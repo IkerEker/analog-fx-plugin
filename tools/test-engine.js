@@ -16,19 +16,17 @@ const only = process.argv[2];
 for (const pr of [{ id: 'none', name: 'Original', p: { warp: { on: false }, erode: { on: false }, ink: { on: false }, out: { hard: 0 } } }].concat(PRESETS)) {
   if (only && pr.id !== only && pr.id !== 'none') continue;
   const p = merge(E.DEFAULTS, pr.p); p.seed = Number(process.env.SEED || 3);
-  const src = E.buildInput(px, meta.w, meta.h, 4, { l: 0, t: 0, r: 0, b: 0 });
-  const m = E.measure(src.alpha, src.w, src.h);
-  const mg = E.margin(p, m.unit);
-  const inp = E.buildInput(px, meta.w, meta.h, 4, { l: mg, t: mg, r: mg, b: mg });
-  inp.unit = m.unit; inp.origin = { x: mg + m.box.left, y: mg + m.box.top };
-  inp.ink = E.averageInk(inp.alpha, inp.rgb, inp.w * inp.h);
+  const inp = E.prepare(px, meta.w, meta.h, 4, p);
+  const m = { unit: inp.unit }, mg = inp.pad.l;
+  tex(p.texture);
   const t0 = Date.now();
   const rgba = E.render(inp, p, tex(p.texture));
   const ms = Date.now() - t0;
   // componer sobre papel
   const W = inp.w, H = inp.h, img = Buffer.alloc(W * H * 3);
+  const lum = 0.299 * inp.ink[0] + 0.587 * inp.ink[1] + 0.114 * inp.ink[2], mul = process.env.BLEND !== 'normal' && lum < 150;
   for (let i = 0; i < W * H; i++) { const a = rgba[i * 4 + 3] / 255; const bg = [236, 233, 224];
-    for (let c = 0; c < 3; c++) img[i * 3 + c] = Math.round(bg[c] * (1 - a) + rgba[i * 4 + c] * a); }
+    for (let c = 0; c < 3; c++) { const top = mul ? bg[c] * rgba[i * 4 + c] / 255 : rgba[i * 4 + c]; img[i * 3 + c] = Math.round(bg[c] * (1 - a) + top * a); } }
   const f = path.join(out, `p_${pr.id}.ppm`);
   fs.writeFileSync(f, Buffer.concat([Buffer.from(`P6 ${W} ${H} 255\n`), img]));
   tiles.push(f);

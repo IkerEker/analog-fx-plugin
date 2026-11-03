@@ -199,7 +199,12 @@ html, body {
   font-size: 11px; color: var(--muted); min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.ctl-label.sub { margin: 6px 0 7px 0; }
+.ctl-label.sub { margin: 10px 0 7px 0; }
+.ctl-sep {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--green); opacity: 0.8; margin: 10px 0 2px 0; padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
 .ctl-val {
   flex: 0 0 auto; margin-left: 8px; font-size: 10px; color: var(--text);
   background: var(--card-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px;

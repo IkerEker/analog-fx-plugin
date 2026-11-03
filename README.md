@@ -2,12 +2,21 @@
 
 Da un aspecto analógico a capas planas (texto, formas y líneas): sello gastado, tinta corrida, goteo, serigrafía, xilografía, guache, fotocopia…
 
-**Versión de prueba 0.1**: requiere Photoshop 2024 (v25) o posterior y un documento RGB de 8 bits.
+**Versión 0.2**: requiere Photoshop 2024 (v25) o posterior y un documento RGB de 8 bits.
+
+## Novedades 0.2
+- Arreglada la vista previa (`encodeImageData...then is not a function`).
+- **Borde húmedo** en *Tinta corrida*: el frente del agua avanza de forma irregular, con un anillo de pigmento atrapado y un halo diluido. El tono, la saturación y la luminosidad del borde son editables.
+- Nuevo módulo **Impresión · fotocopia**: bandas de impresora (separación, grosor, ángulo), desplazamiento de franjas, rayas de tóner o cabezal, trama de semitono y doble impresión (fantasma con su propio tono).
+- Nuevo módulo **Color y tono**: tono, saturación y luminosidad globales, variación de tono, saturación y densidad del pigmento según la textura, y acumulación en los bordes.
+- **Gotas con bulbo** en *Goteo* y **gotas redondas con satélites** en *Salpicaduras*.
+- **Fusión**: Auto, Multiplicar o Normal. Auto multiplica las tintas oscuras con el fondo, como la tinta real.
+- Nuevos estilos: Acuarela, Tinta china, Risografía e Impresora mala. Más colores de tinta: sepia y rosa riso.
 
 ## Instalar
 
 **Opción A: doble clic**
-1. Descarga `dist/AnalogFX_0.1.0.ccx`.
+1. Descarga `dist/AnalogFX_0.2.0.ccx`.
 2. Haz doble clic. Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

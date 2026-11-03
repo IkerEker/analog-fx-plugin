@@ -57,6 +57,8 @@
   function pctS(v) { return Math.round(v * 100) + '%'; }
   function signed(v) { var n = Math.round(v * 100); return n > 0 ? '+' + n : String(n); }
   function dirFmt(v) { var n = Math.round(Math.abs(v) * 100); return v < -0.05 ? 'H ' + n : v > 0.05 ? 'V ' + n : 'Libre'; }
+  function degFmt(v) { var n = Math.round(v * 180); return (n > 0 ? '+' : '') + n + '°'; }
+  function angFmt(v) { return Math.round((v + 1) * 45) + '°'; }
   function veinFmt(v) { var n = Math.round(Math.abs(v) * 100); return v > 0.05 ? 'H ' + n : v < -0.05 ? 'V ' + n : 'No'; }
 
   var GLOBAL = [
@@ -70,14 +72,41 @@
     { id: 'erode', title: 'Desgaste', ctl: [
       { k: 'amount', label: 'Cantidad' }, { k: 'distrib', label: 'Concentración' }, { k: 'contrast', label: 'Dureza del corte' }] },
     { id: 'cracks', title: 'Rayas y grietas', ctl: [{ k: 'amount', label: 'Cantidad' }] },
-    { id: 'bleed', title: 'Tinta corrida', ctl: [
-      { k: 'amount', label: 'Cantidad' }, { k: 'dir', label: 'Dirección', min: -1, max: 1, fmt: dirFmt }] },
+    { id: 'bleed', title: 'Tinta corrida · borde húmedo', ctl: [
+      { k: 'amount', label: 'Cantidad' }, { k: 'dir', label: 'Dirección', min: -1, max: 1, fmt: dirFmt },
+      { sep: 'Borde húmedo' },
+      { k: 'wet', label: 'Borde húmedo (agua)' }, { k: 'pool', label: 'Pigmento atrapado en el borde' },
+      { k: 'halo', label: 'Opacidad del halo' },
+      { sep: 'Color del borde húmedo' },
+      { k: 'hue', label: 'Tono', min: -1, max: 1, fmt: degFmt },
+      { k: 'sat', label: 'Saturación', min: -1, max: 1, fmt: signed },
+      { k: 'light', label: 'Luminosidad (dilución)', min: -1, max: 1, fmt: signed }] },
     { id: 'drips', title: 'Goteo', ctl: [
-      { k: 'length', label: 'Longitud' }, { k: 'amount', label: 'Cantidad' }, { k: 'up', label: 'Hacia arriba' }] },
+      { k: 'length', label: 'Longitud' }, { k: 'amount', label: 'Arrastre' }, { k: 'up', label: 'Hacia arriba' },
+      { k: 'drops', label: 'Gotas con bulbo' }] },
     { id: 'splat', title: 'Salpicaduras', ctl: [
-      { k: 'amount', label: 'Cantidad' }, { k: 'spread', label: 'Alcance' }, { k: 'size', label: 'Tamaño' }] },
+      { k: 'amount', label: 'Manchas' }, { k: 'drops', label: 'Gotas redondas' },
+      { k: 'spread', label: 'Alcance' }, { k: 'size', label: 'Tamaño' }] },
     { id: 'ink', title: 'Tinta y grano', ctl: [
-      { k: 'pressure', label: 'Presión irregular' }, { k: 'grain', label: 'Grano' }] }
+      { k: 'pressure', label: 'Presión irregular' }, { k: 'grain', label: 'Grano' }] },
+    { id: 'print', title: 'Impresión · fotocopia', ctl: [
+      { sep: 'Bandas de impresora' },
+      { k: 'bands', label: 'Bandas' }, { k: 'spacing', label: 'Separación' }, { k: 'width', label: 'Grosor' },
+      { k: 'dir', label: 'Ángulo', min: -1, max: 1, fmt: angFmt, plain: true }, { k: 'shift', label: 'Desplazamiento de franjas' },
+      { k: 'streaks', label: 'Rayas de tóner / cabezal' },
+      { sep: 'Trama' },
+      { k: 'halftone', label: 'Semitono' }, { k: 'dot', label: 'Tamaño del punto' },
+      { sep: 'Doble impresión' },
+      { k: 'ghost', label: 'Fantasma (desregistro)' }, { k: 'ghostOff', label: 'Desplazamiento' },
+      { k: 'ghostHue', label: 'Tono del fantasma', min: -1, max: 1, fmt: degFmt }] },
+    { id: 'color', title: 'Color y tono', ctl: [
+      { k: 'hue', label: 'Tono', min: -1, max: 1, fmt: degFmt },
+      { k: 'sat', label: 'Saturación', min: -1, max: 1, fmt: signed },
+      { k: 'light', label: 'Luminosidad', min: -1, max: 1, fmt: signed },
+      { sep: 'Variación del pigmento' },
+      { k: 'hueVar', label: 'Variación de tono' }, { k: 'satVar', label: 'Variación de saturación' },
+      { k: 'lightVar', label: 'Variación de densidad' },
+      { k: 'edge', label: 'Acumulación en bordes' }] }
   ];
   var OUT = [
     { path: 'out.hard', label: 'Dureza (impresión)' },
@@ -88,7 +117,12 @@
     { id: '#141414', label: 'Negro', sw: '#141414' },
     { id: '#f4f1ea', label: 'Blanco', sw: '#f4f1ea' },
     { id: '#c8352b', label: 'Rojo', sw: '#c8352b' },
-    { id: '#1f4fa3', label: 'Azul', sw: '#1f4fa3' }
+    { id: '#1f4fa3', label: 'Azul', sw: '#1f4fa3' },
+    { id: '#5a3b28', label: 'Sepia', sw: '#5a3b28' },
+    { id: '#e8458b', label: 'Rosa riso', sw: '#e8458b' }
+  ];
+  var BLENDS = [
+    { id: 'auto', label: 'Auto' }, { id: 'multiply', label: 'Multiplicar' }, { id: 'normal', label: 'Normal' }
   ];
 
   var sliders = [];   // { path, def, update() }
@@ -110,7 +144,7 @@
     function update() {
       var v = getPath(state.p, def.path);
       var t = (v - min) / (max - min); t = t < 0 ? 0 : t > 1 ? 1 : t;
-      var zero = min < 0 ? (0 - min) / (max - min) : 0;
+      var zero = min < 0 && !def.plain ? (0 - min) / (max - min) : 0;
       var a = Math.min(zero, t), b = Math.max(zero, t);
       fill.style.left = (a * 100) + '%';
       fill.style.width = ((b - a) * 100) + '%';
@@ -123,7 +157,7 @@
       t = t < 0 ? 0 : t > 1 ? 1 : t;
       var v = min + t * (max - min);
       v = Math.round(v * 100) / 100;
-      if (min < 0 && Math.abs(v) < 0.04) v = 0; // imán al centro
+      if (min < 0 && !def.plain && Math.abs(v) < 0.04) v = 0; // imán al centro
       setPath(state.p, def.path, v);
       update();
       onParamChange(!final);
@@ -182,7 +216,8 @@
       head.appendChild(sw); head.appendChild(title); head.appendChild(chev);
       var body = el('div', 'mod-body');
       m.ctl.forEach(function (c) {
-        body.appendChild(makeSlider({ path: m.id + '.' + c.k, label: c.label, min: c.min, max: c.max, fmt: c.fmt }));
+        if (c.sep) { body.appendChild(el('div', 'ctl-sep', c.sep)); return; }
+        body.appendChild(makeSlider({ path: m.id + '.' + c.k, label: c.label, min: c.min, max: c.max, fmt: c.fmt, plain: c.plain }));
       });
       box.appendChild(head); box.appendChild(body);
       sw.addEventListener('click', function (e) {
@@ -205,6 +240,13 @@
       chip.setAttribute('data-color', c.id);
       chip.addEventListener('click', function () { state.p.out.color = c.id; syncAll(); onParamChange(false); });
       cc.appendChild(chip);
+    });
+    var bc = $('blendChips');
+    BLENDS.forEach(function (b) {
+      var chip = el('div', 'chip', b.label);
+      chip.setAttribute('data-blend', b.id);
+      chip.addEventListener('click', function () { state.p.out.blend = b.id; syncAll(); onParamChange(false); });
+      bc.appendChild(chip);
     });
     // acciones
     $('btnApply').addEventListener('click', applyEffect);
@@ -256,15 +298,17 @@
     for (var j = 0; j < th.length; j++) th[j].className = 'thumb' + (th[j].getAttribute('data-tex') === state.p.texture ? ' active' : '');
     var cc = document.querySelectorAll('#colorChips .chip');
     for (var k = 0; k < cc.length; k++) cc[k].className = 'chip' + (cc[k].getAttribute('data-color') === (state.p.out.color || 'original') ? ' active' : '');
+    var bcs = document.querySelectorAll('#blendChips .chip');
+    for (var b = 0; b < bcs.length; b++) bcs[b].className = 'chip' + (bcs[b].getAttribute('data-blend') === (state.p.out.blend || 'auto') ? ' active' : '');
     $('seedLabel').textContent = 'Semilla ' + state.p.seed;
   }
 
   function applyPreset(id) {
     var pr = PRESETS.filter(function (x) { return x.id === id; })[0];
     if (!pr) return;
-    var keep = { seed: state.p.seed, color: state.p.out.color, effectScale: state.p.effectScale };
+    var keep = { seed: state.p.seed, color: state.p.out.color, blend: state.p.out.blend, effectScale: state.p.effectScale };
     state.p = merge(E.DEFAULTS, pr.p);
-    state.p.seed = keep.seed; state.p.out.color = keep.color; state.p.effectScale = keep.effectScale;
+    state.p.seed = keep.seed; state.p.out.color = keep.color; state.p.out.blend = keep.blend || 'auto'; state.p.effectScale = keep.effectScale;
     state.preset = id;
     syncAll(); onParamChange(false);
   }
@@ -345,17 +389,19 @@
     return { left: Math.round(b.left), top: Math.round(b.top), right: Math.round(b.right), bottom: Math.round(b.bottom) };
   }
 
+  // Las funciones de imaging pueden devolver el valor directamente o una promesa
+  // según la versión de Photoshop: siempre se envuelven con Promise.resolve / await.
+  async function grabPixels(opts) {
+    var res = await Promise.resolve(imaging.getPixels(opts));
+    var im = res.imageData;
+    var data = await Promise.resolve(im.getData({ chunky: true }));
+    if (!(data instanceof Uint8Array)) data = new Uint8Array(data.buffer ? data.buffer : data);
+    var out = { px: data, w: im.width, h: im.height, comps: im.components, profile: im.colorProfile, bounds: res.sourceBounds };
+    try { im.dispose(); } catch (e) { /* */ }
+    return out;
+  }
   function readPixels(opts) {
-    var run = function () {
-      return imaging.getPixels(opts).then(function (res) {
-        var im = res.imageData;
-        return im.getData({ chunky: true }).then(function (data) {
-          var out = { px: data, w: im.width, h: im.height, comps: im.components, profile: im.colorProfile, bounds: res.sourceBounds };
-          try { im.dispose(); } catch (e) { /* */ }
-          return out;
-        });
-      });
-    };
+    var run = function () { return grabPixels(opts); };
     // getPixels normalmente funciona fuera del modo modal; si no, se reintenta dentro.
     return run().catch(function () {
       return core.executeAsModal(function () { return run(); }, { commandName: 'Analog FX · vista previa' });
@@ -423,6 +469,15 @@
     if (msg) setStatus(msg, null);
   }
 
+  // Auto: las tintas oscuras se multiplican con el papel (como la tinta real); las claras, normal
+  function resolveBlend(p, ink) {
+    var b = p.out.blend || 'auto';
+    if (b !== 'auto') return b;
+    var c = p.out.color && p.out.color !== 'original' ? E.hexToRgb(p.out.color) : ink;
+    var lum = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+    return lum < 150 ? 'multiply' : 'normal';
+  }
+
   function setBusy(on) { $('previewBusy').className = 'preview-busy' + (on ? ' on' : ''); }
 
   // ---------------------------------------------------------------- render de la vista previa
@@ -442,11 +497,7 @@
       var px = useHalf ? s.half.px : s.px, w = useHalf ? s.half.w : s.w, h = useHalf ? s.half.h : s.h;
       var m = useHalf ? s.halfMeasure : s.measure;
       var p = state.p;
-      var mg = E.margin(p, m.unit);
-      var inp = E.buildInput(px, w, h, s.comps, { l: mg, t: mg, r: mg, b: mg });
-      inp.unit = m.unit;
-      inp.origin = { x: mg + m.box.left, y: mg + m.box.top };
-      inp.ink = E.averageInk(inp.alpha, inp.rgb, inp.w * inp.h);
+      var inp = E.prepare(px, w, h, s.comps, p, null, m);
       var rgba;
       if (state.showOriginal) {
         rgba = new Uint8Array(inp.w * inp.h * 4);
@@ -461,6 +512,7 @@
       var ink = p.out.color && p.out.color !== 'original' ? E.hexToRgb(p.out.color) : inp.ink;
       var lum = 0.299 * ink[0] + 0.587 * ink[1] + 0.114 * ink[2];
       var bg = lum > 150 ? [27, 31, 29] : [236, 233, 224];
+      var mul = !state.showOriginal && resolveBlend(p, ink) === 'multiply';
       $('previewBox').className = 'preview' + (lum > 150 ? ' dark' : '');
       // recortar al contenido visible (+ un pequeño margen) para que se vea grande
       var W = inp.w, H = inp.h, x0 = W, y0 = H, x1 = -1, y1 = -1, xx, yy;
@@ -474,9 +526,15 @@
       for (yy = 0; yy < ch; yy++) for (xx = 0; xx < cw; xx++) {
         var si = ((yy + y0) * W + xx + x0) * 4, di = (yy * cw + xx) * 3;
         var a = rgba[si + 3] / 255, ia = 1 - a;
-        rgb[di] = rgba[si] * a + bg[0] * ia;
-        rgb[di + 1] = rgba[si + 1] * a + bg[1] * ia;
-        rgb[di + 2] = rgba[si + 2] * a + bg[2] * ia;
+        if (mul) {
+          rgb[di] = bg[0] * (ia + a * rgba[si] / 255);
+          rgb[di + 1] = bg[1] * (ia + a * rgba[si + 1] / 255);
+          rgb[di + 2] = bg[2] * (ia + a * rgba[si + 2] / 255);
+        } else {
+          rgb[di] = rgba[si] * a + bg[0] * ia;
+          rgb[di + 1] = rgba[si + 1] * a + bg[1] * ia;
+          rgb[di + 2] = rgba[si + 2] * a + bg[2] * ia;
+        }
       }
       return toImageURL(rgb, cw, ch);
     }).then(function (url) {
@@ -492,16 +550,32 @@
     });
   }
 
-  function toImageURL(rgb, w, h) {
-    if (IN_PS) {
-      return imaging.createImageDataFromBuffer(rgb, { width: w, height: h, components: 3, chunky: true, colorSpace: 'RGB', colorProfile: 'sRGB IEC61966-2.1' })
-        .then(function (im) {
-          return imaging.encodeImageData({ imageData: im, base64: true }).then(function (b64) {
-            try { im.dispose(); } catch (e) { /* */ }
-            return 'data:image/jpeg;base64,' + b64;
-          });
-        });
+  var B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  function bytesToBase64(b) {
+    var out = '', i;
+    for (i = 0; i + 2 < b.length; i += 3) {
+      var n = (b[i] << 16) | (b[i + 1] << 8) | b[i + 2];
+      out += B64[(n >> 18) & 63] + B64[(n >> 12) & 63] + B64[(n >> 6) & 63] + B64[n & 63];
     }
+    if (i < b.length) {
+      var n2 = (b[i] << 16) | ((i + 1 < b.length ? b[i + 1] : 0) << 8);
+      out += B64[(n2 >> 18) & 63] + B64[(n2 >> 12) & 63] + (i + 1 < b.length ? B64[(n2 >> 6) & 63] : '=') + '=';
+    }
+    return out;
+  }
+  async function encodePS(rgb, w, h) {
+    var im = await Promise.resolve(imaging.createImageDataFromBuffer(rgb, { width: w, height: h, components: 3, chunky: true, colorSpace: 'RGB', colorProfile: 'sRGB IEC61966-2.1' }));
+    try {
+      var enc = await Promise.resolve(imaging.encodeImageData({ imageData: im, base64: true }));
+      if (typeof enc !== 'string') enc = bytesToBase64(enc);   // algunas versiones devuelven los bytes del JPEG
+      if (enc.indexOf('data:') === 0) return enc;
+      return 'data:image/jpeg;base64,' + enc;
+    } finally {
+      try { im.dispose(); } catch (e) { /* */ }
+    }
+  }
+  function toImageURL(rgb, w, h) {
+    if (IN_PS) return encodePS(rgb, w, h);
     var cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
     var ctx = cv.getContext('2d'), id = ctx.createImageData(w, h);
@@ -556,39 +630,35 @@
       }
       var b = boundsOf(dup);
       if (b.right - b.left <= 0 || b.bottom - b.top <= 0) throw new Error('La capa está vacía');
-      var d = await (async function () {
-        var res = await imaging.getPixels({ documentID: doc.id, layerID: dup.id, sourceBounds: b, componentSize: 8 });
-        var im = res.imageData, data = await im.getData({ chunky: true });
-        var o = { px: data, w: im.width, h: im.height, comps: im.components, profile: im.colorProfile, bounds: res.sourceBounds || b };
-        try { im.dispose(); } catch (e) { /* */ }
-        return o;
-      })();
-      var sb = d.bounds;
+      var d = await grabPixels({ documentID: doc.id, layerID: dup.id, sourceBounds: b, componentSize: 8 });
+      var sb = d.bounds || b;
       var base = E.buildInput(d.px, d.w, d.h, d.comps, { l: 0, t: 0, r: 0, b: 0 });
       var m = E.measure(base.alpha, d.w, d.h);
       if (!m) throw new Error('La capa no tiene píxeles visibles');
-      var mg = E.margin(p, m.unit);
       var dw = Math.round(Number(doc.width)), dh = Math.round(Number(doc.height));
-      var pad = {
-        l: Math.max(0, Math.min(mg, sb.left)), t: Math.max(0, Math.min(mg, sb.top)),
-        r: Math.max(0, Math.min(mg, dw - sb.right)), b: Math.max(0, Math.min(mg, dh - sb.bottom))
-      };
-      if (!(dw > 0 && dh > 0)) pad = { l: mg, t: mg, r: mg, b: mg };
-      var inp = E.buildInput(d.px, d.w, d.h, d.comps, pad);
-      inp.unit = m.unit;
-      inp.origin = { x: pad.l + m.box.left, y: pad.t + m.box.top };
-      inp.ink = E.averageInk(inp.alpha, inp.rgb, inp.w * inp.h);
+      var inp = E.prepare(d.px, d.w, d.h, d.comps, p, function (mg) {
+        if (!(dw > 0 && dh > 0)) return { l: mg, t: mg, r: mg, b: mg };
+        return {
+          l: Math.max(0, Math.min(mg, sb.left)), t: Math.max(0, Math.min(mg, sb.top)),
+          r: Math.max(0, Math.min(mg, dw - sb.right)), b: Math.max(0, Math.min(mg, dh - sb.bottom))
+        };
+      }, m);
+      var pad = inp.pad;
       var rgba = E.render(inp, p, tex);
       var opts = { width: inp.w, height: inp.h, components: 4, chunky: true, colorSpace: 'RGB' };
       if (d.profile) opts.colorProfile = d.profile;
-      var out = await imaging.createImageDataFromBuffer(rgba, opts);
-      await imaging.putPixels({
+      var out = await Promise.resolve(imaging.createImageDataFromBuffer(rgba, opts));
+      await Promise.resolve(imaging.putPixels({
         documentID: doc.id, layerID: dup.id, imageData: out, replace: true,
         targetBounds: { left: sb.left - pad.l, top: sb.top - pad.t }
-      });
+      }));
       try { out.dispose(); } catch (e) { /* */ }
       var baseName = source.name;
       dup.name = baseName + RESULT_SUFFIX;
+      try {
+        var bm = resolveBlend(p, inp.ink);
+        dup.blendMode = bm === 'multiply' ? constants.BlendMode.MULTIPLY : constants.BlendMode.NORMAL;
+      } catch (e) { /* modo de fusión opcional */ }
       source.visible = false;
       store(linkKey(doc.id, dup.id), source.id);
       info = { w: inp.w, h: inp.h };
