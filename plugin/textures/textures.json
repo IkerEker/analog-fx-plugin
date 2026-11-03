@@ -1,0 +1,38 @@
+[
+ {
+  "id": "frias_4",
+  "family": "frias",
+  "label": "Frías 4",
+  "size": 1024
+ },
+ {
+  "id": "frias_9",
+  "family": "frias",
+  "label": "Frías 9",
+  "size": 1024
+ },
+ {
+  "id": "frias_10",
+  "family": "frias",
+  "label": "Frías 10",
+  "size": 1024
+ },
+ {
+  "id": "frias_11",
+  "family": "frias",
+  "label": "Frías 11",
+  "size": 1024
+ },
+ {
+  "id": "frias_12",
+  "family": "frias",
+  "label": "Frías 12",
+  "size": 1024
+ },
+ {
+  "id": "grises_8",
+  "family": "grises",
+  "label": "Grises 8",
+  "size": 1024
+ }
+]
