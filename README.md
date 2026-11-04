@@ -1,55 +1,64 @@
 # Analog FX · plugin para Photoshop (UXP)
 
-Da un aspecto analógico a capas planas (texto, formas y líneas): sello gastado, tinta corrida, goteo, serigrafía, xilografía, guache, fotocopia…
+Transforma capas de **texto** y **formas sólidas** imitando técnicas de impresión reales, humedad, goteo y acuarela.
 
-**Versión 0.2**: requiere Photoshop 2024 (v25) o posterior y un documento RGB de 8 bits.
+**Versión 0.3**: requiere Photoshop 2024 (v25) o posterior y un documento RGB de 8 bits.
 
-## Novedades 0.2
-- Arreglada la vista previa (`encodeImageData...then is not a function`).
-- **Borde húmedo** en *Tinta corrida*: el frente del agua avanza de forma irregular, con un anillo de pigmento atrapado y un halo diluido. El tono, la saturación y la luminosidad del borde son editables.
-- Nuevo módulo **Impresión · fotocopia**: bandas de impresora (separación, grosor, ángulo), desplazamiento de franjas, rayas de tóner o cabezal, trama de semitono y doble impresión (fantasma con su propio tono).
-- Nuevo módulo **Color y tono**: tono, saturación y luminosidad globales, variación de tono, saturación y densidad del pigmento según la textura, y acumulación en los bordes.
-- **Gotas con bulbo** en *Goteo* y **gotas redondas con satélites** en *Salpicaduras*.
-- **Fusión**: Auto, Multiplicar o Normal. Auto multiplica las tintas oscuras con el fondo, como la tinta real.
-- Nuevos estilos: Acuarela, Tinta china, Risografía e Impresora mala. Más colores de tinta: sepia y rosa riso.
+## Técnicas
+
+| Grupo | Técnica | Qué imita |
+|---|---|---|
+| Impresión | **Serigrafía** | Tinta plana y opaca, dentado de malla, rasqueta irregular, huecos, desregistro con 2 tintas |
+| Impresión | **Offset · Tritono** | Trama de puntos a 45°/75°/15° (roseta), ganancia de punto, mono/duo/tritono |
+| Impresión | **Risografía** | Grano del esténcil, trama gruesa, tintas transparentes superpuestas, desregistro de 1-3 mm |
+| Impresión | **Tipografía** | Letterpress: tinta acumulada en el borde, halo aplastado, macizos con huecos, huella |
+| Impresión | **Litografía** | Grano de piedra (lápiz litográfico), borde graso, reticulado de tusche, velo de plancha |
+| Impresión | **Xilografía** | Veta de madera (o linóleo), marcas de gubia, restos de talla, presión desigual |
+| Copistería | **Copistería** | Copia de copia, negros quemados, bandas, franjas desplazadas, rayas del tambor, tóner |
+| Gotitas | **Humedad** | Impresión normal que se moja: la tinta se abre y se corre en algunas zonas |
+| Gotitas | **Goteo** | La tinta gotea hacia abajo con hilos finos y gotas muy pequeñas |
+| Acuarelado | **Acuarelado** | Aguada, pigmento en el borde, granulación, floraciones, frente de agua |
+
+Cada técnica tiene 3 variantes rápidas y paletas de color típicas.
 
 ## Instalar
-
 **Opción A: doble clic**
-1. Descarga `dist/AnalogFX_0.2.0.ccx`.
+1. Descarga `dist/AnalogFX_0.3.0.ccx`.
 2. Haz doble clic. Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
-**Opción B: UXP Developer Tool** (si la opción A no funciona)
-1. En Photoshop activa **Preferencias › Plugins › Activar modo de desarrollador** y reinicia Photoshop.
-2. Instala **UXP Developer Tool** desde Creative Cloud y ábrela.
-3. Pulsa **Add Plugin**, elige `plugin/manifest.json` y luego pulsa **Load**.
+**Opción B: UXP Developer Tool**
+1. En Photoshop activa **Preferencias › Plugins › Activar modo de desarrollador**.
+2. En UXP Developer Tool pulsa **Add Plugin**, elige `plugin/manifest.json` y luego pulsa **Load**.
 
 ## Usar
+**Página de presets**
+1. Elige una técnica.
+2. Elige una variante.
+3. Elige los colores: una de las 3 paletas, o pulsa **Elegir colores** para cambiar cada tinta con el selector de Photoshop, el código hexadecimal o las muestras.
+4. Ajusta la **Intensidad**.
+5. Pulsa **APLICAR**.
 
-1. Selecciona una capa de texto, forma o línea.
-2. Elige un **estilo**, una **textura** y ajusta los módulos. La vista previa se actualiza al momento.
-3. Pulsa **APLICAR**. Se crea la capa `Nombre · Analog` y el original queda oculto debajo, intacto.
-4. Para retocar, selecciona el resultado, cambia ajustes y vuelve a aplicar: se regenera desde el original, sin acumular efectos.
+**Ajustes avanzados**
+- Contiene todas las opciones de la técnica, las texturas, el tamaño del efecto, la opacidad y la fusión.
+- Desde ahí puedes **guardar tus propios presets**, que luego aparecen con ★ en la página de presets.
 
-- **Dado**: crea otra variación (otra semilla).
-- **Flecha circular**: vuelve a los valores del estilo.
-- **Doble clic en un número**: restablece ese valor.
-- **Mantén pulsado "ver original"**: compara el antes y el después.
+**Al aplicar**
+- Se crea la capa `Nombre · Analog · Técnica` y el original queda oculto debajo.
+- Si seleccionas el resultado y vuelves a aplicar, se regenera desde el original.
+- El dado crea una variación nueva y el botón de flecha restablece la variante.
 
 ## Estructura
-
 ```
-plugin/            ← el plugin (esto es lo que se instala)
-  manifest.json
-  index.html, styles.css
-  js/engine.js     motor de efectos (JS puro)
-  js/presets.js    estilos
-  js/main.js       panel + Photoshop
-  textures/        texturas optimizadas (1024 px, gris) + miniaturas
-textures-src/      texturas originales
-tools/             build_textures.py, package.sh, pruebas
-dist/              .ccx listo para instalar
+plugin/                 ← el plugin (lo que se instala)
+  js/engine.js          motor: una función por técnica + mezcla sustractiva de tintas
+  js/techniques.js      catálogo: parámetros, variantes y paletas de cada técnica
+  js/main.js            panel (presets / avanzado) + Photoshop
+  textures/  thumbs/    texturas optimizadas y miniaturas
+textures-src/<familia>/ texturas originales (acuarela, humedad, granulado, moteado, piedra, gotas)
+tools/                  build_textures.py, build_thumbs.js, test-engine.js, package.sh
 ```
-
-Para añadir texturas: cópialas a `textures-src/` (con nombres tipo `..._Pinceladas_Frias_7_...png`), ejecuta `python3 tools/build_textures.py` y después `tools/package.sh`.
+Para añadir texturas: cópialas en `textures-src/<familia>/` y ejecuta, en este orden:
+1. `python3 tools/build_textures.py`
+2. `node tools/build_thumbs.js`
+3. `tools/package.sh`
