@@ -6,7 +6,7 @@
  */
 (function () {
   'use strict';
-  var E = window.AFXEngine, PRESETS = window.AFXPresets;
+  var E = window.AFXEngine, PR = window.AFXPresets;
 
   // ---------------------------------------------------------------- entorno
   var ps = null, uxp = null;
@@ -42,15 +42,33 @@
 
   // ---------------------------------------------------------------- estado
   var state = {
-    p: merge(E.DEFAULTS, (PRESETS[0] || {}).p || {}),
-    preset: (PRESETS[0] || {}).id,
+    tech: load('v4.tech', PR.TECHS[0].id), variant: load('v4.variant', null), palette: load('v4.palette', 0),
+    intensity: load('v4.intensity', 1), page: 'presets', colorsOpen: false,
+    p: null, custom: load('v4.custom', false),
     textures: [], texCache: {},
     src: null,          // { w, h, px, comps, half, layerId, docId, name, isResult }
     showOriginal: false, busy: false, rendering: false, dirty: false
   };
-  var saved = load('params', null);
-  if (saved) { state.p = merge(E.DEFAULTS, saved); state.preset = load('preset', null); }
+  if (!PR.byId(state.tech)) state.tech = PR.TECHS[0].id;
+  var saved = load('v4.params', null);
+  function techObj() { return PR.byId(state.tech); }
+  function variantObj() { var t = techObj(); return t.variants.filter(function (v) { return v.id === state.variant; })[0] || t.variants[0]; }
+  state.p = saved ? merge(E.DEFAULTS, saved) : PR.build(E.DEFAULTS, techObj(), variantObj());
+  if (!state.variant) state.variant = variantObj().id;
   var openMods = load('open', { warp: true, erode: true });
+  function saveState() {
+    store('v4.tech', state.tech); store('v4.variant', state.variant); store('v4.palette', state.palette);
+    store('v4.intensity', state.intensity); store('v4.params', state.p); store('v4.custom', state.custom);
+  }
+  // parámetros efectivos: los del estado escalados por el deslizador de intensidad
+  function effParams() {
+    var p = clone(state.p), I = state.intensity;
+    if (I !== 1) for (var mod in PR.INTENSITY) {
+      if (!p[mod]) continue;
+      PR.INTENSITY[mod].forEach(function (k) { if (typeof p[mod][k] === 'number') p[mod][k] = Math.max(0, Math.min(1, p[mod][k] * I)); });
+    }
+    return p;
+  }
 
   // ---------------------------------------------------------------- definición de controles
   function pct(v) { return Math.round(v * 100); }
@@ -80,20 +98,49 @@
       { sep: 'Color del borde húmedo' },
       { k: 'hue', label: 'Tono', min: -1, max: 1, fmt: degFmt },
       { k: 'sat', label: 'Saturación', min: -1, max: 1, fmt: signed },
-      { k: 'light', label: 'Luminosidad (dilución)', min: -1, max: 1, fmt: signed }] },
+      { k: 'light', label: 'Luminosidad (dilución)', min: -1, max: 1, fmt: signed },
+      { sep: 'Zonas mojadas (humedad)' },
+      { k: 'zones', label: 'Zonas mojadas (0 = todo)' }, { k: 'zoneSize', label: 'Tamaño de las manchas' },
+      { k: 'dissolve', label: 'Tinta lavada en el centro' }, { k: 'tide', label: 'Marca del agua' }] },
     { id: 'drips', title: 'Goteo', ctl: [
       { k: 'length', label: 'Longitud' }, { k: 'amount', label: 'Arrastre' }, { k: 'up', label: 'Hacia arriba' },
-      { k: 'drops', label: 'Gotas con bulbo' }] },
+      { k: 'drops', label: 'Gotas con bulbo' }, { k: 'thick', label: 'Grosor de las gotas' }] },
     { id: 'splat', title: 'Salpicaduras', ctl: [
       { k: 'amount', label: 'Manchas' }, { k: 'drops', label: 'Gotas redondas' },
       { k: 'spread', label: 'Alcance' }, { k: 'size', label: 'Tamaño' }] },
     { id: 'ink', title: 'Tinta y grano', ctl: [
-      { k: 'pressure', label: 'Presión irregular' }, { k: 'grain', label: 'Grano' }] },
+      { k: 'pressure', label: 'Presión irregular' }, { k: 'grain', label: 'Grano' },
+      { k: 'fade', label: 'Esténcil gastado (pierde fuerza)' }, { k: 'roller', label: 'Marcas del rodillo' }] },
+    { id: 'paper', title: 'Papel', ctl: [
+      { k: 'feather', label: 'Tinta en las fibras' }, { k: 'relief', label: 'Relieve del papel' },
+      { k: 'tooth', label: 'Valles sin tinta' }, { k: 'paperScale', label: 'Tamaño del grano' }] },
+    { id: 'tintas', title: 'Tintas y trama', ctl: [
+      { k: 'count', label: 'Número de tintas', min: 1, max: 3, fmt: function (v) { return String(Math.round(v)); }, plain: true, step: 1 },
+      { k: 'd2', label: 'Densidad de las otras tintas' }, { k: 'tone', label: 'Densidad general' },
+      { sep: 'Trama de semitono' },
+      { k: 'screen', label: 'Trama' }, { k: 'cell', label: 'Tamaño del punto' }, { k: 'gain', label: 'Ganancia de punto' },
+      { k: 'donut', label: 'Puntos donut (flexo)' },
+      { sep: 'Registro' },
+      { k: 'misreg', label: 'Desregistro' }, { k: 'misAng', label: 'Dirección', min: -1, max: 1, fmt: degFmt }] },
+    { id: 'press', title: 'Prensa · relieve', ctl: [
+      { k: 'squeeze', label: 'Tinta acumulada en el borde' }, { k: 'halo', label: 'Halo aplastado' },
+      { k: 'starve', label: 'Poca tinta en macizos' }] },
+    { id: 'mesh', title: 'Malla de serigrafía', ctl: [
+      { k: 'sawtooth', label: 'Dentado de la malla' }, { k: 'mesh', label: 'Malla visible' }, { k: 'voids', label: 'Huecos' }] },
+    { id: 'wood', title: 'Madera', ctl: [
+      { k: 'grain', label: 'Veta' }, { k: 'angle', label: 'Ángulo de la veta', min: -1, max: 1, fmt: degFmt },
+      { k: 'spacing', label: 'Separación de la veta' }, { k: 'chips', label: 'Restos de talla' }] },
+    { id: 'stone', title: 'Piedra litográfica', ctl: [
+      { k: 'amount', label: 'Grano de piedra' }, { k: 'size', label: 'Tamaño del grano' }, { k: 'tone', label: 'Densidad' },
+      { k: 'greasy', label: 'Borde graso' }, { k: 'veil', label: 'Velo de plancha' }] },
+    { id: 'wash', title: 'Acuarela', ctl: [
+      { k: 'wash', label: 'Manchas de aguada' }, { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' },
+      { k: 'transp', label: 'Transparencia' }] },
     { id: 'print', title: 'Impresión · fotocopia', ctl: [
       { sep: 'Bandas de impresora' },
       { k: 'bands', label: 'Bandas' }, { k: 'spacing', label: 'Separación' }, { k: 'width', label: 'Grosor' },
       { k: 'dir', label: 'Ángulo', min: -1, max: 1, fmt: angFmt, plain: true }, { k: 'shift', label: 'Desplazamiento de franjas' },
-      { k: 'streaks', label: 'Rayas de tóner / cabezal' },
+      { k: 'streaks', label: 'Rayas de tóner / cabezal' }, { k: 'regular', label: 'Líneas regulares (boquillas)' },
       { sep: 'Trama' },
       { k: 'halftone', label: 'Semitono' }, { k: 'dot', label: 'Tamaño del punto' },
       { sep: 'Doble impresión' },
@@ -121,6 +168,8 @@
     { id: '#5a3b28', label: 'Sepia', sw: '#5a3b28' },
     { id: '#e8458b', label: 'Rosa riso', sw: '#e8458b' }
   ];
+  var SWATCHES = ['#151515', '#3b3b3b', '#f4f1ea', '#5a3b28', '#b08d57', '#7d7468', '#e23c3c', '#f15060', '#ff48b0',
+    '#ff6c2f', '#f5c400', '#ffe800', '#00a95c', '#00838a', '#0078bf', '#1f3a93', '#765ba7', '#48a9c5'];
   var BLENDS = [
     { id: 'auto', label: 'Auto' }, { id: 'multiply', label: 'Multiplicar' }, { id: 'normal', label: 'Normal' }
   ];
@@ -142,7 +191,7 @@
     root.appendChild(head); root.appendChild(track);
 
     function update() {
-      var v = getPath(state.p, def.path);
+      var v = def.get ? def.get() : getPath(state.p, def.path);
       var t = (v - min) / (max - min); t = t < 0 ? 0 : t > 1 ? 1 : t;
       var zero = min < 0 && !def.plain ? (0 - min) / (max - min) : 0;
       var a = Math.min(zero, t), b = Math.max(zero, t);
@@ -156,9 +205,9 @@
       var t = r.width > 0 ? (clientX - r.left) / r.width : 0;
       t = t < 0 ? 0 : t > 1 ? 1 : t;
       var v = min + t * (max - min);
-      v = Math.round(v * 100) / 100;
+      v = def.step ? Math.round(v / def.step) * def.step : Math.round(v * 100) / 100;
       if (min < 0 && !def.plain && Math.abs(v) < 0.04) v = 0; // imán al centro
-      setPath(state.p, def.path, v);
+      if (def.set) def.set(v); else { setPath(state.p, def.path, v); markCustom(); }
       update();
       onParamChange(!final);
     }
@@ -183,7 +232,8 @@
     track.addEventListener('pointerdown', down);
     track.addEventListener('mousedown', down);
     val.addEventListener('dblclick', function () {
-      setPath(state.p, def.path, getPath(E.DEFAULTS, def.path)); update(); onParamChange(false);
+      if (def.reset) def.reset(); else { setPath(state.p, def.path, getPath(E.DEFAULTS, def.path)); markCustom(); }
+      update(); onParamChange(false);
     });
     var s = { path: def.path, update: update };
     sliders.push(s);
@@ -193,14 +243,29 @@
 
   // ---------------------------------------------------------------- construcción de la interfaz
   function buildUI() {
-    // estilos
-    var chips = $('presetChips');
-    PRESETS.forEach(function (pr) {
-      var c = el('div', 'chip', pr.name);
-      c.setAttribute('data-id', pr.id);
-      c.addEventListener('click', function () { applyPreset(pr.id); });
-      chips.appendChild(c);
+    // página 1: técnicas agrupadas
+    var list = $('techList');
+    PR.GROUPS.forEach(function (g) {
+      var techs = PR.TECHS.filter(function (t) { return t.group === g.id; });
+      if (!techs.length) return;
+      list.appendChild(el('div', 'group-label', g.name));
+      var grid = el('div', 'tech-grid');
+      techs.forEach(function (t) {
+        var card = el('div', 'tcard');
+        card.setAttribute('data-tech', t.id);
+        var img = el('img'); img.src = 'thumbs/' + t.id + '.jpg';
+        card.appendChild(img); card.appendChild(el('div', 'tname', t.name));
+        card.addEventListener('click', function () { selectTech(t.id); });
+        grid.appendChild(card);
+      });
+      list.appendChild(grid);
     });
+    $('intensityCtl').appendChild(makeSlider({
+      label: 'Intensidad del efecto', min: 0, max: 2, fmt: pctS,
+      get: function () { return state.intensity; }, set: function (v) { state.intensity = v; }, reset: function () { state.intensity = 1; }
+    }));
+    $('btnDetails').addEventListener('click', function () { showPage('details'); });
+    $('btnBack').addEventListener('click', function () { showPage('presets'); });
     // controles globales
     var g = $('globalCtrls');
     GLOBAL.forEach(function (d) { g.appendChild(makeSlider(d)); });
@@ -222,7 +287,7 @@
       box.appendChild(head); box.appendChild(body);
       sw.addEventListener('click', function (e) {
         e.stopPropagation();
-        state.p[m.id].on = !state.p[m.id].on;
+        state.p[m.id].on = !state.p[m.id].on; markCustom();
         if (state.p[m.id].on && !openMods[m.id]) { openMods[m.id] = true; store('open', openMods); }
         syncModules(); onParamChange(false);
       });
@@ -238,7 +303,7 @@
     COLORS.forEach(function (c) {
       var chip = el('div', 'chip', (c.sw ? '<span class="sw" style="background:' + c.sw + '"></span>' : '') + c.label);
       chip.setAttribute('data-color', c.id);
-      chip.addEventListener('click', function () { state.p.out.color = c.id; syncAll(); onParamChange(false); });
+      chip.addEventListener('click', function () { state.p.out.color = c.id; markCustom(); syncAll(); onParamChange(false); });
       cc.appendChild(chip);
     });
     var bc = $('blendChips');
@@ -253,10 +318,7 @@
     $('btnSeed').addEventListener('click', function () {
       state.p.seed = 1 + Math.floor(Math.random() * 99999); syncAll(); onParamChange(false);
     });
-    $('btnReset').addEventListener('click', function () {
-      if (state.preset) applyPreset(state.preset);
-      else { state.p = merge(E.DEFAULTS, { seed: state.p.seed }); syncAll(); onParamChange(false); }
-    });
+    $('btnReset').addEventListener('click', function () { applyVariant(state.variant); });
     // comparar (mantener pulsado)
     var cmp = $('compareBtn');
     function cmpOn(e) { state.showOriginal = true; cmp.className = 'pill active'; renderPreview(false); if (e.preventDefault) e.preventDefault(); }
@@ -269,14 +331,14 @@
   function buildThumbs() {
     var t = $('thumbs');
     t.innerHTML = '';
-    state.textures.forEach(function (tx) {
+    state.textures.filter(function (tx) { return tx.family === 'desgaste'; }).forEach(function (tx) {
       var d = el('div', 'thumb');
       d.setAttribute('data-tex', tx.id);
       var img = el('img');
       img.src = 'textures/thumbs/' + tx.id + '.jpg';
       d.appendChild(img);
       d.appendChild(el('div', 'tl', tx.label));
-      d.addEventListener('click', function () { state.p.texture = tx.id; syncAll(); onParamChange(false); });
+      d.addEventListener('click', function () { state.p.texture = tx.id; markCustom(); syncAll(); onParamChange(false); });
       t.appendChild(d);
     });
   }
@@ -292,8 +354,7 @@
   function syncAll() {
     sliders.forEach(function (s) { s.update(); });
     syncModules();
-    var chips = document.querySelectorAll('#presetChips .chip');
-    for (var i = 0; i < chips.length; i++) chips[i].className = 'chip' + (chips[i].getAttribute('data-id') === state.preset ? ' active' : '');
+    syncPresetsPage();
     var th = document.querySelectorAll('.thumb');
     for (var j = 0; j < th.length; j++) th[j].className = 'thumb' + (th[j].getAttribute('data-tex') === state.p.texture ? ' active' : '');
     var cc = document.querySelectorAll('#colorChips .chip');
@@ -303,18 +364,123 @@
     $('seedLabel').textContent = 'Semilla ' + state.p.seed;
   }
 
-  function applyPreset(id) {
-    var pr = PRESETS.filter(function (x) { return x.id === id; })[0];
-    if (!pr) return;
-    var keep = { seed: state.p.seed, color: state.p.out.color, blend: state.p.out.blend, effectScale: state.p.effectScale };
-    state.p = merge(E.DEFAULTS, pr.p);
-    state.p.seed = keep.seed; state.p.out.color = keep.color; state.p.out.blend = keep.blend || 'auto'; state.p.effectScale = keep.effectScale;
-    state.preset = id;
+  // ---------------------------------------------------------------- página 1: técnica, variante, color
+  function markCustom() { if (!state.custom) { state.custom = true; refreshVariantChips(); } }
+  function applyPalette() {
+    var t = techObj(), pl = t.palettes[state.palette];
+    if (!pl) return;
+    state.p.out.color = pl.ink;
+    if (pl.c2) state.p.tintas.c2 = pl.c2;
+    if (pl.c3) state.p.tintas.c3 = pl.c3;
+  }
+  function applyVariant(id) {
+    var t = techObj(), v = t.variants.filter(function (x) { return x.id === id; })[0] || t.variants[0];
+    var keep = { seed: state.p.seed, blend: state.p.out.blend, effectScale: state.p.effectScale, color: state.p.out.color, c2: state.p.tintas.c2, c3: state.p.tintas.c3 };
+    state.p = PR.build(E.DEFAULTS, t, v);
+    state.p.seed = keep.seed; state.p.out.blend = keep.blend || 'auto'; state.p.effectScale = keep.effectScale;
+    if (state.palette >= 0) applyPalette(); else { state.p.out.color = keep.color; state.p.tintas.c2 = keep.c2; state.p.tintas.c3 = keep.c3; }
+    state.variant = v.id; state.custom = false;
     syncAll(); onParamChange(false);
+  }
+  function selectTech(id) {
+    state.tech = id; state.palette = 0; state.colorsOpen = false;
+    applyVariant(techObj().variants[0].id);
+  }
+  function inkCount() { return state.p.tintas && state.p.tintas.on ? Math.max(1, Math.min(3, state.p.tintas.count | 0)) : 1; }
+  function refreshVariantChips() {
+    var box = $('variantChips'); if (!box) return;
+    box.innerHTML = '';
+    techObj().variants.forEach(function (v) {
+      var c = el('div', 'chip' + (!state.custom && v.id === state.variant ? ' active' : ''), v.name);
+      c.addEventListener('click', function () { applyVariant(v.id); });
+      box.appendChild(c);
+    });
+    if (state.custom) box.appendChild(el('div', 'chip active ghost', 'Personalizado'));
+  }
+  function swatchHtml(hx) { return hx === 'original' ? '<span class="sw sw-layer"></span>' : '<span class="sw" style="background:' + hx + '"></span>'; }
+  function syncPresetsPage() {
+    var t = techObj();
+    var cards = document.querySelectorAll('.tcard');
+    for (var i = 0; i < cards.length; i++) cards[i].className = 'tcard' + (cards[i].getAttribute('data-tech') === t.id ? ' active' : '');
+    $('techName').textContent = t.name; $('techDesc').textContent = t.desc; $('advTitle').textContent = t.name;
+    refreshVariantChips();
+    var pc = $('paletteChips'); pc.innerHTML = '';
+    var n = inkCount();
+    t.palettes.forEach(function (pl, k) {
+      var cols = [pl.ink, pl.c2, pl.c3].slice(0, n).filter(Boolean);
+      var c = el('div', 'chip' + (state.palette === k ? ' active' : ''), cols.map(swatchHtml).join('') + pl.name);
+      c.addEventListener('click', function () { state.palette = k; applyPalette(); syncAll(); onParamChange(false); });
+      pc.appendChild(c);
+    });
+    var pick = el('div', 'chip' + (state.colorsOpen ? ' active' : ''), (state.colorsOpen ? '▾ ' : '▸ ') + 'Elegir color');
+    pick.addEventListener('click', function () { state.colorsOpen = !state.colorsOpen; syncPresetsPage(); });
+    pc.appendChild(pick);
+    buildInkEditor();
+  }
+  // editor de tintas desplegable (tinta 1 = color de salida, 2 y 3 = tintas adicionales)
+  function buildInkEditor() {
+    var box = $('inkEditor'); box.innerHTML = '';
+    box.style.display = state.colorsOpen ? 'block' : 'none';
+    if (!state.colorsOpen) return;
+    for (var idx = 0; idx < inkCount(); idx++) (function (k) {
+      var cur = k === 0 ? (state.p.out.color || 'original') : state.p.tintas[k === 1 ? 'c2' : 'c3'];
+      var row = el('div', 'ink-row'), head = el('div', 'ink-head');
+      head.appendChild(el('div', 'ink-label', 'Tinta ' + (k + 1)));
+      var big = el('div', 'ink-swatch' + (cur === 'original' ? ' sw-layer' : ''));
+      if (cur !== 'original') big.style.background = cur;
+      big.title = 'Abrir selector de color';
+      big.addEventListener('click', function () { pickColor(cur === 'original' ? '#151515' : cur).then(function (hx) { if (hx) setInk(k, hx); }); });
+      head.appendChild(big);
+      var inp = el('input', 'text-in hex'); inp.type = 'text'; inp.value = cur === 'original' ? 'capa' : cur;
+      function commit() { var v = String(inp.value).trim(); if (/^#?[0-9a-f]{6}$/i.test(v)) setInk(k, (v[0] === '#' ? v : '#' + v).toLowerCase()); }
+      inp.addEventListener('change', commit);
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') commit(); });
+      head.appendChild(inp);
+      if (k === 0) {
+        var lc = el('div', 'chip mini' + (cur === 'original' ? ' active' : ''), 'Color de la capa');
+        lc.addEventListener('click', function () { setInk(0, 'original'); });
+        head.appendChild(lc);
+      }
+      row.appendChild(head);
+      var sws = el('div', 'swatches');
+      SWATCHES.forEach(function (hx) {
+        var d = el('div', 'swatch' + (hx === cur ? ' active' : '')); d.style.background = hx; d.title = hx;
+        d.addEventListener('click', function () { setInk(k, hx); });
+        sws.appendChild(d);
+      });
+      row.appendChild(sws);
+      box.appendChild(row);
+    })(idx);
+  }
+  function setInk(k, hx) {
+    if (k === 0) state.p.out.color = hx; else state.p.tintas[k === 1 ? 'c2' : 'c3'] = hx;
+    state.palette = -1;
+    syncAll(); onParamChange(false);
+  }
+  function pickColor(hex) {
+    if (IN_PS) {
+      var rgb = E.hexToRgb(hex);
+      return core.executeAsModal(function () {
+        return action.batchPlay([{ _obj: 'showColorPicker', context: 'Analog FX', color: { _obj: 'RGBColor', red: rgb[0], grain: rgb[1], blue: rgb[2] } }], {});
+      }, { commandName: 'Elegir color' }).then(function (res) {
+        var d = res && res[0], col = d && (d.RGBFloatColor || d.color || d.RGBColor);
+        if (!col || col.red == null) return null;
+        var hx = '#' + [col.red, col.grain != null ? col.grain : col.green, col.blue].map(function (v) { var q = Math.round(Math.max(0, Math.min(255, v))).toString(16); return q.length < 2 ? '0' + q : q; }).join('');
+        return hx;
+      }).catch(function () { setStatus('Selector no disponible: escribe el color en hexadecimal', 'err'); return null; });
+    }
+    return new Promise(function (resolve) { var nc = $('nativeColor'); nc.value = hex; nc.onchange = function () { resolve(nc.value); }; nc.click(); });
+  }
+  function showPage(pg) {
+    state.page = pg;
+    $('pagePresets').className = 'col page' + (pg === 'presets' ? '' : ' hidden');
+    $('pageDetails').className = 'page' + (pg === 'details' ? '' : ' hidden');
+    if (pg === 'presets') syncPresetsPage();
+    try { $('scroll').scrollTop = 0; } catch (e) { /* */ }
   }
 
   function onParamChange(fast) {
-    if (!fast) { store('params', state.p); store('preset', state.preset); }
+    if (!fast) saveState();
     schedulePreview(fast);
   }
 
@@ -346,6 +512,16 @@
       return tex;
     });
     return texLoading[meta.id];
+  }
+
+  // texturas de todas las familias que usa el motor
+  function getTexs(p) {
+    function first(fam) { var t = state.textures.filter(function (x) { return x.family === fam; })[0]; return t ? t.id : null; }
+    var ids = { desgaste: p.texture || first('desgaste'), aguada: first('aguada'), grano: first('grano'), rodillo: first('rodillo') }, out = {};
+    return Promise.all(Object.keys(ids).map(function (f) {
+      if (!ids[f]) return null;
+      return getTexture(ids[f]).then(function (t) { out[f] = t; }).catch(function () { /* sin esa textura: ruido */ });
+    })).then(function () { return out; });
   }
 
   // ---------------------------------------------------------------- Photoshop: capas
@@ -535,11 +711,12 @@
     if (!s) return;
     if (state.rendering) { state.dirty = fast ? 'fast' : 'full'; return; }
     state.rendering = true;
-    getTexture(state.p.texture).then(function (tex) {
+    var pEff = effParams();
+    getTexs(pEff).then(function (tex) {
       var useHalf = fast && s.halfMeasure;
       var px = useHalf ? s.half.px : s.px, w = useHalf ? s.half.w : s.w, h = useHalf ? s.half.h : s.h;
       var m = useHalf ? s.halfMeasure : s.measure;
-      var p = state.p;
+      var p = pEff;
       var inp = E.prepare(px, w, h, s.comps, p, null, m);
       var rgba;
       if (state.showOriginal) {
@@ -643,9 +820,9 @@
     var btn = $('btnApply');
     btn.className = 'btn primary busy'; btn.textContent = 'Aplicando…';
     setStatus('Procesando…', null);
-    var p = clone(state.p), t0 = Date.now();
+    var p = effParams(), t0 = Date.now();
 
-    getTexture(p.texture).then(function (tex) {
+    getTexs(p).then(function (tex) {
       return core.executeAsModal(function (ctx) {
         return runApply(ctx, doc, r.source, r.result, p, tex);
       }, { commandName: 'Analog FX' });
@@ -754,10 +931,11 @@
   function init() {
     buildUI();
     syncAll();
+    showPage('presets');
     if (!IN_PS) { $('modeBadge').textContent = 'DEMO'; $('modeBadge').className = 'badge demo'; }
     readPluginFile('textures/textures.json', false).then(function (txt) {
       state.textures = JSON.parse(txt);
-      if (!state.textures.some(function (t) { return t.id === state.p.texture; })) state.p.texture = state.textures[0].id;
+      if (!state.textures.some(function (t) { return t.id === state.p.texture; })) state.p.texture = 'desgaste_1';
       buildThumbs(); syncAll();
       refreshSource();
     }).catch(function (e) { setStatus('No se pudieron cargar las texturas: ' + errMsg(e), 'err'); });

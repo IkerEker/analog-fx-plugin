@@ -261,3 +261,85 @@ html, body {
 .btn.primary:hover { background: #5af09d; }
 .btn.primary.busy { background: var(--green-2); color: #0d2a1a; }
 .btn.primary.disabled { background: var(--line-2); color: var(--dim); }
+
+/* ---------- v0.4 ---------- */
+/* ---------- páginas, técnicas, tintas ---------- */
+.page.hidden { display: none; }
+.hidden-input { position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; }
+.group-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--green); opacity: 0.85; margin: 8px 0 5px 1px;
+}
+.group-label:first-child { margin-top: 0; }
+.tech-grid { display: flex; flex-wrap: wrap; margin: -3px; }
+.tcard {
+  flex: 1 1 78px; min-width: 70px; max-width: 112px; margin: 3px;
+  background: var(--card-2); border: 2px solid var(--line); border-radius: 8px;
+  overflow: hidden; cursor: pointer;
+}
+.tcard img { width: 100%; height: auto; display: block; background: #f0ede5; }
+.tcard .tname {
+  font-size: 10px; color: var(--muted); padding: 4px 6px 5px 6px; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tcard:hover { border-color: var(--line-2); }
+.tcard:hover .tname { color: var(--text); }
+.tcard.active { border-color: var(--green); }
+.tcard.active .tname { color: var(--green); font-weight: 600; }
+.tech-head { display: flex; align-items: center; justify-content: space-between; }
+.tech-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.tech-desc { font-size: 10px; line-height: 14px; color: var(--muted); margin-top: 4px; }
+.chip.mini { padding: 3px 7px; font-size: 10px; margin: 0 0 0 6px; }
+.chip .x { color: var(--dim); margin-left: 4px; padding: 0 2px; }
+.chip .x:hover { color: #ff7a6b; }
+.sw-layer { background: linear-gradient(135deg, #151515 0%, #151515 50%, #f4f1ea 50%, #f4f1ea 100%); }
+.ink-editor { margin-top: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.ink-row { margin-bottom: 8px; }
+.ink-row:last-child { margin-bottom: 0; }
+.ink-head { display: flex; align-items: center; flex-wrap: wrap; }
+.ink-label { font-size: 10px; color: var(--muted); width: 44px; flex: 0 0 auto; }
+.ink-swatch {
+  width: 26px; height: 20px; border-radius: 5px; border: 1px solid var(--line-2); cursor: pointer;
+  flex: 0 0 auto; margin-right: 6px;
+}
+.ink-swatch:hover { border-color: var(--green); }
+.text-in {
+  background: var(--card-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 6px;
+  font-size: 11px; padding: 3px 6px; min-width: 0;
+}
+.text-in.hex { width: 70px; flex: 0 1 70px; }
+.swatches { display: flex; flex-wrap: wrap; margin: 6px -2px 0 -2px; }
+.swatch {
+  width: 16px; height: 16px; border-radius: 4px; margin: 2px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.swatch:hover { border-color: var(--text); }
+.swatch.active { border: 2px solid var(--green); }
+.btn.outline {
+  margin-top: 10px; background: transparent; border: 1px solid var(--green-2); color: var(--green);
+  font-weight: 600;
+}
+.btn.outline:hover { background: var(--green-soft); }
+.btn.outline .arrow { margin-left: 6px; font-size: 14px; }
+.adv-head { display: flex; align-items: center; margin-bottom: 8px; }
+.btn.back {
+  height: 26px; padding: 0 10px; border-radius: 7px; background: var(--card-2);
+  border: 1px solid var(--line-2); color: var(--text); font-size: 11px; font-weight: 600; flex: 0 0 auto;
+}
+.btn.back:hover { border-color: var(--green-2); color: var(--green); }
+.adv-title {
+  margin-left: 10px; font-size: 13px; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.save-row { display: flex; align-items: center; margin-bottom: 8px; }
+.save-row .text-in { flex: 1 1 auto; height: 20px; }
+.btn.small {
+  height: 28px; padding: 0 12px; margin-left: 6px; background: var(--green); color: var(--green-ink);
+  font-size: 11px; flex: 0 0 auto;
+}
+.hint { font-size: 10px; color: var(--dim); line-height: 14px; }
+.thumbs .thumb img { height: 34px; }
+.tech-name { margin-bottom: 2px; }
+.chip.ghost { background: transparent; color: var(--green); border-style: dashed; border-color: var(--green-2); cursor: default; }
+#pageDetails { margin-top: 0; }
+#pageDetails .adv-head { margin-top: 2px; }
