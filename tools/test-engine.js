@@ -1,48 +1,40 @@
-// Banco de pruebas: renderiza cada técnica con sus variantes.
-// Uso: python3 tools/make_sample.py REKT 300 && node tools/test-engine.js [tecnica] [paleta]
+// Banco de pruebas: aplica cada estilo a la muestra y crea tools/out/presets.png
+// Uso: python3 tools/make_sample.py REKT 300 && node tools/test-engine.js
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
-const E = require('../plugin/js/engine.js'), T = require('../plugin/js/techniques.js');
-const out = path.join(__dirname, 'out'), TEX = path.join(__dirname, '../plugin/textures');
+const E = require('../plugin/js/engine.js'), PRESETS = require('../plugin/js/presets.js');
+const out = path.join(__dirname, 'out');
 const meta = JSON.parse(fs.readFileSync(path.join(out, 'sample.json')));
 const px = fs.readFileSync(path.join(out, 'sample.rgba'));
-const index = JSON.parse(fs.readFileSync(path.join(TEX, 'textures.json')));
-const cache = {};
-function texs(tech) {
-  const o = {};
-  for (const fam of tech.textures.concat(['moteado'])) {
-    const meta = index.find(t => t.family === fam);
-    if (!meta) continue;
-    if (!cache[meta.id]) cache[meta.id] = E.prepareTexture(fs.readFileSync(path.join(TEX, meta.id + '.bin')), meta.size);
-    o[fam] = cache[meta.id];
-  }
-  return o;
+const texCache = {};
+function tex(id) {
+  if (!texCache[id]) texCache[id] = E.prepareTexture(fs.readFileSync(path.join(__dirname, '../plugin/textures', id + '.bin')), 1024);
+  return texCache[id];
 }
-const only = process.argv[2], palIdx = Number(process.argv[3] || 0);
+function merge(a, b) { const o = JSON.parse(JSON.stringify(a)); for (const k in b) o[k] = (typeof b[k] === 'object') ? Object.assign(o[k] || {}, b[k]) : b[k]; return o; }
 const tiles = [];
-for (const tech of T.TECHNIQUES) {
-  if (only && only !== tech.id) continue;
-  for (const pr of tech.presets) {
-    const p = Object.assign({ scale: 1, texScale: 1, opacity: 1, seed: Number(process.env.SEED || 3) }, T.defaults(tech.id), pr.v);
-    const inp = E.prepare(px, meta.w, meta.h, 4, tech.id, p);
-    const pal = tech.inks.palettes[Math.min(palIdx, tech.inks.palettes.length - 1)].c;
-    const inks = pal.map(h => h === 'layer' ? inp.ink : E.hexToRgb(h));
-    const tx = texs(tech);
-    const t0 = Date.now();
-    const rgba = E.render(inp, tech.id, p, tx, inks);
-    const ms = Date.now() - t0;
-    const W = inp.w, H = inp.h, img = Buffer.alloc(W * H * 3), bg = [240, 237, 229];
-    for (let i = 0; i < W * H; i++) { const a = rgba[i * 4 + 3] / 255;
-      for (let k = 0; k < 3; k++) img[i * 3 + k] = Math.round(bg[k] * (1 - a + a * rgba[i * 4 + k] / 255)); }
-    const f = path.join(out, `t_${tech.id}_${pr.id}.ppm`);
-    fs.writeFileSync(f, Buffer.concat([Buffer.from(`P6 ${W} ${H} 255\n`), img]));
-    tiles.push(f);
-    console.log(tech.id.padEnd(11), pr.id.padEnd(12), `${W}x${H}`, `${ms} ms`);
-  }
+const only = process.argv[2];
+for (const pr of [{ id: 'none', name: 'Original', p: { warp: { on: false }, erode: { on: false }, ink: { on: false }, out: { hard: 0 } } }].concat(PRESETS)) {
+  if (only && pr.id !== only && pr.id !== 'none') continue;
+  const p = merge(E.DEFAULTS, pr.p); p.seed = Number(process.env.SEED || 3);
+  const inp = E.prepare(px, meta.w, meta.h, 4, p);
+  const m = { unit: inp.unit }, mg = inp.pad.l;
+  tex(p.texture);
+  const t0 = Date.now();
+  const rgba = E.render(inp, p, tex(p.texture));
+  const ms = Date.now() - t0;
+  // componer sobre papel
+  const W = inp.w, H = inp.h, img = Buffer.alloc(W * H * 3);
+  const lum = 0.299 * inp.ink[0] + 0.587 * inp.ink[1] + 0.114 * inp.ink[2], mul = process.env.BLEND !== 'normal' && lum < 150;
+  for (let i = 0; i < W * H; i++) { const a = rgba[i * 4 + 3] / 255; const bg = [236, 233, 224];
+    for (let c = 0; c < 3; c++) { const top = mul ? bg[c] * rgba[i * 4 + c] / 255 : rgba[i * 4 + c]; img[i * 3 + c] = Math.round(bg[c] * (1 - a) + top * a); } }
+  const f = path.join(out, `p_${pr.id}.ppm`);
+  fs.writeFileSync(f, Buffer.concat([Buffer.from(`P6 ${W} ${H} 255\n`), img]));
+  tiles.push(f);
+  console.log(pr.id.padEnd(12), `${W}x${H}`, `U=${m.unit.toFixed(1)}`, `margin=${mg}`, `${ms} ms`);
 }
-const cols = 3, TW = 620, TH = 300;
-const args = []; tiles.forEach(t => args.push('-i', t));
-const fc = tiles.map((_, i) => `[${i}]scale=${TW - 20}:${TH - 20}:force_original_aspect_ratio=decrease,pad=${TW}:${TH}:(ow-iw)/2:(oh-ih)/2:color=0xF0EDE5[t${i}]`).join(';');
-const layout = tiles.map((_, i) => `${(i % cols) * TW}_${Math.floor(i / cols) * TH}`).join('|');
-const name = only ? `tech_${only}_${palIdx}.png` : `techs_${palIdx}.png`;
-execFileSync('ffmpeg', ['-v', 'error', '-y', ...args, '-filter_complex', tiles.length > 1 ? `${fc};${tiles.map((_, i) => `[t${i}]`).join('')}xstack=inputs=${tiles.length}:layout=${layout}:fill=0xF0EDE5` : fc.replace('[t0]', ''), path.join(out, name)]);
-console.log('->', name);
+const args = [];
+tiles.forEach(t => args.push('-i', t));
+const fc = tiles.map((_, i) => `[${i}]scale=720:400:force_original_aspect_ratio=decrease,pad=740:420:(ow-iw)/2:(oh-ih)/2:color=0xECE9E0[t${i}]`).join(';');
+const cols = 3, rows = Math.ceil(tiles.length / cols);
+const layout = tiles.map((_, i) => `${(i % cols) * 740}_${Math.floor(i / cols) * 420}`).join('|');
+execFileSync('ffmpeg', ['-v', 'error', '-y', ...args, '-filter_complex', `${fc};${tiles.map((_, i) => `[t${i}]`).join('')}xstack=inputs=${tiles.length}:layout=${layout}:fill=0xECE9E0`, path.join(out, only ? `preset_${only}.png` : 'presets.png')]);

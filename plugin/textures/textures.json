@@ -1,116 +1,38 @@
 [
  {
-  "id": "acuarela_1",
-  "family": "acuarela",
-  "label": "Aguada 1",
+  "id": "frias_4",
+  "family": "frias",
+  "label": "Frías 4",
   "size": 1024
  },
  {
-  "id": "acuarela_2",
-  "family": "acuarela",
-  "label": "Aguada 2",
+  "id": "frias_9",
+  "family": "frias",
+  "label": "Frías 9",
   "size": 1024
  },
  {
-  "id": "acuarela_3",
-  "family": "acuarela",
-  "label": "Aguada 3",
+  "id": "frias_10",
+  "family": "frias",
+  "label": "Frías 10",
   "size": 1024
  },
  {
-  "id": "acuarela_4",
-  "family": "acuarela",
-  "label": "Aguada 4",
+  "id": "frias_11",
+  "family": "frias",
+  "label": "Frías 11",
   "size": 1024
  },
  {
-  "id": "acuarela_5",
-  "family": "acuarela",
-  "label": "Aguada 5",
+  "id": "frias_12",
+  "family": "frias",
+  "label": "Frías 12",
   "size": 1024
  },
  {
-  "id": "gotas_1",
-  "family": "gotas",
-  "label": "Gotas 1",
+  "id": "grises_8",
+  "family": "grises",
+  "label": "Grises 8",
   "size": 1024
- },
- {
-  "id": "granulado_1",
-  "family": "granulado",
-  "label": "Grano 1",
-  "size": 512
- },
- {
-  "id": "granulado_2",
-  "family": "granulado",
-  "label": "Grano 2",
-  "size": 512
- },
- {
-  "id": "granulado_3",
-  "family": "granulado",
-  "label": "Grano 3",
-  "size": 512
- },
- {
-  "id": "granulado_4",
-  "family": "granulado",
-  "label": "Grano 4",
-  "size": 512
- },
- {
-  "id": "granulado_5",
-  "family": "granulado",
-  "label": "Grano 5",
-  "size": 512
- },
- {
-  "id": "granulado_6",
-  "family": "granulado",
-  "label": "Grano 6",
-  "size": 512
- },
- {
-  "id": "humedad_1",
-  "family": "humedad",
-  "label": "Humedad 1",
-  "size": 1024
- },
- {
-  "id": "humedad_2",
-  "family": "humedad",
-  "label": "Humedad 2",
-  "size": 1024
- },
- {
-  "id": "moteado_1",
-  "family": "moteado",
-  "label": "Moteado 1",
-  "size": 512
- },
- {
-  "id": "moteado_2",
-  "family": "moteado",
-  "label": "Moteado 2",
-  "size": 512
- },
- {
-  "id": "piedra_1",
-  "family": "piedra",
-  "label": "Piedra 1",
-  "size": 512
- },
- {
-  "id": "piedra_2",
-  "family": "piedra",
-  "label": "Piedra 2",
-  "size": 512
- },
- {
-  "id": "piedra_3",
-  "family": "piedra",
-  "label": "Piedra 3",
-  "size": 512
  }
 ]
