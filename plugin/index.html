@@ -15,7 +15,7 @@
           <div class="brand-sub" id="layerName">Sin capa seleccionada</div>
         </div>
       </div>
-      <div class="badge" id="modeBadge">v0.2.1</div>
+      <div class="badge" id="modeBadge">v0.4</div>
     </header>
 
     <div id="scroll">
@@ -36,30 +36,47 @@
           </div>
         </section>
 
-        <!-- Estilos + textura -->
-        <div class="col">
+        <!-- PÁGINA 1: presets -->
+        <div class="col page" id="pagePresets">
           <section class="card">
-            <div class="card-title">Estilos</div>
-            <div class="chips" id="presetChips"></div>
+            <div class="card-title">Técnica</div>
+            <div id="techList"></div>
           </section>
           <section class="card">
-            <div class="card-title">Textura</div>
-            <div class="thumbs" id="thumbs"></div>
-            <div id="globalCtrls"></div>
+            <div class="tech-name" id="techName"></div>
+            <div class="tech-desc" id="techDesc"></div>
+            <div class="ctl-label sub">Variante</div>
+            <div class="chips" id="variantChips"></div>
+            <div class="ctl-label sub">Color</div>
+            <div class="chips" id="paletteChips"></div>
+            <div class="ink-editor" id="inkEditor"></div>
+            <div id="intensityCtl"></div>
+            <div class="btn outline" id="btnDetails">Ajustes detallados <span class="arrow">›</span></div>
           </section>
         </div>
       </div>
 
-      <div class="mods" id="modules"></div>
-
-      <section class="card">
-        <div class="card-title">Salida</div>
-        <div id="outCtrls"></div>
-        <div class="ctl-label sub">Color de la tinta</div>
-        <div class="chips" id="colorChips"></div>
-        <div class="ctl-label sub">Fusión con el fondo</div>
-        <div class="chips" id="blendChips"></div>
-      </section>
+      <!-- PÁGINA 2: ajustes detallados -->
+      <div class="page hidden" id="pageDetails">
+        <div class="adv-head">
+          <div class="btn back" id="btnBack">‹ Presets</div>
+          <div class="adv-title" id="advTitle"></div>
+        </div>
+        <section class="card">
+          <div class="card-title">Textura de desgaste</div>
+          <div class="thumbs" id="thumbs"></div>
+          <div id="globalCtrls"></div>
+        </section>
+        <div class="mods" id="modules"></div>
+        <section class="card">
+          <div class="card-title">Salida</div>
+          <div id="outCtrls"></div>
+          <div class="ctl-label sub">Color de la tinta</div>
+          <div class="chips" id="colorChips"></div>
+          <div class="ctl-label sub">Fusión con el fondo</div>
+          <div class="chips" id="blendChips"></div>
+        </section>
+      </div>
       <div class="foot-note">El original se conserva oculto debajo. Si seleccionas el resultado y vuelves a aplicar, se regenera desde el original.</div>
     </div>
 
@@ -76,6 +93,7 @@
       </div>
     </footer>
   </div>
+  <input type="color" id="nativeColor" class="hidden-input">
 
   <script src="js/engine.js"></script>
   <script src="js/presets.js"></script>

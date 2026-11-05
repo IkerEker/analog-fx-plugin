@@ -1,38 +1,158 @@
 [
  {
-  "id": "frias_4",
-  "family": "frias",
-  "label": "Frías 4",
+  "id": "desgaste_1",
+  "family": "desgaste",
+  "label": "Desgaste 1",
   "size": 1024
  },
  {
-  "id": "frias_9",
-  "family": "frias",
-  "label": "Frías 9",
+  "id": "desgaste_2",
+  "family": "desgaste",
+  "label": "Desgaste 2",
   "size": 1024
  },
  {
-  "id": "frias_10",
-  "family": "frias",
-  "label": "Frías 10",
+  "id": "desgaste_3",
+  "family": "desgaste",
+  "label": "Desgaste 3",
   "size": 1024
  },
  {
-  "id": "frias_11",
-  "family": "frias",
-  "label": "Frías 11",
+  "id": "desgaste_4",
+  "family": "desgaste",
+  "label": "Desgaste 4",
   "size": 1024
  },
  {
-  "id": "frias_12",
-  "family": "frias",
-  "label": "Frías 12",
+  "id": "desgaste_5",
+  "family": "desgaste",
+  "label": "Desgaste 5",
   "size": 1024
  },
  {
-  "id": "grises_8",
-  "family": "grises",
-  "label": "Grises 8",
+  "id": "desgaste_6",
+  "family": "desgaste",
+  "label": "Desgaste 6",
   "size": 1024
+ },
+ {
+  "id": "desgaste_7",
+  "family": "desgaste",
+  "label": "Desgaste 7",
+  "size": 1024
+ },
+ {
+  "id": "desgaste_8",
+  "family": "desgaste",
+  "label": "Desgaste 8",
+  "size": 1024
+ },
+ {
+  "id": "desgaste_9",
+  "family": "desgaste",
+  "label": "Desgaste 9",
+  "size": 1024
+ },
+ {
+  "id": "desgaste_10",
+  "family": "desgaste",
+  "label": "Desgaste 10",
+  "size": 1024
+ },
+ {
+  "id": "desgaste_11",
+  "family": "desgaste",
+  "label": "Desgaste 11",
+  "size": 1024
+ },
+ {
+  "id": "desgaste_12",
+  "family": "desgaste",
+  "label": "Desgaste 12",
+  "size": 1024
+ },
+ {
+  "id": "aguada_1",
+  "family": "aguada",
+  "label": "Aguada 1",
+  "size": 1024
+ },
+ {
+  "id": "aguada_2",
+  "family": "aguada",
+  "label": "Aguada 2",
+  "size": 1024
+ },
+ {
+  "id": "aguada_3",
+  "family": "aguada",
+  "label": "Aguada 3",
+  "size": 1024
+ },
+ {
+  "id": "aguada_4",
+  "family": "aguada",
+  "label": "Aguada 4",
+  "size": 1024
+ },
+ {
+  "id": "aguada_5",
+  "family": "aguada",
+  "label": "Aguada 5",
+  "size": 1024
+ },
+ {
+  "id": "aguada_6",
+  "family": "aguada",
+  "label": "Aguada 6",
+  "size": 1024
+ },
+ {
+  "id": "grano_1",
+  "family": "grano",
+  "label": "Grano 1",
+  "size": 512
+ },
+ {
+  "id": "grano_2",
+  "family": "grano",
+  "label": "Grano 2",
+  "size": 512
+ },
+ {
+  "id": "grano_3",
+  "family": "grano",
+  "label": "Grano 3",
+  "size": 512
+ },
+ {
+  "id": "grano_4",
+  "family": "grano",
+  "label": "Grano 4",
+  "size": 512
+ },
+ {
+  "id": "grano_5",
+  "family": "grano",
+  "label": "Grano 5",
+  "size": 512
+ },
+ {
+  "id": "grano_6",
+  "family": "grano",
+  "label": "Grano 6",
+  "size": 512
+ },
+ {
+  "id": "rodillo_1",
+  "family": "rodillo",
+  "label": "Rodillo 1",
+  "size": 512
+ },
+ {
+  "id": "rodillo_2",
+  "family": "rodillo",
+  "label": "Rodillo 2",
+  "size": 512
  }
 ]

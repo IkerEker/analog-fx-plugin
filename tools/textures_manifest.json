@@ -1,0 +1,37 @@
+{
+  "_doc": "Texturas que usa el plugin. family: uso en el motor; size: lado en px (potencia de 2).",
+  "families": {
+    "desgaste": { "label": "Desgaste", "size": 1024 },
+    "aguada": { "label": "Aguada", "size": 1024 },
+    "grano": { "label": "Grano", "size": 512 },
+    "rodillo": { "label": "Rodillo", "size": 512 }
+  },
+  "textures": [
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Grises_6_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_4_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_9_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_10_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_11_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_12_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_7_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Calidas_1_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Calidas_4_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Calidas_5_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Grises_9_Basecolor.png"],
+    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Grises_2_Basecolor.png"],
+    ["aguada", "OTRAS TEXTURAS/Acuarela_Base_3_Basecolor.png"],
+    ["aguada", "OTRAS TEXTURAS/Acuarela_Base_4_Basecolor.png"],
+    ["aguada", "OTRAS TEXTURAS/Acuarela_manchas_2_Basecolor.png"],
+    ["aguada", "OTRAS TEXTURAS/Acuarela_manchas_3_Basecolor.png"],
+    ["aguada", "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/ACUARELAS_BASE_3_Basecolor.png"],
+    ["aguada", "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/ACUARELAS_BASE_6_Basecolor.png"],
+    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_1_Basecolor.png"],
+    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_2_Basecolor.png"],
+    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_3_Basecolor.png"],
+    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_5_Basecolor.png"],
+    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_6_Basecolor.png"],
+    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_7_Basecolor.png"],
+    ["rodillo", "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/Bruchazos_Guache_2_Basecolor.png"],
+    ["rodillo", "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/Bruchazos_Guache_8_Basecolor.png"]
+  ]
+}
