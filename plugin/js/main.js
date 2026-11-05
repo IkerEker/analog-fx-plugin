@@ -133,6 +133,9 @@
     { id: 'stone', title: 'Piedra litográfica', ctl: [
       { k: 'amount', label: 'Grano de piedra' }, { k: 'size', label: 'Tamaño del grano' }, { k: 'tone', label: 'Densidad' },
       { k: 'greasy', label: 'Borde graso' }, { k: 'veil', label: 'Velo de plancha' }] },
+    { id: 'damp', title: 'Humedad (gotas de agua)', ctl: [
+      { k: 'amount', label: 'Zona mojada' }, { k: 'size', label: 'Tamaño de las gotas' }, { k: 'spread', label: 'Cuánto se abre la tinta' },
+      { k: 'cloud', label: 'Tinta disuelta en el papel' }, { k: 'lift', label: 'Tinta lavada en la letra' }, { k: 'tide', label: 'Marca del borde del agua' }] },
     { id: 'gouge', title: 'Gubia (xilografía)', ctl: [
       { k: 'edge', label: 'Cortes desde el borde' }, { k: 'inner', label: 'Cortes interiores' },
       { k: 'length', label: 'Largo del corte' }, { k: 'width', label: 'Ancho de la cuña' }, { k: 'spacing', label: 'Separación' },

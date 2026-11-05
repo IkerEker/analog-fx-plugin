@@ -18,7 +18,7 @@
     erode: OFF, cracks: OFF, bleed: OFF, drips: OFF, splat: OFF, print: OFF, tintas: OFF,
     warp: { on: true, amount: 0.04, rough: 0.2 },
     press: OFF, wood: OFF, mesh: OFF, stone: OFF, wash: OFF,
-    aqua: OFF, gouge: OFF, rim: OFF, stencil: OFF, copy: OFF, drip: OFF,
+    damp: OFF, aqua: OFF, gouge: OFF, rim: OFF, stencil: OFF, copy: OFF, drip: OFF,
     paper: { on: true, feather: 0.2, relief: 0.3, tooth: 0.1, paperScale: 0.5 },
     color: { on: true, hue: 0, sat: 0, light: 0, hueVar: 0.05, satVar: 0.1, lightVar: 0.25, edge: 0.25 },
     ink: { on: true, pressure: 0.2, grain: 0.2, fade: 0, roller: 0 },
@@ -122,11 +122,11 @@
       ] },
 
     // ------------------------------------------------------------------ AGUA
-    { id: 'humedad', group: 'agua', name: 'Humedad', desc: 'Impresión normal que se moja: en algunas zonas la tinta se abre y se corre, el centro se lava y en el frente queda la marca del agua.',
+    { id: 'humedad', group: 'agua', name: 'Humedad', desc: 'Gotas de agua sobre la impresión: donde tocan, la tinta se disuelve en el papel en una nube granulosa que rellena los huecos y se para en el borde del agua. El resto queda nítido.',
       palettes: PAL_LAYER, variants: [
-        { id: 'leve', name: 'Humedad leve', p: { texture: 'desgaste_1', bleed: { on: true, amount: 0.4, dir: 0, wet: 0.9, pool: 0.55, halo: 0.45, light: 0.1, zones: 0.3, zoneSize: 0.5, dissolve: 0.25, tide: 0.3 }, warp: { on: true, amount: 0.05, rough: 0.25 }, erode: { on: true, amount: 0.05 }, ink: { on: true, pressure: 0.15, grain: 0.2 }, paper: { on: true, feather: 0.25, relief: 0.3, tooth: 0.05 }, out: { hard: 0.1 } } },
-        { id: 'mojado', name: 'Papel mojado', p: { texture: 'desgaste_1', bleed: { on: true, amount: 0.6, dir: 0, wet: 0.9, pool: 0.6, halo: 0.45, light: 0.1, zones: 0.55, zoneSize: 0.55, dissolve: 0.45, tide: 0.4 }, warp: { on: true, amount: 0.06, rough: 0.3 }, erode: { on: true, amount: 0.05 }, ink: { on: true, pressure: 0.2, grain: 0.2 }, paper: { on: true, feather: 0.3, relief: 0.3, tooth: 0.05 }, out: { hard: 0.05 } } },
-        { id: 'mancha', name: 'Mancha de agua', p: { texture: 'desgaste_1', bleed: { on: true, amount: 0.75, dir: 0, wet: 1, pool: 0.75, halo: 0.45, light: 0.1, zones: 0.45, zoneSize: 0.85, dissolve: 0.55, tide: 0.6 }, warp: { on: true, amount: 0.06, rough: 0.3 }, ink: { on: true, pressure: 0.2, grain: 0.2 }, paper: { on: true, feather: 0.3, relief: 0.3, tooth: 0.05 }, out: { hard: 0.05 } } }
+        { id: 'leve', name: 'Unas gotas', p: { texture: 'desgaste_1', damp: { on: true, amount: 0.3, size: 0.4, spread: 0.4, cloud: 0.75, lift: 0.3, tide: 0.3 }, warp: { on: true, amount: 0.04, rough: 0.25 }, erode: { on: true, amount: 0.05 }, ink: { on: true, pressure: 0.15, grain: 0.2 }, paper: { on: true, feather: 0.2, relief: 0.35, tooth: 0.05 }, out: { hard: 0.05 } } },
+        { id: 'mojado', name: 'Papel mojado', p: { texture: 'desgaste_1', damp: { on: true, amount: 0.55, size: 0.6, spread: 0.6, cloud: 0.85, lift: 0.4, tide: 0.35 }, warp: { on: true, amount: 0.05, rough: 0.3 }, erode: { on: true, amount: 0.06 }, cracks: { on: true, amount: 0.15 }, ink: { on: true, pressure: 0.2, grain: 0.25 }, paper: { on: true, feather: 0.25, relief: 0.35, tooth: 0.05 }, out: { hard: 0.05 } } },
+        { id: 'mancha', name: 'Mancha de agua', p: { texture: 'desgaste_1', damp: { on: true, amount: 0.45, size: 0.9, spread: 0.85, cloud: 0.9, lift: 0.5, tide: 0.55 }, warp: { on: true, amount: 0.05, rough: 0.3 }, ink: { on: true, pressure: 0.2, grain: 0.25 }, paper: { on: true, feather: 0.25, relief: 0.35, tooth: 0.05 }, out: { hard: 0.05 } } }
       ] },
     { id: 'goteo', group: 'agua', name: 'Goteo', desc: 'La tinta fresca gotea desde la base de cada letra: gotas de largo muy distinto, que se afilan y acaban en una lágrima más oscura.',
       palettes: PAL_LAYER, variants: [
@@ -149,7 +149,7 @@
     print: ['bands', 'shift', 'streaks', 'ghost'], paper: ['feather', 'tooth'], tintas: ['misreg'],
     press: ['squeeze', 'halo', 'starve'], wood: ['grain', 'chips'], mesh: ['sawtooth', 'mesh', 'voids'],
     stone: ['amount', 'veil'], wash: ['wash', 'granul', 'blooms'],
-    aqua: ['variation', 'rim', 'granul', 'blooms'], gouge: ['edge', 'inner'], rim: ['amount'], stencil: ['fiber', 'density', 'setoff'],
+    damp: ['amount', 'spread', 'cloud', 'lift', 'tide'], aqua: ['variation', 'rim', 'granul', 'blooms'], gouge: ['edge', 'inner'], rim: ['amount'], stencil: ['fiber', 'density', 'setoff'],
     copy: ['gen', 'dropout', 'toner', 'streaks', 'haze'], drip: ['amount', 'length', 'trail']
   };
 
