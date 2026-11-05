@@ -36,42 +36,6 @@
   "size": 1024
  },
  {
-  "id": "desgaste_7",
-  "family": "desgaste",
-  "label": "Desgaste 7",
-  "size": 1024
- },
- {
-  "id": "desgaste_8",
-  "family": "desgaste",
-  "label": "Desgaste 8",
-  "size": 1024
- },
- {
-  "id": "desgaste_9",
-  "family": "desgaste",
-  "label": "Desgaste 9",
-  "size": 1024
- },
- {
-  "id": "desgaste_10",
-  "family": "desgaste",
-  "label": "Desgaste 10",
-  "size": 1024
- },
- {
-  "id": "desgaste_11",
-  "family": "desgaste",
-  "label": "Desgaste 11",
-  "size": 1024
- },
- {
-  "id": "desgaste_12",
-  "family": "desgaste",
-  "label": "Desgaste 12",
-  "size": 1024
- },
- {
   "id": "aguada_1",
   "family": "aguada",
   "label": "Aguada 1",
@@ -154,5 +118,155 @@
   "family": "rodillo",
   "label": "Rodillo 2",
   "size": 512
+ },
+ {
+  "id": "goteo_1",
+  "family": "goteo",
+  "label": "Goteo 1",
+  "size": 1024
+ },
+ {
+  "id": "goteo_2",
+  "family": "goteo",
+  "label": "Goteo 2",
+  "size": 1024
+ },
+ {
+  "id": "goteo_3",
+  "family": "goteo",
+  "label": "Goteo 3",
+  "size": 1024
+ },
+ {
+  "id": "goteo_4",
+  "family": "goteo",
+  "label": "Goteo 4",
+  "size": 1024
+ },
+ {
+  "id": "goteo_5",
+  "family": "goteo",
+  "label": "Goteo 5",
+  "size": 1024
+ },
+ {
+  "id": "toner_1",
+  "family": "toner",
+  "label": "Tóner 1",
+  "size": 512
+ },
+ {
+  "id": "toner_2",
+  "family": "toner",
+  "label": "Tóner 2",
+  "size": 512
+ },
+ {
+  "id": "toner_3",
+  "family": "toner",
+  "label": "Tóner 3",
+  "size": 512
+ },
+ {
+  "id": "fibra_1",
+  "family": "fibra",
+  "label": "Fibra 1",
+  "size": 512
+ },
+ {
+  "id": "fibra_2",
+  "family": "fibra",
+  "label": "Fibra 2",
+  "size": 512
+ },
+ {
+  "id": "fibra_3",
+  "family": "fibra",
+  "label": "Fibra 3",
+  "size": 512
+ },
+ {
+  "id": "floracion_1",
+  "family": "floracion",
+  "label": "Floración 1",
+  "size": 1024
+ },
+ {
+  "id": "floracion_2",
+  "family": "floracion",
+  "label": "Floración 2",
+  "size": 1024
+ },
+ {
+  "id": "floracion_3",
+  "family": "floracion",
+  "label": "Floración 3",
+  "size": 1024
+ },
+ {
+  "id": "floracion_4",
+  "family": "floracion",
+  "label": "Floración 4",
+  "size": 1024
+ },
+ {
+  "id": "granul_1",
+  "family": "granul",
+  "label": "Granulación 1",
+  "size": 512
+ },
+ {
+  "id": "granul_2",
+  "family": "granul",
+  "label": "Granulación 2",
+  "size": 512
+ },
+ {
+  "id": "granul_3",
+  "family": "granul",
+  "label": "Granulación 3",
+  "size": 512
+ },
+ {
+  "id": "granul_4",
+  "family": "granul",
+  "label": "Granulación 4",
+  "size": 512
+ },
+ {
+  "id": "lavado_1",
+  "family": "lavado",
+  "label": "Lavado 1",
+  "size": 512
+ },
+ {
+  "id": "lavado_2",
+  "family": "lavado",
+  "label": "Lavado 2",
+  "size": 512
+ },
+ {
+  "id": "lavado_3",
+  "family": "lavado",
+  "label": "Lavado 3",
+  "size": 512
+ },
+ {
+  "id": "lavado_4",
+  "family": "lavado",
+  "label": "Lavado 4",
+  "size": 512
+ },
+ {
+  "id": "gubia_1",
+  "family": "gubia",
+  "label": "Gubia 1",
+  "size": 1024
+ },
+ {
+  "id": "gubia_2",
+  "family": "gubia",
+  "label": "Gubia 2",
+  "size": 1024
  }
 ]

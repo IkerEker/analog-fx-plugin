@@ -6,7 +6,8 @@ const out = path.join(__dirname, 'out'), TEX = path.join(__dirname, '../plugin/t
 const meta = JSON.parse(fs.readFileSync(path.join(out, 'sample.json'))), px = fs.readFileSync(path.join(out, 'sample.rgba'));
 const index = JSON.parse(fs.readFileSync(path.join(TEX, 'textures.json'))), cache = {};
 function tex(id) { const m = index.find(t => t.id === id); if (!cache[id]) cache[id] = E.prepareTexture(fs.readFileSync(path.join(TEX, id + '.bin')), m.size); return cache[id]; }
-function texs(p) { return { desgaste: tex(p.texture || 'desgaste_1'), aguada: tex('aguada_1'), grano: tex('grano_1'), rodillo: tex('rodillo_1') }; }
+const FAMS = ['aguada', 'grano', 'rodillo', 'goteo', 'toner', 'fibra', 'floracion', 'granul', 'lavado', 'gubia'];
+function texs(p) { const o = { desgaste: tex(p.texture || 'desgaste_1') }; for (const f of FAMS) o[f] = tex(f + '_1'); return o; }
 const only = process.argv[2], palIdx = Number(process.argv[3] || 0), tiles = [];
 for (const t of P.TECHS) {
   if (only && only !== t.id && !only.split(',').includes(t.id)) continue;

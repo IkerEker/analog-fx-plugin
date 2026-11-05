@@ -22,6 +22,18 @@ def equalize(gray):
     return (ranks * (255.0 / (flat.size - 1))).reshape(gray.shape).round().astype(np.uint8)
 
 
+def seamless(a):
+    """Hace la textura repetible: mezcla con su copia desplazada media vuelta con una máscara suave."""
+    S = a.shape[0]
+    b = np.roll(np.roll(a, S // 2, 0), S // 2, 1)
+    t = np.minimum(np.arange(S), S - 1 - np.arange(S)) / (S / 2)
+    t = np.clip((t - 0.08) / 0.5, 0, 1); t = t * t * (3 - 2 * t)
+    w = np.minimum.outer(t, t)
+    # igualar contraste local para que la mezcla no se vea lavada
+    out = a * w + b * (1 - w)
+    return out
+
+
 def main():
     if OUT.exists():
         shutil.rmtree(OUT)
@@ -32,7 +44,11 @@ def main():
         count[fam] = count.get(fam, 0) + 1
         tid = f"{fam}_{count[fam]}"
         img = Image.open(SRC / rel).convert("RGB")
-        gray = np.asarray(img.convert("L").resize((info["size"], info["size"]), Image.Resampling.LANCZOS))
+        if img.width != img.height:          # recorte cuadrado centrado (texturas 9:16)
+            m = min(img.size); img = img.crop(((img.width - m) // 2, (img.height - m) // 2, (img.width - m) // 2 + m, (img.height - m) // 2 + m))
+        gray = np.asarray(img.convert("L").resize((info["size"], info["size"]), Image.Resampling.LANCZOS)).astype(np.float32)
+        if info.get("seamless"):
+            gray = seamless(gray)
         (OUT / f"{tid}.bin").write_bytes(equalize(gray).tobytes())
         img.resize((96, 96), Image.Resampling.LANCZOS).save(OUT / "thumbs" / f"{tid}.jpg", quality=80)
         index.append({"id": tid, "family": fam, "label": f"{info['label']} {count[fam]}", "size": info["size"]})

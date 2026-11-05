@@ -13,7 +13,8 @@ for (const t of P.TECHS) {
   const pal = t.palettes.find(x => x.ink !== 'original') || t.palettes[0];
   p.out.color = pal.ink === 'original' ? '#151515' : pal.ink; if (pal.c2) p.tintas.c2 = pal.c2; if (pal.c3) p.tintas.c3 = pal.c3;
   const inp = E.prepare(px, meta.w, meta.h, 4, p);
-  const rgba = E.render(inp, p, { desgaste: tex(p.texture), aguada: tex('aguada_1'), grano: tex('grano_1'), rodillo: tex('rodillo_1') });
+  const tx = { desgaste: tex(p.texture) }; for (const f of ['aguada', 'grano', 'rodillo', 'goteo', 'toner', 'fibra', 'floracion', 'granul', 'lavado', 'gubia']) tx[f] = tex(f + '_1');
+  const rgba = E.render(inp, p, tx);
   let x0 = inp.w, y0 = inp.h, x1 = -1, y1 = -1;
   for (let y = 0; y < inp.h; y++) for (let x = 0; x < inp.w; x++) if (rgba[(y * inp.w + x) * 4 + 3] > 8) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
   const pd = 6; x0 = Math.max(0, x0 - pd); y0 = Math.max(0, y0 - pd); x1 = Math.min(inp.w - 1, x1 + pd); y1 = Math.min(inp.h - 1, y1 + pd);

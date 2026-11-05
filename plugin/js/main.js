@@ -133,7 +133,27 @@
     { id: 'stone', title: 'Piedra litográfica', ctl: [
       { k: 'amount', label: 'Grano de piedra' }, { k: 'size', label: 'Tamaño del grano' }, { k: 'tone', label: 'Densidad' },
       { k: 'greasy', label: 'Borde graso' }, { k: 'veil', label: 'Velo de plancha' }] },
-    { id: 'wash', title: 'Acuarela', ctl: [
+    { id: 'gouge', title: 'Gubia (xilografía)', ctl: [
+      { k: 'edge', label: 'Cortes desde el borde' }, { k: 'inner', label: 'Cortes interiores' },
+      { k: 'length', label: 'Largo del corte' }, { k: 'width', label: 'Ancho de la cuña' }, { k: 'spacing', label: 'Separación' },
+      { k: 'zone', label: 'Tamaño de las zonas' }, { k: 'chaos', label: 'Variedad de direcciones' },
+      { k: 'angle', label: 'Dirección interior', min: -1, max: 1, fmt: degFmt }] },
+    { id: 'rim', title: 'Pigmento en el borde', ctl: [
+      { k: 'amount', label: 'Cantidad' }, { k: 'width', label: 'Ancho' }, { k: 'coverage', label: 'Tramos con pigmento' }] },
+    { id: 'stencil', title: 'Esténcil (mimeógrafo)', ctl: [
+      { k: 'fiber', label: 'Fibra del esténcil' }, { k: 'density', label: 'Desigualdad de tinta' },
+      { k: 'spread', label: 'Tinta que se abre' }, { k: 'setoff', label: 'Repinte' }] },
+    { id: 'copy', title: 'Fotocopia', ctl: [
+      { k: 'gen', label: 'Copia de copia' }, { k: 'dropout', label: 'Huecos de tóner' }, { k: 'toner', label: 'Motas de tóner' },
+      { k: 'streaks', label: 'Rayas del tambor' }, { k: 'haze', label: 'Velo gris' }] },
+    { id: 'drip', title: 'Goteo desde las letras', ctl: [
+      { k: 'amount', label: 'Cantidad de gotas' }, { k: 'length', label: 'Longitud' }, { k: 'thick', label: 'Grosor' },
+      { k: 'sag', label: 'Tinta acumulada en la base' }, { k: 'beads', label: 'Gotitas que se desprenden' }, { k: 'dark', label: 'Pigmento en la gota' }] },
+    { id: 'aqua', title: 'Acuarela', ctl: [
+      { k: 'density', label: 'Densidad del pigmento' }, { k: 'variation', label: 'Manchas del lavado' },
+      { k: 'rim', label: 'Aro oscuro del borde' }, { k: 'rimWidth', label: 'Ancho del aro' },
+      { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' }, { k: 'edgeWobble', label: 'Borde ondulado' }] },
+    { id: 'wash', title: 'Aguada (litografía)', ctl: [
       { k: 'wash', label: 'Manchas de aguada' }, { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' },
       { k: 'transp', label: 'Transparencia' }] },
     { id: 'print', title: 'Impresión · fotocopia', ctl: [
@@ -517,7 +537,8 @@
   // texturas de todas las familias que usa el motor
   function getTexs(p) {
     function first(fam) { var t = state.textures.filter(function (x) { return x.family === fam; })[0]; return t ? t.id : null; }
-    var ids = { desgaste: p.texture || first('desgaste'), aguada: first('aguada'), grano: first('grano'), rodillo: first('rodillo') }, out = {};
+    var ids = { desgaste: p.texture || first('desgaste') }, out = {};
+    ['aguada', 'grano', 'rodillo', 'goteo', 'toner', 'fibra', 'floracion', 'granul', 'lavado', 'gubia'].forEach(function (f) { ids[f] = first(f); });
     return Promise.all(Object.keys(ids).map(function (f) {
       if (!ids[f]) return null;
       return getTexture(ids[f]).then(function (t) { out[f] = t; }).catch(function () { /* sin esa textura: ruido */ });
