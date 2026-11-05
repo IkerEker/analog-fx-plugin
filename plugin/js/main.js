@@ -118,6 +118,8 @@
       { k: 'count', label: 'Número de tintas', min: 1, max: 3, fmt: function (v) { return String(Math.round(v)); }, plain: true, step: 1 },
       { k: 'd2', label: 'Densidad de las otras tintas' }, { k: 'tone', label: 'Densidad general' },
       { sep: 'Trama de semitono' },
+      { k: 'lpi', label: 'Lineatura (líneas por pulgada)', min: 0, max: 150, step: 1, plain: true, fmt: function (v) { return v > 0 ? Math.round(v) + ' lpp' : 'Auto'; } },
+      { k: 'toneVar', label: 'Variación del tono' },
       { k: 'screen', label: 'Trama' }, { k: 'cell', label: 'Tamaño del punto' }, { k: 'gain', label: 'Ganancia de punto' },
       { k: 'donut', label: 'Puntos donut (flexo)' },
       { sep: 'Registro' },
@@ -133,6 +135,19 @@
     { id: 'stone', title: 'Piedra litográfica', ctl: [
       { k: 'amount', label: 'Grano de piedra' }, { k: 'size', label: 'Tamaño del grano' }, { k: 'tone', label: 'Densidad' },
       { k: 'greasy', label: 'Borde graso' }, { k: 'veil', label: 'Velo de plancha' }] },
+    { id: 'seep', title: 'Tinta corrida (fibras)', ctl: [
+      { k: 'amount', label: 'Tramos donde se corre' }, { k: 'reach', label: 'Hasta dónde llega' },
+      { k: 'density', label: 'Densidad de la tinta corrida' }, { k: 'front', label: 'Línea del frente' }] },
+    { id: 'engrave', title: 'Talla (xilografía)', ctl: [
+      { k: 'spacing', label: 'Separación de las líneas' }, { k: 'width', label: 'Grosor de las líneas' },
+      { k: 'length', label: 'Cuánto entran en la letra' }, { k: 'skip', label: 'Líneas que faltan' },
+      { k: 'wobble', label: 'Pulso de la mano' }, { k: 'light', label: 'Lado de la luz', min: -1, max: 1, fmt: function (v) { return v >= 0 ? 'Derecha' : 'Izquierda'; } },
+      { k: 'shadow', label: 'Sombra negra' }, { k: 'misreg', label: 'Desregistro del color' }] },
+    { id: 'stamp', title: 'Sello de goma', ctl: [
+      { k: 'tilt', label: 'Inclinación (presión desigual)' }, { k: 'uneven', label: 'Irregularidad' },
+      { k: 'edge', label: 'Tinta cargada en el borde' }, { k: 'letterVar', label: 'Diferencia entre letras' }] },
+    { id: 'letters', title: 'Variación entre letras', ctl: [
+      { k: 'density', label: 'Carga de tinta' }, { k: 'tone', label: 'Tono' }] },
     { id: 'damp', title: 'Humedad (gotas de agua)', ctl: [
       { k: 'amount', label: 'Zona mojada' }, { k: 'size', label: 'Tamaño de las gotas' }, { k: 'spread', label: 'Cuánto se abre la tinta' },
       { k: 'cloud', label: 'Tinta disuelta en el papel' }, { k: 'lift', label: 'Tinta lavada en la letra' }, { k: 'tide', label: 'Marca del borde del agua' }] },
@@ -155,7 +170,8 @@
     { id: 'aqua', title: 'Acuarela', ctl: [
       { k: 'density', label: 'Densidad del pigmento' }, { k: 'variation', label: 'Manchas del lavado' },
       { k: 'rim', label: 'Aro oscuro del borde' }, { k: 'rimWidth', label: 'Ancho del aro' },
-      { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' }, { k: 'edgeWobble', label: 'Borde ondulado' }] },
+      { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' }, { k: 'edgeWobble', label: 'Borde ondulado' },
+      { k: 'drift', label: 'Pigmento que se va a un lado' }, { k: 'glaze', label: 'Segunda veladura' }] },
     { id: 'wash', title: 'Aguada (litografía)', ctl: [
       { k: 'wash', label: 'Manchas de aguada' }, { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' },
       { k: 'transp', label: 'Transparencia' }] },
@@ -678,7 +694,7 @@
     }
     reading.then(function (d) {
       if (token !== srcToken) return;
-      setSource({ px: d.px, w: d.w, h: d.h, comps: d.comps, layerId: r.source.id, docId: doc.id, isResult: !!r.result });
+      setSource({ px: d.px, w: d.w, h: d.h, comps: d.comps, layerId: r.source.id, docId: doc.id, isResult: !!r.result, scale: d.w / Math.max(1, bw), dpi: Number(doc.resolution) || 300 });
       if ($('status').className.indexOf('ok') < 0) setStatus(r.result ? 'Resultado seleccionado: al aplicar se regenera desde el original' : '', null);
     }).catch(function (e) {
       if (token !== srcToken) return;
@@ -742,6 +758,7 @@
       var m = useHalf ? s.halfMeasure : s.measure;
       var p = pEff;
       var inp = E.prepare(px, w, h, s.comps, p, null, m);
+      inp.dpi = s.dpi || 300; inp.pxScale = (s.scale || 1) * (useHalf ? s.half.w / s.w : 1);
       var rgba;
       if (state.showOriginal) {
         rgba = new Uint8Array(inp.w * inp.h * 4);
@@ -924,6 +941,7 @@
         };
       }, m);
       var pad = inp.pad;
+      inp.dpi = Number(origDoc.resolution) || 300; inp.pxScale = 1;
       var rgba = E.render(inp, p, tex);
       var opts = { width: inp.w, height: inp.h, components: 4, chunky: true, colorSpace: 'RGB' };
       if (d.profile && d.comps >= 3) opts.colorProfile = d.profile;
@@ -948,7 +966,7 @@
     c.fillText('REKT', W / 2, H / 2 + 6);
     var data = c.getImageData(0, 0, W, H).data;
     $('layerName').textContent = 'Demo · REKT';
-    setSource({ px: new Uint8Array(data.buffer.slice(0)), w: W, h: H, comps: 4, layerId: 0, docId: 0 });
+    setSource({ px: new Uint8Array(data.buffer.slice(0)), w: W, h: H, comps: 4, layerId: 0, docId: 0, scale: 1, dpi: 300 });
   }
 
   // ---------------------------------------------------------------- arranque

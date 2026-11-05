@@ -15,7 +15,7 @@ for (const t of P.TECHS) {
     const p = P.build(E.DEFAULTS, t, v); p.seed = Number(process.env.SEED || 3);
     const pal = t.palettes[Math.min(palIdx, t.palettes.length - 1)];
     p.out.color = pal.ink; if (pal.c2) p.tintas.c2 = pal.c2; if (pal.c3) p.tintas.c3 = pal.c3;
-    const inp = E.prepare(px, meta.w, meta.h, 4, p);
+    const inp = E.prepare(px, meta.w, meta.h, 4, p); inp.dpi = 300; inp.pxScale = 1;
     const tx = texs(p), t0 = Date.now(), rgba = E.render(inp, p, tx), ms = Date.now() - t0;
     const W = inp.w, H = inp.h, img = Buffer.alloc(W * H * 3), bg = [240, 237, 229];
     for (let i = 0; i < W * H; i++) { const a = rgba[i * 4 + 3] / 255; for (let k = 0; k < 3; k++) img[i * 3 + k] = Math.round(bg[k] * (1 - a + a * rgba[i * 4 + k] / 255)); }

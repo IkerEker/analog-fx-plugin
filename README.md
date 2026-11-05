@@ -2,7 +2,18 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela.
 
-**Versión 0.5.1**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.6**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.6
+- **Cada letra en su color:** todo lo que sale de una letra (corrido, humedad, gotas, salpicaduras) hereda el color de esa letra.
+- **Humedad:** gotas localizadas con borde de agua definido. Donde tocan, la tinta se disuelve en una nube granulosa y diluida pegada a la letra, se lava por dentro y deja la marca del agua. Fuera, nítido.
+- **Tinta corrida:** se escapa poco y de forma desigual por las fibras, pegada a cada letra, con línea de frente donde llega más lejos. Ya no es un halo.
+- **Acuarelado rehecho:** charco con borde propio, aro fino y oscuro con interior más claro, pigmento que deriva a un lado, granulación del mismo color, floraciones y segunda veladura.
+- **Xilografía** al estilo de los carteles grabados: líneas de talla que entran desde el lado de la luz, anchas en el borde y afiladas en punta, sombra negra y color plano desregistrado (dos tintas), o una sola tinta.
+- **Sello gastado:** presión desigual del sello inclinado, borde cargado, centro pobre con poros del papel y diferencias entre letras.
+- **Destrozado:** desconchones nítidos, grietas por zonas, cada letra con su daño y el texto pequeño protegido para que se lea.
+- **Mimeógrafo:** casi plano, borde que se humedece y carga pigmento, y variaciones ligerísimas entre letras.
+- **Tramas (Tritono, Flexografía):** lineatura real en líneas por pulgada, tono vivo bajo la trama, puntos irregulares, tritono con las tintas derivadas del color del texto, y flexografía con macizos sólidos, poros y halo.
 
 ## Novedades 0.5.1
 - **Humedad rehecha**: la letra reacciona al agua donde cae la gota. La tinta se disuelve en el papel en una nube granulosa que sigue la fibra: densa junto a la letra, rellena los huecos y se para en el borde del agua, con su marca. El resto queda nítido.
@@ -42,7 +53,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.5.1.ccx`.
+1. Descarga `dist/AnalogFX_0.6.0.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

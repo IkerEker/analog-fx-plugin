@@ -267,30 +267,113 @@
     if (p.stencil && p.stencil.on) m += U * 0.15 * (p.stencil.setoff || 0) + U * 0.02;
     if (p.aqua && p.aqua.on) m += U * 0.05;
     if (p.damp && p.damp.on) m += U * (0.1 + 0.35 * (p.damp.spread || 0));
+    if (p.seep && p.seep.on) m += U * (0.02 + 0.15 * (p.seep.reach || 0));
+    if (p.engrave && p.engrave.on) m += U * 0.06 * ((p.engrave.shadow || 0) + (p.engrave.misreg || 0));
     return Math.ceil(Math.min(m + ext, U * 3) + 3);
   }
 
 
   // ------------------------------------------------------------------ distancia al borde
   // Distancia aproximada (chaflán 3-4, en px) desde cada píxel de la máscara al exterior.
-  function distInside(A, w, h, thr) {
-    var n = w * h, D = new Float32Array(n), BIG = 1e9, x, y, i;
+  function distInside(A, w, h, thr, noBorder) {
+    var n = w * h, D = new Float32Array(n), BIG = 1e9, x, y, i, EB = noBorder ? BIG : 1;
     for (i = 0; i < n; i++) D[i] = A[i] > thr ? BIG : 0;
     for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
       i = y * w + x; if (D[i] === 0) continue;
       var v = D[i];
-      if (x > 0) v = Math.min(v, D[i - 1] + 1); else v = Math.min(v, 1);
-      if (y > 0) { v = Math.min(v, D[i - w] + 1); if (x > 0) v = Math.min(v, D[i - w - 1] + 1.4142); if (x < w - 1) v = Math.min(v, D[i - w + 1] + 1.4142); } else v = Math.min(v, 1);
+      if (x > 0) v = Math.min(v, D[i - 1] + 1); else v = Math.min(v, EB);
+      if (y > 0) { v = Math.min(v, D[i - w] + 1); if (x > 0) v = Math.min(v, D[i - w - 1] + 1.4142); if (x < w - 1) v = Math.min(v, D[i - w + 1] + 1.4142); } else v = Math.min(v, EB);
       D[i] = v;
     }
     for (y = h - 1; y >= 0; y--) for (x = w - 1; x >= 0; x--) {
       i = y * w + x; if (D[i] === 0) continue;
       var u = D[i];
-      if (x < w - 1) u = Math.min(u, D[i + 1] + 1); else u = Math.min(u, 1);
-      if (y < h - 1) { u = Math.min(u, D[i + w] + 1); if (x < w - 1) u = Math.min(u, D[i + w + 1] + 1.4142); if (x > 0) u = Math.min(u, D[i + w - 1] + 1.4142); } else u = Math.min(u, 1);
+      if (x < w - 1) u = Math.min(u, D[i + 1] + 1); else u = Math.min(u, EB);
+      if (y < h - 1) { u = Math.min(u, D[i + w] + 1); if (x < w - 1) u = Math.min(u, D[i + w + 1] + 1.4142); if (x > 0) u = Math.min(u, D[i + w - 1] + 1.4142); } else u = Math.min(u, EB);
       D[i] = u;
     }
     return D;
+  }
+
+  // ------------------------------------------------------------------ color y letra más cercanos
+  // Para cada píxel, índice del píxel de tinta más cercano (propagación en dos pasadas).
+  function nearestSeed(A, w, h) {
+    var n = w * h, S = new Int32Array(n), x, y, i, BIG = 1e18;
+    for (i = 0; i < n; i++) S[i] = A[i] > 0.5 ? i : -1;
+    function d2(i0, s0) { if (s0 < 0) return BIG; var ax = i0 % w, ay = (i0 / w) | 0, bx = s0 % w, by = (s0 / w) | 0; return (ax - bx) * (ax - bx) + (ay - by) * (ay - by); }
+    function tryN(i0, j) { var sj = S[j]; if (sj < 0) return; if (S[i0] < 0 || d2(i0, sj) < d2(i0, S[i0])) S[i0] = sj; }
+    for (var pass = 0; pass < 2; pass++) {
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        i = y * w + x;
+        if (x > 0) tryN(i, i - 1);
+        if (y > 0) { tryN(i, i - w); if (x > 0) tryN(i, i - w - 1); if (x < w - 1) tryN(i, i - w + 1); }
+      }
+      for (y = h - 1; y >= 0; y--) for (x = w - 1; x >= 0; x--) {
+        i = y * w + x;
+        if (x < w - 1) tryN(i, i + 1);
+        if (y < h - 1) { tryN(i, i + w); if (x < w - 1) tryN(i, i + w + 1); if (x > 0) tryN(i, i + w - 1); }
+      }
+    }
+    return S;
+  }
+  // Etiqueta cada letra (componente conexa de tinta). Devuelve { lab, size, count }.
+  function labelLetters(A, w, h) {
+    var n = w * h, lab = new Int32Array(n), size = [0], stack = new Int32Array(n), id = 0;
+    for (var s0 = 0; s0 < n; s0++) {
+      if (A[s0] <= 0.5 || lab[s0]) continue;
+      id++; var top = 0, cnt = 0; stack[top++] = s0; lab[s0] = id;
+      while (top) {
+        var c = stack[--top], cx = c % w, cy = (c / w) | 0; cnt++;
+        if (cx > 0 && !lab[c - 1] && A[c - 1] > 0.5) { lab[c - 1] = id; stack[top++] = c - 1; }
+        if (cx < w - 1 && !lab[c + 1] && A[c + 1] > 0.5) { lab[c + 1] = id; stack[top++] = c + 1; }
+        if (cy > 0 && !lab[c - w] && A[c - w] > 0.5) { lab[c - w] = id; stack[top++] = c - w; }
+        if (cy < h - 1 && !lab[c + w] && A[c + w] > 0.5) { lab[c + w] = id; stack[top++] = c + w; }
+      }
+      size.push(cnt);
+    }
+    return { lab: lab, size: size, count: id };
+  }
+
+  // ------------------------------------------------------------------ XILOGRAFÍA: líneas de talla
+  // Líneas paralelas (casi horizontales, hechas a mano) que entran desde el lado de la luz de cada
+  // trazo, anchas en el borde y afiladas en punta hacia dentro, como en los carteles grabados.
+  function engraveCuts(M, w, h, U, E, seed, noise, ox, oy, invU) {
+    var n = w * h, x, y, i, K = new Float32Array(n);
+    var sp = Math.max(3, U * (0.03 + 0.07 * E.spacing)), dirR = (E.light || 0) >= 0 ? 1 : -1;
+    var rs = new Int32Array(n), re = new Int32Array(n);
+    for (y = 0; y < h; y++) {
+      var st = -1;
+      for (x = 0; x <= w; x++) {
+        var inside = x < w && M[y * w + x] > 0.5;
+        if (inside && st < 0) st = x;
+        if (!inside && st >= 0) { for (var q = st; q < x; q++) { rs[y * w + q] = st; re[y * w + q] = x - 1; } st = -1; }
+      }
+    }
+    var gstep = Math.max(1, Math.min(8, Math.floor(U / 40)));
+    var gw = makeGrid(w, h, gstep, function (gx, gy) { return noise.fbm((gx - ox) * invU * 1.2 + 9, (gy - oy) * invU * 0.4, 3); });
+    var gw2 = makeGrid(w, h, gstep, function (gx, gy) { return noise.fbm((gx - ox) * invU * 4.5 - 3, (gy - oy) * invU * 1.5 + 2, 2); });
+    var sd = seed * 7919;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x;
+      var m = M[i];
+      if (m <= 0.002) continue;
+      if (m < 0.5) { K[i] = m; continue; }
+      var yy = y + (gw(x, y) - 0.5) * sp * 2.2 * E.wobble + (gw2(x, y) - 0.5) * sp * 0.5 * E.wobble;
+      var qv = yy / sp, k = Math.floor(qv), f = qv - k;
+      var hk = hash(k * 7919 + sd), hk2 = hash(k * 31 + 5 + sd), hk3 = hash(k * 131 + 17 + sd);
+      var span = re[i] - rs[i] + 1, d = dirR > 0 ? re[i] - x : x - rs[i];
+      var cut = 0;
+      if (hk2 >= E.skip && span > 2) {
+        var Lk = span * Math.min(1.05, E.length * (0.35 + 0.95 * hk)) + 1;
+        if (d < Lk) {
+          var tt = d / Lk, half = 0.5 * E.width * Math.pow(1 - tt, 0.65) * (0.75 + 0.5 * hk3);
+          var off = Math.abs(f - 0.5) * sp, hwp = half * sp;
+          cut = clamp01(hwp - off + 0.5);
+        }
+      }
+      K[i] = m * (1 - cut);
+    }
+    return K;
   }
 
   // ------------------------------------------------------------------ XILOGRAFÍA: cortes de gubia
@@ -615,6 +698,13 @@
     }
     var shape = A; // forma deformada (base para salpicaduras)
     var PA = p.paper || {}, TI = p.tintas || {}, PS = p.press || {}, WO = p.wood || {}, ME = p.mesh || {}, ST = p.stone || {}, WA = p.wash || {};
+    var NEAR = null, LAB = null;
+    function getNear() { if (!NEAR) NEAR = nearestSeed(A0, w, h); return NEAR; }
+    function getLab() { if (!LAB) LAB = labelLetters(A0, w, h); return LAB; }
+    // id de letra (la más cercana) y su escala respecto a U
+    function letterOf(i0) { var nn = getNear()[i0]; return nn >= 0 ? getLab().lab[nn] : 0; }
+    function letterScale(id) { var L = getLab(); return id > 0 ? Math.sqrt(L.size[id]) / U : 1; }
+    var SE = p.seep || {}, EN = p.engrave || {}, SPm = p.stamp || {}, LV = p.letters || {};
     var DP = p.damp || {}, AQ = p.aqua || {}, GO = p.gouge || {}, RI = p.rim || {}, SN = p.stencil || {}, CP = p.copy || {}, DR = p.drip || {};
 
     // 1b · Fibras del papel: la tinta se escapa por las fibras (feathering) ----
@@ -634,47 +724,116 @@
       A = Fe; shape = A;
     }
 
-    // 1c · ACUARELA: forma con borde definido, pigmento transparente, aro oscuro, granulación y floraciones
+    // 1b2 · TINTA CORRIDA (realista): la tinta se escapa poco y de forma muy desigual por las
+    // fibras, pegada al trazo; en algunos tramos llega más lejos y deja una línea más oscura.
+    if (SE.on && SE.amount > 0) {
+      var Ainv = new Float32Array(n);
+      for (i = 0; i < n; i++) Ainv[i] = 1 - A[i];
+      var Dout = distInside(Ainv, w, h, 0.5, true), reachMax = U * (0.008 + 0.09 * SE.reach);
+      var gR = grid(function (u, v) { return noise.fbm(u * 1.7 + 41, v * 1.7 - 13, 3); });
+      var tsf1 = sampler('d', 0.28, 1.3, 'fibra'), tsf2 = sampler('d', 0.28, -1.3, 'fibra'), tsb = sampler('b', 0.7, 0, 'fibra');
+      var As2 = new Float32Array(A), PS2 = needPool();
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        i = y * w + x;
+        var dO = Dout[i];
+        if (dO <= 0 || dO > reachMax * 1.6) continue;
+        var patch = Math.pow(smooth(1 - SE.amount - 0.05, 1 - SE.amount + 0.35, gR(x, y)), 1.4);
+        if (patch <= 0.001) continue;
+        var fbm2 = Math.max(smooth(0.55, 0.92, tsf1(x, y)), smooth(0.55, 0.92, tsf2(x, y)));
+        var reach = reachMax * patch * (0.35 + 1.1 * fbm2);
+        if (dO >= reach) continue;
+        var tt3 = dO / reach;
+        var dens = Math.pow(1 - tt3, 1.25) * (0.55 + 0.45 * tsb(x, y)) * SE.density;
+        var front = SE.front * smooth(0.65, 0.92, tt3) * (1 - smooth(0.94, 1, tt3)) * smooth(0.3, 0.8, patch);
+        var v3 = Math.max(dens, front * 0.55);
+        if (v3 > As2[i]) As2[i] = v3;
+        if (front > 0) PS2[i] = Math.max(PS2[i], front * 0.8);
+      }
+      A = As2; shape = A;
+    }
+
+    // 1b3 · XILOGRAFÍA (carteles grabados): plancha negra con líneas de talla y sombra
+    var keyPlate = null, colorPlate = null;
+    if (EN.on) {
+      var Mh = new Float32Array(n);
+      for (i = 0; i < n; i++) Mh[i] = smooth(0.42, 0.58, A[i]);
+      var Kc = engraveCuts(Mh, w, h, U, EN, p.seed, noise, ox, oy, invU);
+      var dirE = (EN.light || 0) >= 0 ? 1 : -1, sdx = -dirE * U * 0.04 * EN.shadow, sdy = U * 0.03 * EN.shadow;
+      if (EN.shadow > 0) for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        i = y * w + x;
+        var sh = sampleBil(Mh, w, h, x - sdx, y - sdy) * (1 - Mh[i]);
+        if (sh > Kc[i]) Kc[i] = sh;
+      }
+      var inkE = (p.out.color && p.out.color !== 'original') ? hexToRgb(p.out.color) : (input.ink || [0, 0, 0]);
+      var twoE = EN.two && (0.299 * inkE[0] + 0.587 * inkE[1] + 0.114 * inkE[2]) > 70;
+      if (twoE) {
+        var mrx = U * 0.025 * EN.misreg, mry = -U * 0.012 * EN.misreg;
+        colorPlate = new Float32Array(n);
+        for (y = 0; y < h; y++) for (x = 0; x < w; x++) colorPlate[y * w + x] = sampleBil(Mh, w, h, x - mrx, y - mry);
+        keyPlate = Kc;
+        A = colorPlate;
+      } else A = Kc;
+      shape = A;
+    }
+
+    // 1c · ACUARELA (rehecha): pigmento transparente en un charco de agua con borde propio.
+    // Al secarse, el pigmento migra al frente del agua: aro fino y oscuro, interior más claro
+    // junto al aro, densidad que deriva hacia un lado, granulación del mismo color en los
+    // valles del papel, floraciones y una segunda veladura parcial con su propio borde.
     if (AQ.on) {
-      var tlv = sampler('b', 4.5, 0, 'lavado'), tlv2 = sampler('b', 1.2, 0, 'lavado');
-      var Ae = blur(A, w, h, U * 0.01 + 0.6, U * 0.01 + 0.6), Aq = new Float32Array(n);
+      var bwA = input.bw || U * 3;
+      // forma del charco: borde ondulado y definido, a veces se sale un poco
+      var tlv = sampler('b', 4.0, 0, 'lavado'), tlv2 = sampler('b', 1.0, 0, 'lavado'), tlv3 = sampler('d', 0.5, 0, 'lavado');
+      var Ae = blur(A, w, h, U * 0.012 + 0.6, U * 0.012 + 0.6), Aq = new Float32Array(n);
       for (i = 0; i < n; i++) {
         if (Ae[i] < 0.01) continue;
         y = (i / w) | 0; x = i - y * w;
-        Aq[i] = smooth(0.44, 0.52, Ae[i] + (tlv2(x, y) - 0.5) * 0.12 * AQ.edgeWobble);
+        var wob = (tlv2(x, y) - 0.5) * 0.22 + (tlv3(x, y) - 0.5) * 0.08;
+        Aq[i] = smooth(0.47, 0.53, Ae[i] + wob * AQ.edgeWobble);
       }
       var Dq = distInside(Aq, w, h, 0.5);
-      var rimW = U * (0.004 + 0.016 * AQ.rimWidth) + 0.7;
-      var tgq = sampler('d', 0.22, 0, 'granul'), tgq2 = sampler('b', 0.35, 0, 'granul');
-      var tfl = sampler('b', 1.6, 0, 'floracion'), tfd = sampler('d', 1.6, 0, 'floracion');
-      var grim = grid(function (u, v) { return noise.fbm(u * 2.2 + 5, v * 2.2 + 11, 2); });
-      var gflow = grid(function (u, v) { return noise.fbm(u * 0.6 + 40, v * 0.6 - 3, 3); });
+      var rimW = U * (0.004 + 0.014 * AQ.rimWidth) + 0.8;
+      var tgq = sampler('d', 0.16, 0, 'granul'), tgq2 = sampler('b', 0.3, 0, 'granul');
+      var tfl = sampler('b', 1.3, 0, 'floracion'), tfd = sampler('d', 1.3, 0, 'floracion');
+      var grim = grid(function (u, v) { return noise.fbm(u * 2.5 + 5, v * 2.5 + 11, 2); });
+      var gflow = grid(function (u, v) { return noise.fbm(u * 0.5 + 40, v * 0.5 - 3, 3); });
+      var gGl = grid(function (u, v) { return noise.fbm(u * 0.9 - 17, v * 0.9 + 23, 3); });
+      var angD = R() * Math.PI * 2, cD = Math.cos(angD), sD = Math.sin(angD);
+      // segunda veladura: zona parcial con su propio borde dentro de la letra
+      var Gm = new Float32Array(n);
+      if (AQ.glaze > 0) for (i = 0; i < n; i++) { if (Aq[i] <= 0) continue; y = (i / w) | 0; x = i - y * w; Gm[i] = Aq[i] * smooth(0.6 - AQ.glaze * 0.2 - 0.01, 0.6 - AQ.glaze * 0.2 + 0.01, gGl(x, y)); }
+      var Dg = AQ.glaze > 0 ? distInside(Gm, w, h, 0.5) : null;
       var PQ = needPool();
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
         i = y * w + x;
         var sq = Aq[i];
         if (sq <= 0.002) { A[i] = 0; continue; }
         var dq = Dq[i];
-        // densidad del lavado: manchas suaves y desplazamiento del pigmento al secar
-        var dn = AQ.density * (1 + AQ.variation * ((tlv(x, y) - 0.5) * 0.55 + (gflow(x, y) - 0.5) * 0.7));
-        // floraciones: zonas donde el agua empujó el pigmento (más claras, con línea oscura)
-        var bl = 0, bline = 0;
+        var ramp = (((x - ox) * cD + (y - oy) * sD) / bwA);
+        var dn = AQ.density * (1 + AQ.variation * ((tlv(x, y) - 0.5) * 0.6 + (gflow(x, y) - 0.5) * 0.8) + AQ.drift * 0.6 * (ramp - 0.3));
+        // migración: justo dentro del aro el lavado queda más claro
+        var nearRim = Math.exp(-dq / (rimW * 4));
+        dn *= 1 - 0.35 * AQ.rim * nearRim * (1 - Math.exp(-dq / rimW));
+        // floraciones (coliflores): zona lavada con línea oscura ramificada
+        var bline = 0;
         if (AQ.blooms > 0) {
-          var fv = tfl(x, y);
-          bl = smooth(1 - AQ.blooms * 0.55, 1 - AQ.blooms * 0.55 + 0.05, fv);
-          bline = smooth(0.1, 0.02, tfd(x, y)) * AQ.blooms;
-          dn *= 1 - 0.45 * bl;
+          var fv = tfl(x, y), bl = smooth(1 - AQ.blooms * 0.5, 1 - AQ.blooms * 0.5 + 0.04, fv);
+          dn *= 1 - 0.5 * bl;
+          bline = smooth(0.12, 0.03, tfd(x, y)) * bl * AQ.blooms;
         }
-        // granulación: pigmento en los valles del papel
-        var gq = tgq(x, y), settle = AQ.granul * smooth(0.6, 0.95, tgq2(x, y));
-        dn *= 1 - AQ.granul * 0.3 * smooth(0.55, 0.92, gq);
-        dn += settle * 0.15;
-        // aro de pigmento acumulado en el borde (efecto "anillo de café"), discontinuo
-        var seg = 0.55 + 0.45 * smooth(0.3, 0.7, grim(x, y));
-        var rim = Math.exp(-dq / rimW) * AQ.rim * seg;
-        var aOut = clamp01(dn + (0.97 - dn) * Math.min(1, rim * 1.15) + bline * 0.35);
+        // segunda veladura
+        var gl = 0;
+        if (Dg && Gm[i] > 0.5) { gl = AQ.glaze * 0.35; var grimG = Math.exp(-Dg[i] / rimW) * AQ.glaze; dn += gl + grimG * 0.35; PQ[i] = Math.max(PQ[i], grimG * 0.6); }
+        // granulación del mismo pigmento
+        var gq = tgq(x, y), gq2 = tgq2(x, y), settle = AQ.granul * smooth(0.55, 0.92, gq2);
+        dn *= 1 - AQ.granul * 0.35 * smooth(0.55, 0.92, gq);
+        dn += settle * 0.18;
+        // aro de pigmento (frente del agua seco), discontinuo
+        var segR = 0.5 + 0.5 * smooth(0.25, 0.7, grim(x, y));
+        var rim = Math.exp(-dq / rimW) * AQ.rim * segR;
+        var aOut = clamp01(dn + (0.97 - dn) * Math.min(1, rim * 1.2) + bline * 0.4);
         A[i] = sq * aOut;
-        PQ[i] = Math.max(PQ[i], Math.min(1, rim * 1.1) * 0.75 + bline * 0.5 + settle * 0.35);
+        PQ[i] = Math.max(PQ[i], Math.min(1, rim * 1.2) * 0.8 + bline * 0.55 + settle * 0.4);
       }
       shape = A;
     }
@@ -683,39 +842,40 @@
     // se disuelve en el papel: nube granulosa que sigue la fibra, densa junto a la
     // letra, que rellena los huecos y se detiene en el límite del agua. Fuera, nítido.
     if (DP.on && DP.amount > 0) {
-      // 1) dónde ha caído el agua: manchas grandes con borde orgánico
-      var zsD = 0.9 + 2.6 * DP.size;
-      var tzw = sampler('b', zsD * 1.1, 0, 'floracion'), tzw2 = sampler('d', 0.6, 0, 'lavado');
-      var gzw = grid(function (u, v) { return noise.fbm(u / zsD + 13, v / zsD - 7, 3); });
+      // 1) dónde ha caído el agua: gotas y charcos con borde definido (no un halo general)
+      var zsD = 0.5 + 1.8 * DP.size;
+      var tzw = sampler('b', zsD * 1.3, 0, 'floracion'), tzw2 = sampler('d', 0.5, 0, 'floracion');
+      var gzw = grid(function (u, v) { return noise.fbm(u / zsD + 13, v / zsD - 7, 4); });
       var Wd = new Float32Array(n), cov0 = DP.amount;
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
         i = y * w + x;
-        var fz = gzw(x, y) * 0.6 + tzw(x, y) * 0.4 + (tzw2(x, y) - 0.5) * 0.06;
-        Wd[i] = smooth(1 - cov0 - 0.03, 1 - cov0 + 0.03, fz);
+        var fz = gzw(x, y) * 0.65 + tzw(x, y) * 0.35 + (tzw2(x, y) - 0.5) * 0.05;
+        Wd[i] = smooth(1 - cov0 - 0.012, 1 - cov0 + 0.012, fz);
       }
-      // 2) la tinta se disuelve: difusión a dos escalas (cerca densa, lejos tenue)
-      var rN = U * (0.03 + 0.07 * DP.spread), rF = U * (0.08 + 0.22 * DP.spread);
+      // 2) la tinta disuelta sale de la letra a dos escalas y se queda dentro del agua
+      var rN = U * (0.02 + 0.06 * DP.spread), rF = U * (0.07 + 0.22 * DP.spread);
       var Bn = blur(A, w, h, rN, rN), Bf = blur(A, w, h, rF, rF);
-      var tfib = sampler('d', 0.18, 0, 'fibra'), tfib2 = sampler('b', 0.4, 0, 'granul'), tlift = sampler('b', 0.9, 0, 'lavado');
-      var Ad = new Float32Array(n), Wb = blur(Wd, w, h, 1.2, 1.2), PDm = needPool();
+      var tfib = sampler('d', 0.16, 0, 'fibra'), tgr2 = sampler('b', 0.22, 0, 'granul'), tgr3 = sampler('d', 0.12, 0, 'granul');
+      var tlift = sampler('b', 0.7, 0, 'lavado');
+      var Ad = new Float32Array(n), PDm = needPool();
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
         i = y * w + x;
-        var a0 = A[i], wv = Wb[i];
+        var a0 = A[i], wv = Wd[i];
         if (wv <= 0.003) { Ad[i] = a0; continue; }
-        // nube de tinta disuelta: granulosa, modulada por la fibra del papel
-        var cloud = Math.pow(clamp01(Bn[i] * 1.15), 0.8) * 0.85 + Math.pow(clamp01(Bf[i] * 1.4), 0.9) * 0.45;
-        var fibv = tfib(x, y), grv = tfib2(x, y);
-        cloud *= 0.55 + 0.75 * smooth(0.25, 0.85, fibv) * (0.6 + 0.6 * grv);
-        cloud = clamp01(cloud) * DP.cloud;
-        // la letra pierde el borde y se lava en parte por dentro
-        var core = a0 * (1 - DP.lift * 0.55 * smooth(0.45, 0.85, tlift(x, y)) * (0.4 + 0.6 * fibv));
-        var soft = Math.max(core * smooth(0.35, 0.9, Bn[i] + (fibv - 0.5) * 0.25), cloud);
-        var wet = Math.max(soft, cloud);
-        // línea de marea: el pigmento arrastrado se acumula en el borde del agua
-        var tide = DP.tide * smooth(0.15, 0.45, wv) * (1 - smooth(0.5, 0.85, wv)) * smooth(0.02, 0.25, Bf[i]);
-        wet = wet + (1 - wet) * tide * 0.55;
+        // tinta disuelta (diluida): densa junto al trazo, gris y granulosa más lejos
+        var g1 = tgr2(x, y) * 0.55 + tgr3(x, y) * 0.3 + tfib(x, y) * 0.15;
+        var raw = clamp01(Bn[i] * 1.3) * 0.55 + clamp01(Bf[i] * 2.2) * 0.5;
+        var cloud = Math.min(0.85, raw) * (0.45 + 0.85 * smooth(0.2, 0.85, g1)) * DP.cloud;
+        // la letra se abre: pierde el borde y se lava a ratos por dentro
+        var lift = DP.lift * 0.85 * smooth(0.55, 0.8, tlift(x, y)) * (0.5 + 0.5 * smooth(0.3, 0.7, g1));
+        var core = Math.min(a0, smooth(0.25, 0.75, Bn[i] + (g1 - 0.5) * 0.3)) * (1 - lift);
+        var wet = Math.max(core, cloud);
+        // marca del borde del agua: pigmento arrastrado y acumulado justo en el límite
+        var edgeW = smooth(0.0, 0.35, wv) * (1 - smooth(0.35, 0.9, wv));
+        var tide = DP.tide * edgeW * smooth(0.03, 0.3, Bf[i]);
+        wet = wet + (1 - wet) * tide * 0.5;
         Ad[i] = a0 + (wet - a0) * wv;
-        if (tide > 0) PDm[i] = Math.max(PDm[i], tide * 0.6);
+        if (tide > 0.01) PDm[i] = Math.max(PDm[i], tide * 0.7);
       }
       A = Ad; shape = A;
     }
@@ -871,7 +1031,8 @@
     // 5 · Desgaste / erosión ------------------------------------------------
     if (p.erode.on && p.erode.amount > 0) {
       var ea = p.erode.amount, dist = p.erode.distrib, soft2 = 0.015 + 0.22 * (1 - p.erode.contrast);
-      var te = sampler('b', 1);
+      var te = sampler('b', 1, 0, p.erode.fam);
+      var perL = p.erode.perLetter || 0, prot = p.erode.protect || 0;
       var gef = grid(function (u, v) { return noise.fbm(u * 2.2 + 10, v * 2.2 - 5, 3); });
       var gec = grid(function (u, v) { return noise.fbm(u * 0.45 - 30, v * 0.45 + 60, 2); });
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
@@ -879,6 +1040,11 @@
         if (A[i] <= 0) continue;
         var field = te(x, y) * 0.72 + gef(x, y) * 0.28;
         var tE = ea * (1 - dist + dist * 2.1 * smooth(0.3, 0.8, gec(x, y)));
+        if (perL > 0 || prot > 0) {
+          var lid = letterOf(i);
+          if (perL > 0) tE *= 1 - perL * 0.85 * hash(lid * 977 + p.seed);
+          if (prot > 0) tE *= 1 - prot * (1 - smooth(0.12, 0.55, letterScale(lid)));
+        }
         tE = Math.min(tE, 1.05);
         A[i] *= smooth(tE - soft2, tE + soft2, field);
       }
@@ -886,7 +1052,7 @@
 
     // 6 · Rayas y grietas ---------------------------------------------------
     if (p.cracks.on && p.cracks.amount > 0) {
-      var ca = p.cracks.amount, tc = sampler('d', 0.45, 0.4), tc2 = sampler('d', 0.25, -0.3);
+      var ca = p.cracks.amount, tc = sampler('d', 0.45, 0.4, p.cracks.fam), tc2 = sampler('d', 0.25, -0.3, p.cracks.fam);
       var gcm = grid(function (u, v) { return noise.fbm(u * 1.3 + 200, v * 1.3, 2); });
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
         i = y * w + x;
@@ -1088,6 +1254,28 @@
       }
     }
 
+    // 7a4 · SELLO DE GOMA: presión desigual (sello inclinado), borde cargado, centro pobre, poros
+    if (SPm.on) {
+      var angS = R() * Math.PI * 2, cS = Math.cos(angS), sS = Math.sin(angS), bwS = input.bw || U * 3;
+      var gpS = grid(function (u, v) { return noise.fbm(u * 0.5 + 21, v * 0.5 - 4, 3); });
+      var Dst = distInside(A, w, h, 0.5), eW = U * 0.012 + 0.8;
+      var tpS = sampler('b', 0.45, 0, 'grano'), tpS2 = sampler('d', 0.25, 0, 'grano'), PSt = needPool();
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        i = y * w + x;
+        if (A[i] <= 0) continue;
+        var sproj = (((x - ox) * cS + (y - oy) * sS) / bwS) + 0.5;
+        var P = 1 - SPm.tilt * smooth(0.0, 1.2, sproj) + (gpS(x, y) - 0.5) * 0.5 * SPm.uneven;
+        if (SPm.letterVar > 0) P -= SPm.letterVar * 0.35 * hash(letterOf(i) * 613 + p.seed);
+        P = clamp01(P);
+        var edgeL = Math.exp(-Dst[i] / eW) * SPm.edge;
+        var thrP = 0.25 + 0.7 * P;
+        var pore = smooth(thrP - 0.05, thrP + 0.05, tpS(x, y) * 0.7 + tpS2(x, y) * 0.3);
+        var dS = clamp01((0.35 + 0.65 * P) * (1 - pore * (1 - edgeL * 0.8)) + edgeL * 0.5);
+        A[i] *= dS;
+        PSt[i] = Math.max(PSt[i], edgeL * 0.45);
+      }
+    }
+
     // 7b · Litografía: grano de piedra, borde graso y velo de plancha ---------
     if (ST.on && (ST.amount > 0 || ST.veil > 0)) {
       var greasy = ST.greasy || 0, Abs = blur(A, w, h, U * 0.035 * greasy + 0.5, U * 0.035 * greasy + 0.5);
@@ -1266,10 +1454,19 @@
     }
     // tintas múltiples (duotono / tritono / riso / 2 colores), mezcla sustractiva
     var nInk = TI.on ? Math.max(1, Math.min(3, TI.count | 0)) : 1;
-    var multi = TI.on && (nInk > 1 || TI.screen > 0);
+    var multi = TI.on && (nInk > 1 || TI.screen > 0) && !keyPlate;
     var covs = null, inkCols = null;
+    if (keyPlate) { covs = [A, keyPlate]; inkCols = [null, hexToRgb(EN.key || '#161414')]; }
     if (multi) {
-      var cellT = Math.max(2.6, U * (0.018 + 0.1 * (TI.cell == null ? 0.35 : TI.cell)));
+      // la trama va en líneas por pulgada reales (igual en toda la página); sin resolución, relativa a U
+      var cellT = input.dpi && TI.lpi ? (input.dpi / TI.lpi) * (input.pxScale || 1) : U * (0.018 + 0.1 * (TI.cell == null ? 0.35 : TI.cell));
+      cellT = Math.max(2.4, cellT);
+      // tono vivo bajo la trama (la tinta nunca es uniforme)
+      var ttv = sampler('b', 1.8, 0, 'lavado'), ttv2 = sampler('b', 0.6, 0, 'granul');
+      var gtv = grid(function (u, v) { return noise.fbm(u * 0.8 + 3, v * 0.8 - 2, 3); });
+      var TV = new Float32Array(n), tvAmt = TI.toneVar == null ? 0.35 : TI.toneVar;
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) { i = y * w + x; if (A[i] > 0) TV[i] = 1 + tvAmt * ((ttv(x, y) - 0.5) * 0.7 + (ttv2(x, y) - 0.5) * 0.35 + (gtv(x, y) - 0.5) * 0.6); }
+      var jit = grid(function (u, v) { return noise.fbm(u * 6 + 50, v * 6, 2); }), jit2 = grid(function (u, v) { return noise.fbm(u * 6 - 20, v * 6 + 70, 2); });
       var angles = [45, 75, 15];
       // curvas de cada tinta en dúo/tritono: oscura (sombras), media, clara (luces)
       var curveK = function (k, t) {
@@ -1278,7 +1475,10 @@
         return t;
       };
       var trg = sampler('d', 0.4, 0, 'grano'), ma0 = (TI.misAng || 0) * Math.PI * 0.5 + Math.PI * 0.25;
-      covs = []; inkCols = [null, hexToRgb(TI.c2 || '#0078bf'), hexToRgb(TI.c3 || '#f5c400')];
+      covs = [];
+      var baseInk = custom || ink;
+      function tint(c, t2) { return [Math.round(c[0] + (255 - c[0]) * t2), Math.round(c[1] + (255 - c[1]) * t2), Math.round(c[2] + (255 - c[2]) * t2)]; }
+      inkCols = [null, TI.c2 === 'auto' || !TI.c2 ? tint(baseInk, 0.45) : hexToRgb(TI.c2), TI.c3 === 'auto' || !TI.c3 ? tint(baseInk, 0.72) : hexToRgb(TI.c3)];
       for (var k = 0; k < nInk; k++) {
         var aRad = angles[k] * Math.PI / 180, hcs = Math.cos(aRad) / cellT, hsn = Math.sin(aRad) / cellT, eT = Math.min(0.45, 0.85 / cellT);
         var md = k === 0 ? 0 : U * 0.06 * (TI.misreg || 0) * (k === 1 ? 1 : 0.6) + ((TI.misreg || 0) > 0 ? 0.4 : 0);
@@ -1288,12 +1488,14 @@
           i = y * w + x;
           var sxk = x - mdx, syk = y - mdy, ak = md ? sampleBil(A, w, h, sxk, syk) : A[i];
           if (ak <= 0.002) continue;
-          var cover = ak * dk * (TI.tone == null ? 1 : TI.tone);
+          var cover = ak * dk * (TI.tone == null ? 1 : TI.tone) * TV[i];
           if (TI.screen > 0) {
             var mask = smooth(0.08, 0.5, ak), tc = curveK(k, clamp01(cover));
             var tt2 = tc + (TI.gain || 0) * tc * (1 - tc) * 1.3;
-            var hu2 = sxk * hcs + syk * hsn, hv2 = -sxk * hsn + syk * hcs;
-            var sp2 = 0.5 - 0.25 * (Math.cos(6.283 * hu2) + Math.cos(6.283 * hv2)) + (trg(x, y) - 0.5) * 0.12;
+            // posición del punto algo irregular (la plancha y el papel no son perfectos)
+            var jx = sxk + (jit(x, y) - 0.5) * cellT * 0.35, jy = syk + (jit2(x, y) - 0.5) * cellT * 0.35;
+            var hu2 = jx * hcs + jy * hsn, hv2 = -jx * hsn + jy * hcs;
+            var sp2 = 0.5 - 0.25 * (Math.cos(6.283 * hu2) + Math.cos(6.283 * hv2)) + (trg(x, y) - 0.5) * 0.22;
             var dot = tt2 <= 0.001 ? 0 : tt2 >= 0.999 ? 1 : smooth(sp2 - eT, sp2 + eT, tt2);
             if ((TI.donut || 0) > 0 && dot > 0) dot *= 1 - TI.donut * 0.6 * (1 - smooth(0.15, 0.75, sp2 / Math.max(0.01, tt2)));
             cover = (tc + (dot - tc) * TI.screen) * mask;
@@ -1313,7 +1515,7 @@
       else if (rgb) {
         var ci = cidx[i];
         if (ci >= 0 && A0[ci] > 0.35) { cr = rgb[ci * 3]; cg = rgb[ci * 3 + 1]; cb = rgb[ci * 3 + 2]; }
-        else { cr = ink[0]; cg = ink[1]; cb = ink[2]; }
+        else { var nn0 = getNear()[i]; if (nn0 >= 0) { cr = rgb[nn0 * 3]; cg = rgb[nn0 * 3 + 1]; cb = rgb[nn0 * 3 + 2]; } else { cr = ink[0]; cg = ink[1]; cb = ink[2]; } }
       } else { cr = ink[0]; cg = ink[1]; cb = ink[2]; }
       if (!anyColor && !covs) {
         rgba[o] = cr; rgba[o + 1] = cg; rgba[o + 2] = cb;
@@ -1340,6 +1542,11 @@
       dL -= pv * 0.42; dS += pv * 0.25;                      // pigmento atrapado: más denso y saturado
       dL -= dv * 0.45;                                        // líneas oscuras de impresión
       if (pressDark) { dL -= pressDark[i] * 0.4; dS += pressDark[i] * 0.2; }
+      if (LV.on) {   // variaciones muy ligeras entre letras (carga de tinta y tono)
+        var lidv = letterOf(i), hv1 = hash(lidv * 313 + p.seed), hv2b = hash(lidv * 727 + 11 + p.seed);
+        a2 *= 1 - LV.density * 0.18 * hv1;
+        dL += (hv2b - 0.5) * LV.tone * 0.14; dH += (hv1 - 0.5) * LV.tone * 0.02;
+      }
       if (washDark) { dL -= washDark[i] * 0.4; dS += washDark[i] * 0.25; }
       if (relief) { var rv = relief[i] * PA.relief; dL += rv * 0.35; if (rv > 0) a2 *= 1 - Math.min(0.5, rv * 0.5); }
       dS = Math.max(-1, Math.min(1, dS)); dL = Math.max(-1, Math.min(1, dL));
@@ -1444,8 +1651,8 @@
   var DEFAULTS = {
     texture: 'desgaste_1', texScale: 1, stretch: 0, effectScale: 1, seed: 1,
     warp: { on: true, amount: 0.25, rough: 0.4 },
-    erode: { on: true, amount: 0.25, distrib: 0.5, contrast: 0.6 },
-    cracks: { on: false, amount: 0.3 },
+    erode: { on: true, amount: 0.25, distrib: 0.5, contrast: 0.6, fam: 'desgaste', perLetter: 0, protect: 0 },
+    cracks: { on: false, amount: 0.3, fam: 'desgaste' },
     bleed: { on: false, amount: 0.3, dir: 0, wet: 0.6, pool: 0.5, halo: 0.7, hue: 0, sat: 0, light: 0.15, zones: 0, zoneSize: 0.5, dissolve: 0, tide: 0 },
     drips: { on: false, length: 0.35, amount: 0.5, up: 0, drops: 0, thick: 0.5 },
     splat: { on: false, amount: 0.3, spread: 0.4, size: 0.5, drops: 0 },
@@ -1453,14 +1660,18 @@
     print: { on: false, bands: 0.45, spacing: 0.35, width: 0.3, dir: -1, shift: 0, streaks: 0, regular: 0, halftone: 0, dot: 0.35, ghost: 0, ghostOff: 0.35, ghostHue: 0 },
     color: { on: true, hue: 0, sat: 0, light: 0, hueVar: 0.15, satVar: 0.2, lightVar: 0.3, edge: 0.3 },
     paper: { on: true, feather: 0.3, relief: 0.35, tooth: 0.15, paperScale: 0.5 },
-    tintas: { on: false, count: 1, c2: '#0078bf', c3: '#f5c400', d2: 1, tone: 1, screen: 0, cell: 0.35, gain: 0.25, donut: 0, misreg: 0.3, misAng: 0.3 },
+    tintas: { on: false, count: 1, c2: '#0078bf', c3: '#f5c400', d2: 1, tone: 1, toneVar: 0.35, lpi: 0, screen: 0, cell: 0.35, gain: 0.25, donut: 0, misreg: 0.3, misAng: 0.3 },
     press: { on: false, squeeze: 0.5, halo: 0.35, starve: 0.3 },
     wood: { on: false, grain: 0.55, angle: 0, spacing: 0.4, chips: 0.25 },
     mesh: { on: false, sawtooth: 0.4, mesh: 0.3, voids: 0.2 },
     stone: { on: false, amount: 0.6, size: 0.4, tone: 0.8, greasy: 0.4, veil: 0.15 },
     wash: { on: false, wash: 0.5, granul: 0.5, blooms: 0.3, transp: 0.3 },
+    seep: { on: false, amount: 0.45, reach: 0.35, density: 0.7, front: 0.5 },
+    engrave: { on: false, spacing: 0.35, width: 0.6, length: 0.7, skip: 0.12, wobble: 0.5, light: 1, shadow: 0.6, two: false, misreg: 0.4, key: '#161414' },
+    stamp: { on: false, tilt: 0.45, uneven: 0.5, edge: 0.5, letterVar: 0.3 },
+    letters: { on: false, density: 0.4, tone: 0.4 },
     damp: { on: false, amount: 0.45, size: 0.5, spread: 0.5, cloud: 0.8, lift: 0.35, tide: 0.35 },
-    aqua: { on: false, density: 0.55, variation: 0.5, rim: 0.7, rimWidth: 0.35, granul: 0.4, blooms: 0.3, edgeWobble: 0.5 },
+    aqua: { on: false, density: 0.5, variation: 0.6, rim: 0.85, rimWidth: 0.35, granul: 0.45, blooms: 0.3, edgeWobble: 0.6, drift: 0.5, glaze: 0.4 },
     gouge: { on: false, zone: 0.45, spacing: 0.4, length: 0.45, width: 0.7, edge: 0.75, inner: 0.35, chaos: 0.4, angle: 0 },
     rim: { on: false, amount: 0.35, width: 0.3, coverage: 0.4 },
     stencil: { on: false, fiber: 0.5, density: 0.35, spread: 0.4, setoff: 0.3 },

@@ -12,7 +12,7 @@ for (const t of P.TECHS) {
   const p = P.build(E.DEFAULTS, t, t.variants[0]); p.seed = 7;
   const pal = t.palettes.find(x => x.ink !== 'original') || t.palettes[0];
   p.out.color = pal.ink === 'original' ? '#151515' : pal.ink; if (pal.c2) p.tintas.c2 = pal.c2; if (pal.c3) p.tintas.c3 = pal.c3;
-  const inp = E.prepare(px, meta.w, meta.h, 4, p);
+  const inp = E.prepare(px, meta.w, meta.h, 4, p); inp.dpi = 300; inp.pxScale = 1;
   const tx = { desgaste: tex(p.texture) }; for (const f of ['aguada', 'grano', 'rodillo', 'goteo', 'toner', 'fibra', 'floracion', 'granul', 'lavado', 'gubia']) tx[f] = tex(f + '_1');
   const rgba = E.render(inp, p, tx);
   let x0 = inp.w, y0 = inp.h, x1 = -1, y1 = -1;
