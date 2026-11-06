@@ -2,7 +2,34 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela.
 
-**Versión 0.6.1**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.7**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.7
+- **Base común:**
+  - Texturas sin repetición (muestreo estocástico con conservación del contraste).
+  - Grano del papel, la fibra y el tóner a tamaño físico (300 ppp), sin depender del tamaño de la letra.
+  - Ganancia de punto óptica: la tinta parece metida en el papel, no encima.
+- **Acuarelado nuevo, sin las rayas radiales:**
+  - Densidad en tres capas: grano del papel, flujo turbulento y dispersión.
+  - Veladuras con su borde de secado y granulación en los valles del papel.
+  - Aro de pigmento más marcado en las letras más diluidas.
+  - Pincel seco en algunos finales y floraciones en algunas letras.
+- **Humedad:**
+  - La tinta corrida avanza en dedos por la fibra.
+  - El tinte se queda atrás, dejando una franja de agua sin color.
+  - El centro de la gota se lava y el papel mojado se abomba muy ligeramente.
+- **Goteo:**
+  - Menos gotas, con cuello y barriga, y algunas que se paran sin lágrima.
+  - Brillo en la lágrima y tramo fino más transparente.
+- **Detalles de impresión:**
+  - Offset: corrido del punto (slur), doble impresión y motas de suciedad (hickeys).
+  - Serigrafía: cresta de la rasqueta.
+  - Tipografía: sombra del hundimiento.
+  - Sello: marca del canto del sello.
+  - Fotocopia: tóner arrastrado.
+  - Xilografía: mezcla de cortes en V (afilados) y en U (redondeados).
+  - Destrozado: zonas grandes muy rotas y el resto casi intacto.
+- **Risografía:** con el color del texto usa el color de cada letra (ya no sale azul).
 
 ## Novedades 0.6.1
 - **Xilografía** con tres variantes:
@@ -65,7 +92,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.6.1.ccx`.
+1. Descarga `dist/AnalogFX_0.7.0.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

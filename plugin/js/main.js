@@ -121,14 +121,16 @@
       { k: 'lpi', label: 'Lineatura (líneas por pulgada)', min: 0, max: 150, step: 1, plain: true, fmt: function (v) { return v > 0 ? Math.round(v) + ' lpp' : 'Auto'; } },
       { k: 'toneVar', label: 'Variación del tono' },
       { k: 'screen', label: 'Trama' }, { k: 'cell', label: 'Tamaño del punto' }, { k: 'gain', label: 'Ganancia de punto' },
-      { k: 'donut', label: 'Puntos donut (flexo)' },
+      { k: 'donut', label: 'Puntos donut (flexo)' }, { k: 'slur', label: 'Corrido del punto (slur)' },
+      { k: 'double', label: 'Doble impresión del punto' }, { k: 'hickeys', label: 'Motas de suciedad (hickeys)' },
       { sep: 'Registro' },
       { k: 'misreg', label: 'Desregistro' }, { k: 'misAng', label: 'Dirección', min: -1, max: 1, fmt: degFmt }] },
     { id: 'press', title: 'Prensa · relieve', ctl: [
       { k: 'squeeze', label: 'Tinta acumulada en el borde' }, { k: 'halo', label: 'Halo aplastado' },
-      { k: 'starve', label: 'Poca tinta en macizos' }] },
+      { k: 'starve', label: 'Poca tinta en macizos' }, { k: 'deboss', label: 'Hundimiento en el papel' }] },
     { id: 'mesh', title: 'Malla de serigrafía', ctl: [
-      { k: 'sawtooth', label: 'Dentado de la malla' }, { k: 'mesh', label: 'Malla visible' }, { k: 'voids', label: 'Huecos' }] },
+      { k: 'sawtooth', label: 'Dentado de la malla' }, { k: 'mesh', label: 'Malla visible' }, { k: 'voids', label: 'Huecos' },
+      { k: 'ridge', label: 'Cresta de la rasqueta' }] },
     { id: 'wood', title: 'Madera', ctl: [
       { k: 'grain', label: 'Veta' }, { k: 'angle', label: 'Ángulo de la veta', min: -1, max: 1, fmt: degFmt },
       { k: 'spacing', label: 'Separación de la veta' }, { k: 'chips', label: 'Restos de talla' }] },
@@ -146,12 +148,14 @@
       { k: 'shadow', label: 'Sombra negra' }, { k: 'misreg', label: 'Desregistro del color' }] },
     { id: 'stamp', title: 'Sello de goma', ctl: [
       { k: 'tilt', label: 'Inclinación (presión desigual)' }, { k: 'uneven', label: 'Irregularidad' },
-      { k: 'edge', label: 'Tinta cargada en el borde' }, { k: 'letterVar', label: 'Diferencia entre letras' }] },
+      { k: 'edge', label: 'Tinta cargada en el borde' }, { k: 'letterVar', label: 'Diferencia entre letras' },
+      { k: 'periph', label: 'Marca del canto del sello' }] },
     { id: 'letters', title: 'Variación entre letras', ctl: [
       { k: 'density', label: 'Carga de tinta' }, { k: 'tone', label: 'Tono' }] },
     { id: 'damp', title: 'Humedad (gotas de agua)', ctl: [
       { k: 'amount', label: 'Zona mojada' }, { k: 'size', label: 'Tamaño de las gotas' }, { k: 'spread', label: 'Cuánto se abre la tinta' },
-      { k: 'cloud', label: 'Tinta disuelta en el papel' }, { k: 'lift', label: 'Tinta lavada en la letra' }, { k: 'tide', label: 'Marca del borde del agua' }] },
+      { k: 'cloud', label: 'Tinta disuelta en el papel' }, { k: 'lift', label: 'Tinta lavada en la letra' }, { k: 'tide', label: 'Marca del borde del agua' },
+      { k: 'cockle', label: 'Papel abombado' }] },
     { id: 'gouge', title: 'Gubia (xilografía)', ctl: [
       { k: 'edge', label: 'Cortes desde el borde' }, { k: 'inner', label: 'Cortes interiores' },
       { k: 'length', label: 'Largo del corte' }, { k: 'width', label: 'Ancho de la cuña' }, { k: 'spacing', label: 'Separación' },
@@ -164,7 +168,7 @@
       { k: 'spread', label: 'Tinta que se abre' }, { k: 'setoff', label: 'Repinte' }] },
     { id: 'copy', title: 'Fotocopia', ctl: [
       { k: 'gen', label: 'Copia de copia' }, { k: 'dropout', label: 'Huecos de tóner' }, { k: 'toner', label: 'Motas de tóner' },
-      { k: 'streaks', label: 'Rayas del tambor' }, { k: 'haze', label: 'Velo gris' }] },
+      { k: 'streaks', label: 'Rayas del tambor' }, { k: 'haze', label: 'Velo gris' }, { k: 'slur', label: 'Tóner arrastrado' }] },
     { id: 'drip', title: 'Goteo desde las letras', ctl: [
       { k: 'amount', label: 'Cantidad de gotas' }, { k: 'length', label: 'Longitud' }, { k: 'thick', label: 'Grosor' },
       { k: 'sag', label: 'Tinta acumulada en la base' }, { k: 'beads', label: 'Gotitas que se desprenden' }, { k: 'dark', label: 'Pigmento en la gota' }] },
@@ -172,7 +176,8 @@
       { k: 'density', label: 'Densidad del pigmento' }, { k: 'variation', label: 'Manchas del lavado' },
       { k: 'rim', label: 'Aro oscuro del borde' }, { k: 'rimWidth', label: 'Ancho del aro' },
       { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' }, { k: 'edgeWobble', label: 'Borde ondulado' },
-      { k: 'drift', label: 'Pigmento que se va a un lado' }, { k: 'letterVar', label: 'Diferencia entre letras' }] },
+      { k: 'drift', label: 'Pigmento que se va a un lado' }, { k: 'letterVar', label: 'Diferencia entre letras' },
+      { k: 'dry', label: 'Pincel seco' }] },
     { id: 'wash', title: 'Aguada (litografía)', ctl: [
       { k: 'wash', label: 'Manchas de aguada' }, { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' },
       { k: 'transp', label: 'Transparencia' }] },
