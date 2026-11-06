@@ -613,15 +613,7 @@
     }
     for (var r = 0; r < runs.length && count < MAX; r++) {
       var run = runs[r], len = run.pts.length;
-      // menisco: la tinta se acumula y abomba la base del trazo
-      if (P.sag > 0) {
-        for (var pi2 = 0; pi2 < run.pts.length; pi2++) {
-          var px2 = run.pts[pi2][0], py2 = run.pts[pi2][1];
-          var tt = pi2 / Math.max(1, run.pts.length - 1), env = Math.sin(Math.PI * tt);
-          var hh = U * 0.012 * P.sag * env * (0.4 + 0.8 * noise(px2 / U * 6, py2 / U * 3));
-          for (var k2 = 1; k2 <= Math.ceil(hh); k2++) put(px2, py2 + k2, clamp01(hh - k2 + 1), 0.25 * P.sag);
-        }
-      }
+      // (sin franja a lo largo de toda la base: la acumulación solo existe en la raíz de cada gota)
       var expected = Math.min(6, len / U * P.amount * 7 + P.amount * 0.6);
       var nd = Math.floor(expected) + (R() < expected - Math.floor(expected) ? 1 : 0);
       for (var d = 0; d < nd && count < MAX; d++) {

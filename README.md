@@ -5,7 +5,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 **Versión 0.7.2**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
 
 ## Novedades 0.7.2
-- **Goteo:** la gota sale de la letra opaca y del mismo color, empapada de su pintura, y según baja se infiltra en el papel y se vuelve más transparente. Solo nace en bases horizontales, sin repisa plana ni rendijas en las curvas.
+- **Goteo:** la gota sale de la letra opaca y del mismo color, empapada de su pintura, y según baja se infiltra en el papel y se vuelve más transparente. Solo nace en bases horizontales y sale directamente del borde de la letra: ya no hay franja de tinta acumulada a lo largo de la base (la base plana que sobresalía) ni rendijas en las curvas.
 
 ## Novedades 0.7.1
 - **Xilografía a dos tintas:** letra de color con las líneas de talla en negro y la sombra (como en los carteles). Con tintas oscuras se usa una sola plancha.
