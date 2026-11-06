@@ -2,7 +2,18 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela.
 
-**Versión 0.7.3**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.7.4**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.7.4
+- **La tinta se extiende, no se superpone** (Humedad, Papel húmedo, Tinta corrida): la tinta de la propia letra avanza por el papel. Pegada al borde tiene la misma intensidad que la letra y se desvanece al alejarse, por zonas y por fibras.
+- **Goteo en papel absorbente:**
+  - La gota sale con la tinta de la letra.
+  - Al caer se infiltra y se abre como una acuarela, más ancha, diluida y con algo de borde de pigmento.
+  - La punta se desvanece y la raíz se apoya solo en tinta real, sin repisa.
+- **Variantes revisadas para que sean efectos distintos:**
+  - **Humedad:** Gotas secas (marcas).
+  - **Serigrafía:** Malla gruesa.
+  - **Acuarelado:** Pincel seco.
 
 ## Novedades 0.7.3
 - **Humedad › Papel húmedo** (modo nuevo): todo el papel algo mojado. El borde de cada letra se abre poco, en un halo granuloso y desigual, con flecos que caen hacia abajo, zonas lavadas y grietas. Los otros modos de Humedad siguen igual.
@@ -118,7 +129,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.7.3.ccx`.
+1. Descarga `dist/AnalogFX_0.7.4.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

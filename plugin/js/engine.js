@@ -367,6 +367,30 @@
     return { lab: lab, size: size, count: id };
   }
 
+  // ------------------------------------------------------------------ tinta que se extiende
+  // No es una mancha superpuesta: es la tinta de la letra que avanza por el papel. Pegada al borde
+  // tiene la MISMA intensidad que la letra y se desvanece con la distancia. El alcance varía por
+  // zonas y por fibras (pelillos), y puede caer más hacia abajo.
+  // reachAt(x, y, i) -> alcance en px (0 = no se extiende ahí); grainAt(x, y) -> 0..1
+  function inkSpread(A, w, h, reachAt, grainAt, grainAmt, down) {
+    var n = w * h, inv = new Float32Array(n), i, x, y;
+    for (i = 0; i < n; i++) inv[i] = 1 - A[i];
+    var D = distInside(inv, w, h, 0.5, true), O = new Float32Array(A);
+    for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) {
+      i = y * w + x;
+      var d = D[i];
+      if (d <= 0 || d > 1e8) continue;
+      var r = reachAt(x, y, i);
+      if (r <= 0.3) continue;
+      if (down > 0) { var gy = (D[i + w] - D[i - w]) * 0.5; if (gy > 0) r *= 1 + down * gy; }
+      if (d > r * 2.6) continue;
+      var t = d / r, v = Math.exp(-Math.pow(t, 1.35));
+      if (grainAt) v *= 1 - grainAmt * smooth(0.1, 1.2, t) * (1 - grainAt(x, y));
+      if (v > O[i]) O[i] = v;
+    }
+    return O;
+  }
+
   // ------------------------------------------------------------------ campo del trazo
   function maxFilter(F, w, h, r) {
     r = Math.max(1, Math.round(r));
@@ -576,7 +600,7 @@
 
   // ------------------------------------------------------------------ GOTEO: gotas que nacen de cada letra
   function dripsFromLetters(A, w, h, U, P, R, noise, dark) {
-    var Aorig = blur(A, w, h, U * 0.012 + 1.5, U * 0.012 + 1.5);
+    var Aorig = new Float32Array(A);
     var x, y, i, runs = [];
     // tramos de borde inferior (bases de los trazos)
     // puntos de base (tinta encima, aire limpio debajo) agrupados en tramos casi horizontales
@@ -637,8 +661,9 @@
           var tl = Math.max(0, t) / L;
           var tf = t / Lf, fil = tf < 1 ? (1 - Math.sqrt(1 - (1 - tf) * (1 - tf))) : 0;
           var belly = 1 + bamp * Math.sin(tl * bfr * Math.PI + bph) - 0.25 * smooth(0.75, 0.95, tl) * (stops ? 0 : 1);
-          var hw = rw * (1 - 0.4 * tl) * belly + Fw * fil + 0.2;
-          if (stops) hw *= 1 - 0.7 * smooth(0.7, 1, tl);
+          var abs = P.absorb || 0;
+          var hw = rw * (1 - 0.4 * tl * (1 - abs) + abs * 2.4 * smooth(0, U * 0.7, t) * (0.6 + 0.4 * tl)) * belly + Fw * fil + 0.2;
+          if (stops && abs <= 0.4) hw *= 1 - 0.7 * smooth(0.7, 1, tl);
           ex = cx + drift * Math.max(0, t) + (noise(t / U * 4 + d * 3.1 + r, r * 0.7) - 0.5) * rw * 1.1;
           var xa = Math.floor(ex - hw - 2), xb = Math.ceil(ex + hw + 2);
           var edgeN = 0.6 + 0.4 * noise(yy / U * 22 + d, d * 1.3);           // borde algo irregular
@@ -646,20 +671,22 @@
             var dd = Math.abs(xx - ex), cov = smooth(hw + 0.9 * edgeN, hw - 0.9, dd) * (thin ? 0.85 : 1);
             // el menisco solo existe pegado a la letra: fuera del cuerpo de la gota, exige tinta
             // de la letra justo encima (si no, saldría una base plana que sobresale)
-            var bodyW = rw * (1 - 0.4 * tl) * belly + 0.2;
+            var bodyW = rw * (1 - 0.4 * tl * (1 - abs) + abs * 2.4 * smooth(0, U * 0.7, t) * (0.6 + 0.4 * tl)) * belly + 0.2;
             if (dd > bodyW && cov > 0) {
               var up = Math.round(1 + t * 0.9), yu = yy - up;
-              var supp = (yu >= 0 && xx >= 0 && xx < w) ? Aorig[yu * w + xx] : 0;
+              var supp = 0;
+              if (yu >= 0) for (var dxs = -1; dxs <= 1; dxs++) { var xs2 = xx + dxs; if (xs2 >= 0 && xs2 < w) supp = Math.max(supp, Aorig[yu * w + xs2]); }
               cov *= smooth(0.15, 0.55, supp);
             }
             // pigmento: nulo en la raíz (se funde con la letra), crece hacia abajo
             var dk = (0.15 + 0.35 * (1 - dd / (hw + 0.5))) * cov * P.dark * smooth(0, 0.35, tl);
             // el tramo fino es más transparente; la tinta se concentra donde la gota engorda
+            if (abs > 0.4) cov *= 1 - smooth(0.6, 1, tl);   // en papel absorbente la punta se desvanece, sin corte
             if (cov > 0) put(xx, yy, cov * (hw < 1.6 ? 0.8 : 1) * (0.88 + 0.12 * belly), dk);
           }
         }
         // gota final alargada (lágrima): más pigmento, más oscura
-        if (stops) continue;
+        if (stops || (P.absorb || 0) > 0.4) continue;
         var rb = rw * (1.15 + 0.6 * R()), ryb = rb * (1.15 + 0.4 * R());
         ellipse(ex, y0 + L, rb, ryb, 0.7 * P.dark);
         // brillo: la gota es una lente de tinta; un punto algo más claro arriba a la izquierda
@@ -869,21 +896,29 @@
         var add2 = new Float32Array(n), dist = new Float32Array(n);
         for (i = 0; i < n; i++) add2[i] = Math.max(0, Ddr[i] - A[i]);
         for (x = 0; x < w; x++) { var run = 1e9; for (y = 0; y < h; y++) { i = y * w + x; if (A[i] > 0.5) run = 0; else run += 1; dist[i] = run; } }
-        var Lref = U * (0.1 + 0.9 * DR.length);
-        var rAb = U * 0.006 * ab + 0.8, Bab = blur(add2, w, h, rAb, rAb), Bab2 = blur(add2, w, h, rAb * 3, rAb * 3);
-        var tfa1 = physSampler('d', 280, 'fibra', 1.2), tfa2 = physSampler('d', 280, 'fibra', -1.2), tga = physSampler('b', 300, 'granul');
+        var Lref = U * (0.15 + 1.1 * DR.length);
+        // la gota se va abriendo: desenfoque creciente con la distancia a la letra (mezcla de 3 escalas)
+        var r1 = 0.8 + U * 0.004 * ab, r2 = 1 + U * 0.018 * ab, r3 = 1.5 + U * 0.04 * ab;
+        var B1 = blur(add2, w, h, r1, r1), B2 = blur(add2, w, h, r2, r2 * 0.8), B3 = blur(add2, w, h, r3, r3 * 0.7);
+        var tfa1 = physSampler('d', 280, 'fibra', 1.2), tfa2 = physSampler('d', 280, 'fibra', -1.2), tga = physSampler('b', 260, 'granul'), tgb = sampler('b', 1.2, 0, 'lavado');
         for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
           i = y * w + x;
-          if (Bab2[i] < 0.004 && add2[i] <= 0) continue;
-          var tdn = smooth(0, Lref, dist[i]);                     // 0 en la raíz -> 1 abajo
-          var fbr = Math.max(smooth(0.5, 0.9, tfa1(x, y)), smooth(0.5, 0.9, tfa2(x, y)));
-          var sharp = add2[i];
-          var soft = Math.max(add2[i] * 0.8, clamp01(Bab[i] * 1.6)) * (0.72 + 0.28 * tga(x, y));
-          var wick = clamp01(Bab2[i] * 2.2) * fbr * 0.55 * tdn;
-          var body = sharp + (soft - sharp) * tdn * ab;           // se abre según baja
-          var vv = Math.max(body, wick) * (1 - ab * 0.55 * tdn);  // y se aclara según baja
+          if (B3[i] < 0.003 && add2[i] <= 0) continue;
+          var tdn = smooth(0, Lref, dist[i]);                      // 0 en la raíz -> 1 abajo
+          var e1 = tdn * ab;
+          // forma: nítida arriba, cada vez más abierta abajo
+          var shp = e1 < 0.5 ? add2[i] + (clamp01(B2[i] * 2.2) - add2[i]) * (e1 * 2) : clamp01(B2[i] * 2.2) + (clamp01(B3[i] * 3) - clamp01(B2[i] * 2.2)) * (e1 * 2 - 1);
+          shp = Math.max(shp, add2[i] * (1 - e1));
+          // densidad: misma tinta que la letra arriba; abajo diluida, con lavado y granulación
+          var dens = 1 - ab * 0.65 * tdn;
+          dens *= 1 - e1 * 0.35 * (1 - tgb(x, y)) - e1 * 0.25 * smooth(0.5, 0.9, 1 - tga(x, y));
+          // borde de acuarela: el pigmento se acumula en el contorno de la parte abierta
+          var rimA = clamp01((clamp01(B1[i] * 1.5) - clamp01(B3[i] * 2.4)) * 2.5) * e1;
+          var fbr = Math.max(smooth(0.55, 0.92, tfa1(x, y)), smooth(0.55, 0.92, tfa2(x, y)));
+          var wick = clamp01(B3[i] * 3) * fbr * 0.35 * e1;
+          var vv = Math.max(shp * clamp01(dens + rimA * 0.4), wick);
           if (vv > A[i]) A[i] = vv;
-          DKd[i] *= 1 - ab * 0.7 * tdn;
+          DKd[i] = Math.max(DKd[i] * (1 - e1), rimA * 0.5);
         }
       } else A = Ddr;
       shape = A;
@@ -925,7 +960,7 @@
         var reach = reachMax * patch * (0.35 + 1.1 * fbm2);
         if (dO >= reach) continue;
         var tt3 = dO / reach;
-        var dens = Math.pow(1 - tt3, 1.25) * (0.55 + 0.45 * tsb(x, y)) * SE.density;
+        var dens = Math.exp(-Math.pow(tt3 * 2.2, 1.35)) * (1 - (1 - SE.density) * smooth(0.15, 0.9, tt3)) * (0.85 + 0.15 * tsb(x, y));
         var front = SE.front * smooth(0.65, 0.92, tt3) * (1 - smooth(0.94, 1, tt3)) * smooth(0.3, 0.8, patch);
         var v3 = Math.max(dens, front * 0.55);
         if (v3 > As2[i]) As2[i] = v3;
@@ -1075,54 +1110,33 @@
       var Ack = new Float32Array(n), ckA = U * 0.014 * (DP.cockle == null ? 0.5 : DP.cockle);
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) { i = y * w + x; var wk = Wd[i]; Ack[i] = wk > 0 ? sampleBil(A, w, h, x + (gck(x, y) - 0.5) * 2 * ckA * wk, y + (gck2(x, y) - 0.5) * 2 * ckA * wk) * wk + A[i] * (1 - wk) : A[i]; }
       A = Ack;
-      // 2) la tinta disuelta sale de la letra a dos escalas y se queda dentro del agua
-      var rN = U * (0.03 + 0.08 * DP.spread), rF = U * (0.09 + 0.3 * DP.spread);
-      var tfg1 = physSampler('d', 300, 'fibra', 1.3), tfg2 = physSampler('d', 300, 'fibra', -1.3);
-      var Bdn = null, tVst = null;
-      if (DP.global) {
-        var rDn = rN * 1.3, Bv = blur(A, w, h, rDn * 0.3, rDn * 1.8), shD = rDn * 1.3;
-        Bdn = new Float32Array(n);
-        for (y = 0; y < h; y++) for (x = 0; x < w; x++) Bdn[y * w + x] = sampleBil(Bv, w, h, x, y - shD);
-        tVst = physSampler('d', 260, 'fibra', 1.5);
-        var gPatch = grid(function (u, v) { return noise.fbm(u * 1.6 + 7, v * 1.6 - 33, 3); });
-      }
-      var bandW = U * 0.012 + 1.5, tideW = U * 0.008 + 1.2;
-      var Bn = blur(A, w, h, rN, rN), Bf = blur(A, w, h, rF, rF);
-      var tfib = sampler('d', 0.16, 0, 'fibra'), tgr2 = sampler('b', 0.22, 0, 'granul'), tgr3 = sampler('d', 0.12, 0, 'granul');
-      var tlift = sampler('b', 0.7, 0, 'lavado');
-      var Ad = new Float32Array(n), PDm = needPool();
+      // 2) la tinta de la letra se extiende por el papel mojado: misma intensidad junto al borde,
+      //    se desvanece al alejarse; avanza por las fibras y en el papel húmedo cae algo hacia abajo
+      var reachD = U * (0.012 + (DP.global ? 0.13 : 0.09) * DP.spread) * (0.45 + 0.8 * DP.cloud);
+      var tfg1 = physSampler('d', 220, 'fibra', 0.5), tfg2 = physSampler('d', 220, 'fibra', -0.5);
+      var tgr2 = physSampler('b', 260, 'granul'), tlift = sampler('b', 0.7, 0, 'lavado');
+      var gPatch = grid(function (u, v) { return noise.fbm(u * 1.6 + 7, v * 1.6 - 33, 3); });
+      var Ed = inkSpread(A, w, h, function (x2, y2, i2) {
+        var wv2 = Wd[i2]; if (wv2 <= 0.01) return 0;
+        var fb = Math.max(tfg1(x2, y2), tfg2(x2, y2));
+        return reachD * wv2 * (0.25 + 1.1 * smooth(0.25, 0.75, gPatch(x2, y2))) * (0.7 + 0.55 * smooth(0.4, 0.9, fb));
+      }, function (x2, y2) { return tgr2(x2, y2); }, 0.55, DP.global ? 0.9 : 0.3);
+      var tideW = U * 0.008 + 1.2, Ad = new Float32Array(n), PDm = needPool(), Bf = blur(A, w, h, U * 0.08, U * 0.08);
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
         i = y * w + x;
         var a0 = A[i], wv = Wd[i];
         if (wv <= 0.003) { Ad[i] = a0; continue; }
-        // tinta disuelta (diluida): densa junto al trazo, gris y granulosa más lejos
-        var g1 = tgr2(x, y) * 0.55 + tgr3(x, y) * 0.3 + tfib(x, y) * 0.15;
-        var raw = clamp01(Bn[i] * 1.3) * 0.55 + clamp01(Bf[i] * 2.2) * 0.5;
-        if (Bdn) {   // papel húmedo: la tinta cae un poco hacia abajo en flecos verticales
-          var vs = smooth(0.35, 0.85, tVst(x, y));
-          raw = Math.max(raw * 0.75, clamp01(Bdn[i] * 2.0) * (0.3 + 0.9 * vs));
+        // la letra se lava a ratos por dentro (el agua levanta pigmento)
+        var lift = DP.lift * 0.6 * smooth(0.55, 0.85, tlift(x, y)) * wv;
+        var wet = Math.max(a0 * (1 - lift), Ed[i] * (1 - lift * 0.5));
+        // marca del borde del agua (solo en gotas, no en papel húmedo general)
+        if (!DP.global) {
+          var dzv = Dz[i], edgeW = Math.exp(-dzv / tideW) * smooth(0.0, 1.0, dzv);
+          var tide = DP.tide * edgeW * smooth(0.02, 0.25, Bf[i]);
+          wet = wet + (1 - wet) * tide * 0.5;
+          if (tide > 0.01) PDm[i] = Math.max(PDm[i], tide * 0.7);
         }
-        var cloud = Math.min(0.85, raw) * (0.45 + 0.85 * smooth(0.2, 0.85, g1)) * DP.cloud;
-        // el frente avanza en dedos a lo largo de las fibras, no como una nube redonda
-        var fing = Math.max(smooth(0.45, 0.9, tfg1(x, y)), smooth(0.45, 0.9, tfg2(x, y)));
-        cloud *= 0.65 + 0.6 * fing;
-        // el tinte se queda atrás: franja de papel mojado sin color antes del borde del agua
-        var dzv = Dz[i];
-        cloud *= (DP.global ? 1 : smooth(bandW * 0.4, bandW * 1.6, dzv)) * smooth(0.04, 0.3, Bn[i] + Bf[i] * 0.5);
-        // el centro de la gota se lava: el agua empujó el pigmento hacia fuera
-        var centre = DP.global ? 0 : smooth(U * 0.25, U * 0.7, dzv) * DP.size;
-        // la letra se abre: pierde el borde y se lava a ratos por dentro
-        var lift = DP.lift * 0.85 * smooth(0.55, 0.8, tlift(x, y)) * (0.5 + 0.5 * smooth(0.3, 0.7, g1));
-        var core = DP.global ? a0 * (1 - lift * 0.8)
-                             : Math.min(a0, smooth(0.25, 0.75, Bn[i] + (g1 - 0.5) * 0.3)) * (1 - lift) * (1 - centre * DP.lift * 0.35);
-        if (DP.global) cloud *= 0.25 + 0.95 * smooth(0.3, 0.75, gPatch(x, y));   // más abierta en unas zonas que en otras
-        var wet = Math.max(core, cloud);
-        // marca del borde del agua: pigmento arrastrado y acumulado justo en el límite
-        var edgeW = Math.exp(-dzv / tideW) * smooth(0.0, 1.0, dzv);
-        var tide = DP.tide * edgeW * smooth(0.02, 0.25, Bf[i]) * (0.5 + 0.5 * g1);
-        wet = wet + (1 - wet) * tide * 0.5;
         Ad[i] = a0 + (wet - a0) * wv;
-        if (tide > 0.01) PDm[i] = Math.max(PDm[i], tide * 0.7);
       }
       A = Ad; shape = A;
     }
