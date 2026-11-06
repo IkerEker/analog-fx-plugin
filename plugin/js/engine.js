@@ -334,6 +334,90 @@
     return { lab: lab, size: size, count: id };
   }
 
+  // ------------------------------------------------------------------ campo del trazo
+  function maxFilter(F, w, h, r) {
+    r = Math.max(1, Math.round(r));
+    var T = new Float32Array(F.length), O = new Float32Array(F.length), x, y, k;
+    for (y = 0; y < h; y++) { var o = y * w; for (x = 0; x < w; x++) { var m = 0, a = Math.max(0, x - r), b = Math.min(w - 1, x + r); for (k = a; k <= b; k++) if (F[o + k] > m) m = F[o + k]; T[o + x] = m; } }
+    for (x = 0; x < w; x++) for (y = 0; y < h; y++) { var m2 = 0, a2 = Math.max(0, y - r), b2 = Math.min(h - 1, y + r); for (k = a2; k <= b2; k++) if (T[k * w + x] > m2) m2 = T[k * w + x]; O[y * w + x] = m2; }
+    return O;
+  }
+  // Para cada píxel de la forma: distancia al borde (D), normal hacia dentro (nx, ny),
+  // eje del trazo (ax, ay: dirección en la que "corre" la letra) y medio grosor local (Hw).
+  function strokeField(M, w, h, U) {
+    var n = w * h, D = distInside(M, w, h, 0.5), x, y, i;
+    var Ds = blur(D, w, h, 1.5, 1.5);
+    var gx = new Float32Array(n), gy = new Float32Array(n), Jxx = new Float32Array(n), Jxy = new Float32Array(n), Jyy = new Float32Array(n);
+    for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) {
+      i = y * w + x;
+      var a = (Ds[i + 1] - Ds[i - 1]) * 0.5, b = (Ds[i + w] - Ds[i - w]) * 0.5;
+      gx[i] = a; gy[i] = b; Jxx[i] = a * a; Jxy[i] = a * b; Jyy[i] = b * b;
+    }
+    var rT = Math.max(2, U * 0.1);
+    Jxx = blur(Jxx, w, h, rT, rT); Jxy = blur(Jxy, w, h, rT, rT); Jyy = blur(Jyy, w, h, rT, rT);
+    var ax = new Float32Array(n), ay = new Float32Array(n), nx = new Float32Array(n), ny = new Float32Array(n);
+    for (i = 0; i < n; i++) {
+      var th = 0.5 * Math.atan2(2 * Jxy[i], Jxx[i] - Jyy[i]);       // dirección dominante del gradiente
+      ax[i] = -Math.sin(th); ay[i] = Math.cos(th);                      // el trazo corre perpendicular
+      var gl = Math.sqrt(gx[i] * gx[i] + gy[i] * gy[i]) || 1;
+      nx[i] = gx[i] / gl; ny[i] = gy[i] / gl;
+    }
+    var Hw = blur(maxFilter(D, w, h, U * 0.07), w, h, U * 0.03, U * 0.03);
+    return { D: D, ax: ax, ay: ay, nx: nx, ny: ny, Hw: Hw };
+  }
+
+  // Talla que sigue la dirección de cada letra.
+  // mode 'across': líneas que cruzan el trazo (perpendiculares a su eje), nacen anchas en el borde
+  //                iluminado y se afilan en punta hacia el otro lado.
+  // mode 'contour': líneas paralelas al contorno (siguen la forma), troceadas y afiladas en sus extremos.
+  function engraveDirectional(M, w, h, U, E, seed, noise, ox, oy, invU) {
+    var n = w * h, x, y, i, K = new Float32Array(n), F = strokeField(M, w, h, U);
+    var sp = Math.max(3, U * (0.03 + 0.07 * E.spacing));
+    var la = (E.lightAng == null ? -0.6 : E.lightAng) * Math.PI, lx = Math.cos(la), ly = Math.sin(la);
+    var gstep = Math.max(1, Math.min(8, Math.floor(U / 40)));
+    var gw = makeGrid(w, h, gstep, function (gx2, gy2) { return noise.fbm((gx2 - ox) * invU * 1.3 + 9, (gy2 - oy) * invU * 1.3 - 4, 3); });
+    var gs = makeGrid(w, h, gstep, function (gx2, gy2) { return noise.fbm((gx2 - ox) * invU * 5 + 31, (gy2 - oy) * invU * 5 + 2, 2); });
+    var sd = seed * 7919;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x;
+      var m = M[i];
+      if (m <= 0.002) continue;
+      if (m < 0.5) { K[i] = m; continue; }
+      var Dv = F.D[i], H = Math.max(1.5, F.Hw[i]), cut = 0;
+      if (E.mode === 'contour') {
+        // líneas a la distancia sp, sp*2... del borde, con el negro macizo en el centro
+        var qv = (Dv + (gw(x, y) - 0.5) * sp * 0.8 * E.wobble) / sp - 0.5, k = Math.floor(qv), f = qv - k;
+        var depth = Math.max(1, Math.round(E.length * 4));
+        if (k >= 0 && k < depth && Dv < H * 0.92) {
+          var hk = hash(k * 7919 + sd);
+          var along = x * F.ax[i] + y * F.ay[i];
+          var segn = noise(along / (U * (0.08 + 0.2 * hk)) + k * 13.7, k * 3.1 + hk * 20);   // tramos que se cortan
+          var w0 = E.width * (1 - k / (depth + 0.5)) * smooth(0.25 + 0.35 * E.skip, 0.65, segn);
+          cut = clamp01(w0 * sp * 0.5 - Math.abs(f - 0.5) * sp + 0.5);
+        }
+      } else {
+        // cruzando el trazo: la dirección se agrupa en sectores de 15°, así las líneas son rectas
+        // y continuas dentro de cada trazo y cambian de dirección donde cambia la letra
+        var thA = Math.atan2(F.ay[i], F.ax[i]); if (thA < 0) thA += Math.PI; if (thA >= Math.PI) thA -= Math.PI;
+        var bin = Math.round(thA / (Math.PI / 12)) % 12, thq = bin * Math.PI / 12;
+        var along2 = (x - ox) * Math.cos(thq) + (y - oy) * Math.sin(thq) + bin * sp * 0.37;
+        var qv2 = (along2 + (gw(x, y) - 0.5) * sp * 1.6 * E.wobble) / sp, k2 = Math.floor(qv2), f2 = qv2 - k2;
+        var hk2 = hash(k2 * 7919 + sd), hk3 = hash(k2 * 31 + 5 + sd);
+        if (hk3 >= E.skip) {
+          var facing = -(F.nx[i] * lx + F.ny[i] * ly);                    // >0: borde que mira a la luz
+          var dl = facing > 0 ? Dv : 2 * H - Dv;                           // distancia desde el borde iluminado
+          var Lk = 2 * H * Math.min(1.05, E.length * (0.4 + 0.9 * hk2)) + 1;
+          if (dl < Lk) {
+            var tq = dl / Lk, half = 0.5 * E.width * (tq < 0.6 ? 1 - 0.25 * tq : 0.85 * Math.pow((1 - tq) / 0.4, 0.8)) * (0.7 + 0.6 * gs(x, y));
+            cut = clamp01(half * sp - Math.abs(f2 - 0.5) * sp + 0.5);
+          }
+        }
+      }
+      K[i] = m * (1 - cut);
+    }
+    return K;
+  }
+
   // ------------------------------------------------------------------ XILOGRAFÍA: líneas de talla
   // Líneas paralelas (casi horizontales, hechas a mano) que entran desde el lado de la luz de cada
   // trazo, anchas en el borde y afiladas en punta hacia dentro, como en los carteles grabados.
@@ -757,7 +841,7 @@
     if (EN.on) {
       var Mh = new Float32Array(n);
       for (i = 0; i < n; i++) Mh[i] = smooth(0.42, 0.58, A[i]);
-      var Kc = engraveCuts(Mh, w, h, U, EN, p.seed, noise, ox, oy, invU);
+      var Kc = (EN.mode === 'across' || EN.mode === 'contour') ? engraveDirectional(Mh, w, h, U, EN, p.seed, noise, ox, oy, invU) : engraveCuts(Mh, w, h, U, EN, p.seed, noise, ox, oy, invU);
       var dirE = (EN.light || 0) >= 0 ? 1 : -1, sdx = -dirE * U * 0.04 * EN.shadow, sdy = U * 0.03 * EN.shadow;
       if (EN.shadow > 0) for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
         i = y * w + x;
@@ -776,64 +860,71 @@
       shape = A;
     }
 
-    // 1c · ACUARELA (rehecha): pigmento transparente en un charco de agua con borde propio.
-    // Al secarse, el pigmento migra al frente del agua: aro fino y oscuro, interior más claro
-    // junto al aro, densidad que deriva hacia un lado, granulación del mismo color en los
-    // valles del papel, floraciones y una segunda veladura parcial con su propio borde.
+    // 1c · ACUARELA pintada a mano, letra a letra. Bordes rectos y cortantes (solo deformados,
+    // nunca redondeados); pigmento que sigue la dirección del trazo como la pincelada; aro de
+    // pigmento seco en el borde; cada letra con su carga, su deriva y su humedad.
     if (AQ.on) {
-      var bwA = input.bw || U * 3;
-      // forma del charco: borde ondulado y definido, a veces se sale un poco
-      var tlv = sampler('b', 4.0, 0, 'lavado'), tlv2 = sampler('b', 1.0, 0, 'lavado'), tlv3 = sampler('d', 0.5, 0, 'lavado');
-      var Ae = blur(A, w, h, U * 0.012 + 0.6, U * 0.012 + 0.6), Aq = new Float32Array(n);
-      for (i = 0; i < n; i++) {
-        if (Ae[i] < 0.01) continue;
-        y = (i / w) | 0; x = i - y * w;
-        var wob = (tlv2(x, y) - 0.5) * 0.22 + (tlv3(x, y) - 0.5) * 0.08;
-        Aq[i] = smooth(0.47, 0.53, Ae[i] + wob * AQ.edgeWobble);
+      var Ms = new Float32Array(n);
+      for (i = 0; i < n; i++) Ms[i] = A[i];                              // forma nítida (sin desenfoque)
+      // borde cortante con pequeñas irregularidades del pincel (desplazamiento, no suavizado)
+      var tlvE = sampler('d', 0.35, 0, 'lavado'), gE = grid(function (u, v) { return noise.fbm(u * 3.5 + 7, v * 3.5 - 2, 2); });
+      var dmax = U * 0.012 * AQ.edgeWobble + 0.4, Aq = new Float32Array(n);
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        i = y * w + x;
+        var dxq = (gE(x, y) - 0.5) * 2 * dmax + (tlvE(x, y) - 0.5) * dmax * 0.6;
+        var dyq = (gE(y * 0.7, x * 0.7) - 0.5) * 2 * dmax;
+        var v0 = sampleBil(Ms, w, h, x + dxq, y + dyq);
+        Aq[i] = smooth(0.46, 0.54, v0);                                    // corte seco y nítido
       }
-      var Dq = distInside(Aq, w, h, 0.5);
-      var rimW = U * (0.004 + 0.014 * AQ.rimWidth) + 0.8;
-      var tgq = sampler('d', 0.16, 0, 'granul'), tgq2 = sampler('b', 0.3, 0, 'granul');
-      var tfl = sampler('b', 1.3, 0, 'floracion'), tfd = sampler('d', 1.3, 0, 'floracion');
-      var grim = grid(function (u, v) { return noise.fbm(u * 2.5 + 5, v * 2.5 + 11, 2); });
-      var gflow = grid(function (u, v) { return noise.fbm(u * 0.5 + 40, v * 0.5 - 3, 3); });
-      var gGl = grid(function (u, v) { return noise.fbm(u * 0.9 - 17, v * 0.9 + 23, 3); });
-      var angD = R() * Math.PI * 2, cD = Math.cos(angD), sD = Math.sin(angD);
-      // segunda veladura: zona parcial con su propio borde dentro de la letra
-      var Gm = new Float32Array(n);
-      if (AQ.glaze > 0) for (i = 0; i < n; i++) { if (Aq[i] <= 0) continue; y = (i / w) | 0; x = i - y * w; Gm[i] = Aq[i] * smooth(0.6 - AQ.glaze * 0.2 - 0.01, 0.6 - AQ.glaze * 0.2 + 0.01, gGl(x, y)); }
-      var Dg = AQ.glaze > 0 ? distInside(Gm, w, h, 0.5) : null;
+      var SF = strokeField(Aq, w, h, U), Dq = SF.D;
+      var rimW = U * (0.003 + 0.01 * AQ.rimWidth) + 0.7;
+      var tgq = sampler('d', 0.14, 0, 'granul'), tgq2 = sampler('b', 0.26, 0, 'granul'), tfl = sampler('b', 1.1, 0, 'floracion'), tfd = sampler('d', 1.1, 0, 'floracion');
+      var tlvA = sampler('b', 3.5, 0, 'lavado'), grim = grid(function (u, v) { return noise.fbm(u * 3 + 5, v * 3 + 11, 2); });
       var PQ = needPool();
+      var Lq = getLab(), cache = {};
+      function letterParams(id) {
+        var c = cache[id]; if (c) return c;
+        var h1 = hash(id * 101 + p.seed), h2 = hash(id * 211 + 7 + p.seed), h3 = hash(id * 307 + 3 + p.seed), h4 = hash(id * 401 + 9 + p.seed);
+        var ang = (0.5 + (h2 - 0.5) * 0.9) * Math.PI;                     // la deriva tiende hacia abajo
+        c = { load: 1 + AQ.letterVar * (h1 - 0.5) * 0.7, dx: Math.cos(ang), dy: Math.sin(ang), rim: 0.6 + 0.8 * h3, bloom: h4 < AQ.blooms * 0.8, ph: h1 * 100 };
+        cache[id] = c; return c;
+      }
+      var bwA = input.bw || U * 3;
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
         i = y * w + x;
         var sq = Aq[i];
         if (sq <= 0.002) { A[i] = 0; continue; }
-        var dq = Dq[i];
-        var ramp = (((x - ox) * cD + (y - oy) * sD) / bwA);
-        var dn = AQ.density * (1 + AQ.variation * ((tlv(x, y) - 0.5) * 0.6 + (gflow(x, y) - 0.5) * 0.8) + AQ.drift * 0.6 * (ramp - 0.3));
-        // migración: justo dentro del aro el lavado queda más claro
-        var nearRim = Math.exp(-dq / (rimW * 4));
-        dn *= 1 - 0.35 * AQ.rim * nearRim * (1 - Math.exp(-dq / rimW));
-        // floraciones (coliflores): zona lavada con línea oscura ramificada
+        var lid = letterOf(i), LP = letterParams(lid), dq = Dq[i], Hq = Math.max(1, SF.Hw[i]);
+        // pincelada: vetas de pigmento a lo largo del eje del trazo
+        var u1 = (x - ox) * SF.ax[i] + (y - oy) * SF.ay[i], v1 = -(x - ox) * SF.ay[i] + (y - oy) * SF.ax[i];
+        var streak = noise(u1 * invU * 1.2 + LP.ph, v1 * invU * 9 + LP.ph) * 0.6 + noise(u1 * invU * 3 + 9, v1 * invU * 22 - LP.ph) * 0.4;
+        // deriva: el pigmento se va hacia un lado de cada trazo y se acumula
+        var side = ((x - ox) * LP.dx + (y - oy) * LP.dy) / U;
+        var drift = smooth(-0.6, 0.9, Math.sin(side * 2.2 + LP.ph) * 0.5 + (dq / Hq - 0.5) * -0.3);
+        var dn = AQ.density * LP.load * (1 + AQ.variation * ((streak - 0.5) * 0.9 + (tlvA(x, y) - 0.5) * 0.3) + AQ.drift * 0.4 * (drift - 0.5));
+        // charco: zona donde el pigmento se acumuló al secar, con borde duro (línea de secado)
+        var pf = noise(u1 * invU * 0.55 + LP.ph * 3, v1 * invU * 0.9 - LP.ph) * 0.7 + side * 0.12 + (LP.load - 1) * 0.5;
+        var thrP = 0.62 - AQ.drift * 0.12, inPool = smooth(thrP - 0.006, thrP + 0.006, pf);
+        var pline = (1 - smooth(0.0, 0.018, Math.abs(pf - thrP))) * AQ.drift;
+        dn += inPool * AQ.drift * 0.22 + pline * 0.25;
+        // migración al borde: franja más clara justo dentro del aro
+        dn *= 1 - 0.35 * AQ.rim * Math.exp(-dq / (rimW * 5)) * (1 - Math.exp(-dq / rimW));
+        // floraciones solo en algunas letras (agua que entra en el lavado húmedo)
         var bline = 0;
-        if (AQ.blooms > 0) {
-          var fv = tfl(x, y), bl = smooth(1 - AQ.blooms * 0.5, 1 - AQ.blooms * 0.5 + 0.04, fv);
-          dn *= 1 - 0.5 * bl;
-          bline = smooth(0.12, 0.03, tfd(x, y)) * bl * AQ.blooms;
+        if (LP.bloom) {
+          var fv = tfl(x, y), bl = smooth(0.55, 0.6, fv);
+          dn *= 1 - 0.45 * bl;
+          bline = smooth(0.1, 0.02, tfd(x, y)) * bl;
         }
-        // segunda veladura
-        var gl = 0;
-        if (Dg && Gm[i] > 0.5) { gl = AQ.glaze * 0.35; var grimG = Math.exp(-Dg[i] / rimW) * AQ.glaze; dn += gl + grimG * 0.35; PQ[i] = Math.max(PQ[i], grimG * 0.6); }
-        // granulación del mismo pigmento
-        var gq = tgq(x, y), gq2 = tgq2(x, y), settle = AQ.granul * smooth(0.55, 0.92, gq2);
-        dn *= 1 - AQ.granul * 0.35 * smooth(0.55, 0.92, gq);
-        dn += settle * 0.18;
-        // aro de pigmento (frente del agua seco), discontinuo
-        var segR = 0.5 + 0.5 * smooth(0.25, 0.7, grim(x, y));
-        var rim = Math.exp(-dq / rimW) * AQ.rim * segR;
-        var aOut = clamp01(dn + (0.97 - dn) * Math.min(1, rim * 1.2) + bline * 0.4);
+        // granulación: pigmento asentado en los valles del papel
+        var gq = tgq(x, y), settle = AQ.granul * smooth(0.75, 0.97, tgq2(x, y));
+        dn *= 1 - AQ.granul * 0.18 * smooth(0.7, 0.95, gq);
+        dn += settle * 0.12;
+        // aro seco: fino, pegado al borde cortante, con tramos más cargados
+        var rim = Math.exp(-dq / rimW) * AQ.rim * LP.rim * (0.45 + 0.55 * smooth(0.25, 0.7, grim(x, y)));
+        var aOut = clamp01(dn + (0.97 - dn) * Math.min(1, rim) + bline * 0.4);
         A[i] = sq * aOut;
-        PQ[i] = Math.max(PQ[i], Math.min(1, rim * 1.2) * 0.8 + bline * 0.55 + settle * 0.4);
+        PQ[i] = Math.max(PQ[i], Math.min(1, rim) * 0.9 + bline * 0.55 + settle * 0.3 + pline * 0.7 + inPool * AQ.drift * 0.25);
       }
       shape = A;
     }
@@ -853,7 +944,7 @@
         Wd[i] = smooth(1 - cov0 - 0.012, 1 - cov0 + 0.012, fz);
       }
       // 2) la tinta disuelta sale de la letra a dos escalas y se queda dentro del agua
-      var rN = U * (0.02 + 0.06 * DP.spread), rF = U * (0.07 + 0.22 * DP.spread);
+      var rN = U * (0.03 + 0.08 * DP.spread), rF = U * (0.09 + 0.3 * DP.spread);
       var Bn = blur(A, w, h, rN, rN), Bf = blur(A, w, h, rF, rF);
       var tfib = sampler('d', 0.16, 0, 'fibra'), tgr2 = sampler('b', 0.22, 0, 'granul'), tgr3 = sampler('d', 0.12, 0, 'granul');
       var tlift = sampler('b', 0.7, 0, 'lavado');
@@ -1667,11 +1758,11 @@
     stone: { on: false, amount: 0.6, size: 0.4, tone: 0.8, greasy: 0.4, veil: 0.15 },
     wash: { on: false, wash: 0.5, granul: 0.5, blooms: 0.3, transp: 0.3 },
     seep: { on: false, amount: 0.45, reach: 0.35, density: 0.7, front: 0.5 },
-    engrave: { on: false, spacing: 0.35, width: 0.6, length: 0.7, skip: 0.12, wobble: 0.5, light: 1, shadow: 0.6, two: false, misreg: 0.4, key: '#161414' },
+    engrave: { on: false, mode: 'horizontal', lightAng: -0.6, spacing: 0.35, width: 0.6, length: 0.7, skip: 0.12, wobble: 0.5, light: 1, shadow: 0.6, two: false, misreg: 0.4, key: '#161414' },
     stamp: { on: false, tilt: 0.45, uneven: 0.5, edge: 0.5, letterVar: 0.3 },
     letters: { on: false, density: 0.4, tone: 0.4 },
     damp: { on: false, amount: 0.45, size: 0.5, spread: 0.5, cloud: 0.8, lift: 0.35, tide: 0.35 },
-    aqua: { on: false, density: 0.5, variation: 0.6, rim: 0.85, rimWidth: 0.35, granul: 0.45, blooms: 0.3, edgeWobble: 0.6, drift: 0.5, glaze: 0.4 },
+    aqua: { on: false, density: 0.5, variation: 0.6, rim: 0.85, rimWidth: 0.35, granul: 0.45, blooms: 0.3, edgeWobble: 0.5, drift: 0.55, letterVar: 0.6 },
     gouge: { on: false, zone: 0.45, spacing: 0.4, length: 0.45, width: 0.7, edge: 0.75, inner: 0.35, chaos: 0.4, angle: 0 },
     rim: { on: false, amount: 0.35, width: 0.3, coverage: 0.4 },
     stencil: { on: false, fiber: 0.5, density: 0.35, spread: 0.4, setoff: 0.3 },

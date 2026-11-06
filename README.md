@@ -2,7 +2,19 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela.
 
-**Versión 0.6**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.6.1**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.6.1
+- **Xilografía** con tres variantes:
+  - **Siguiendo el trazo:** el motor entiende la dirección de cada trazo de cada letra y talla líneas largas y finas que lo cruzan, afiladas en punta. Cambian de dirección con la letra.
+  - **Contorno tallado:** líneas que siguen el contorno de la letra, troceadas.
+  - **Rayado horizontal:** como en la 0.6.
+- **Humedad:** mucha menos superficie mojada por defecto. Donde está seco la letra no se corre (deformación mínima). Donde cae el agua, la tinta sale de la letra hacia fuera con más fuerza.
+- **Acuarelado pintado a mano:**
+  - Cada letra con su carga, deriva y floraciones.
+  - Vetas de pigmento a lo largo de la dirección del trazo.
+  - Bordes rectos y cortantes, sin redondear.
+  - Aro seco fino, línea de secado donde el pigmento se acumuló y granulación sutil.
 
 ## Novedades 0.6
 - **Cada letra en su color:** todo lo que sale de una letra (corrido, humedad, gotas, salpicaduras) hereda el color de esa letra.
@@ -53,7 +65,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.6.0.ccx`.
+1. Descarga `dist/AnalogFX_0.6.1.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

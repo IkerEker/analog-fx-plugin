@@ -141,7 +141,8 @@
     { id: 'engrave', title: 'Talla (xilografía)', ctl: [
       { k: 'spacing', label: 'Separación de las líneas' }, { k: 'width', label: 'Grosor de las líneas' },
       { k: 'length', label: 'Cuánto entran en la letra' }, { k: 'skip', label: 'Líneas que faltan' },
-      { k: 'wobble', label: 'Pulso de la mano' }, { k: 'light', label: 'Lado de la luz', min: -1, max: 1, fmt: function (v) { return v >= 0 ? 'Derecha' : 'Izquierda'; } },
+      { k: 'wobble', label: 'Pulso de la mano' }, { k: 'light', label: 'Lado de la luz (rayado horizontal)', min: -1, max: 1, fmt: function (v) { return v >= 0 ? 'Derecha' : 'Izquierda'; } },
+      { k: 'lightAng', label: 'Dirección de la luz', min: -1, max: 1, fmt: function (v) { return Math.round(v * 180) + '°'; } },
       { k: 'shadow', label: 'Sombra negra' }, { k: 'misreg', label: 'Desregistro del color' }] },
     { id: 'stamp', title: 'Sello de goma', ctl: [
       { k: 'tilt', label: 'Inclinación (presión desigual)' }, { k: 'uneven', label: 'Irregularidad' },
@@ -171,7 +172,7 @@
       { k: 'density', label: 'Densidad del pigmento' }, { k: 'variation', label: 'Manchas del lavado' },
       { k: 'rim', label: 'Aro oscuro del borde' }, { k: 'rimWidth', label: 'Ancho del aro' },
       { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' }, { k: 'edgeWobble', label: 'Borde ondulado' },
-      { k: 'drift', label: 'Pigmento que se va a un lado' }, { k: 'glaze', label: 'Segunda veladura' }] },
+      { k: 'drift', label: 'Pigmento que se va a un lado' }, { k: 'letterVar', label: 'Diferencia entre letras' }] },
     { id: 'wash', title: 'Aguada (litografía)', ctl: [
       { k: 'wash', label: 'Manchas de aguada' }, { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' },
       { k: 'transp', label: 'Transparencia' }] },
