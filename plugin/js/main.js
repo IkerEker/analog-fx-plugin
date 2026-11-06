@@ -165,13 +165,13 @@
       { k: 'amount', label: 'Cantidad' }, { k: 'width', label: 'Ancho' }, { k: 'coverage', label: 'Tramos con pigmento' }] },
     { id: 'stencil', title: 'Esténcil (mimeógrafo)', ctl: [
       { k: 'fiber', label: 'Fibra del esténcil' }, { k: 'density', label: 'Desigualdad de tinta' },
-      { k: 'spread', label: 'Tinta que se abre' }, { k: 'setoff', label: 'Repinte' }] },
+      { k: 'spread', label: 'Tinta que se abre' }, { k: 'setoff', label: 'Repinte' }, { k: 'oil', label: 'Halo de aceite' }, { k: 'starve', label: 'Zonas con poca tinta' }] },
     { id: 'copy', title: 'Fotocopia', ctl: [
       { k: 'gen', label: 'Copia de copia' }, { k: 'dropout', label: 'Huecos de tóner' }, { k: 'toner', label: 'Motas de tóner' },
       { k: 'streaks', label: 'Rayas del tambor' }, { k: 'haze', label: 'Velo gris' }, { k: 'slur', label: 'Tóner arrastrado' }] },
     { id: 'drip', title: 'Goteo desde las letras', ctl: [
       { k: 'amount', label: 'Cantidad de gotas' }, { k: 'length', label: 'Longitud' }, { k: 'thick', label: 'Grosor' },
-      { k: 'sag', label: 'Tinta acumulada en la base' }, { k: 'beads', label: 'Gotitas que se desprenden' }, { k: 'dark', label: 'Pigmento en la gota' }] },
+      { k: 'sag', label: 'Tinta acumulada en la base' }, { k: 'beads', label: 'Gotitas que se desprenden' }, { k: 'dark', label: 'Pigmento en la gota' }, { k: 'absorb', label: 'Papel absorbente (se infiltra)' }] },
     { id: 'aqua', title: 'Acuarela', ctl: [
       { k: 'density', label: 'Densidad del pigmento' }, { k: 'variation', label: 'Manchas del lavado' },
       { k: 'rim', label: 'Aro oscuro del borde' }, { k: 'rimWidth', label: 'Ancho del aro' },
@@ -884,40 +884,60 @@
     });
   }
 
+  // Todo lo que cambia el documento del usuario ocurre dentro de UNA sola entrada de historial
+  // ("Analog FX"), con el documento activo todo el rato: así Ctrl+Z deshace el efecto completo
+  // (capa nueva, original oculto y nombre) de una vez y deja todo como estaba.
   async function runApply(ctx, doc, source, oldResult, p, tex) {
-    var hc = ctx.hostControl, suspension = null, ok = false, info = null;
-    try { suspension = await hc.suspendHistory({ documentID: doc.id, name: 'Analog FX' }); } catch (e) { suspension = null; }
+    var hc = ctx.hostControl, info = null, tmp = null, tmpLayer = null;
+    var direct = isDirectDoc(doc);
     try {
-      if (oldResult) { try { await oldResult.delete(); } catch (e) { /* ya no existe */ } }
-      var result;
-      if (isDirectDoc(doc)) {
-        var dup = await source.duplicate();
-        info = await processLayer(doc, doc, dup, source, p, tex);
-        result = dup;
-      } else {
-        // CMYK / Lab / grises / 16-32 bits: se procesa en un RGB temporal y se devuelve al documento
-        result = await withTempCopy(doc, source, async function (tmp, copy) {
-          info = await processLayer(tmp, doc, copy, source, p, tex);
-          var back = await copy.duplicate(doc);
-          if (!back) back = doc.activeLayers && doc.activeLayers[0];
-          // comprobar que la posición se mantiene al pasar de un documento a otro
-          var cb = boundsOf(copy), bb = boundsOf(back);
-          if (cb.left !== bb.left || cb.top !== bb.top) { try { await back.translate(cb.left - bb.left, cb.top - bb.top); } catch (e) { /* */ } }
-          return back;
+      if (!direct) {
+        // 1) CMYK / Lab / grises / 16-32 bits: el efecto se calcula ANTES, en un documento temporal RGB
+        tmp = await app.documents.add({
+          name: 'Analog FX (temporal)',
+          width: Math.round(Number(doc.width)), height: Math.round(Number(doc.height)),
+          resolution: Number(doc.resolution) || 72,
+          mode: constants.NewDocumentMode.RGB, fill: constants.DocumentFill.TRANSPARENT, depth: 8
         });
-        try { await result.move(source, constants.ElementPlacement.PLACEBEFORE); } catch (e) { /* queda arriba del todo */ }
+        tmpLayer = await source.duplicate(tmp);
+        if (!tmpLayer) tmpLayer = tmp.activeLayers && tmp.activeLayers[0];
+        try { tmpLayer.visible = true; } catch (e) { /* */ }
+        var lb = boundsOf(source), cb0 = boundsOf(tmpLayer);
+        if (lb.left !== cb0.left || lb.top !== cb0.top) { try { await tmpLayer.translate(lb.left - cb0.left, lb.top - cb0.top); } catch (e) { /* */ } }
+        info = await processLayer(tmp, doc, tmpLayer, source, p, tex);
+        try { app.activeDocument = doc; } catch (e) { /* */ }
       }
-      result.name = source.name + RESULT_SUFFIX;
+      // 2) cambios en el documento del usuario: una sola entrada de historial
+      var suspension = null, ok = false;
+      try { suspension = await hc.suspendHistory({ documentID: doc.id, name: 'Analog FX' }); } catch (e) { suspension = null; }
       try {
-        var bm = resolveBlend(p, info.ink);
-        result.blendMode = bm === 'multiply' ? constants.BlendMode.MULTIPLY : constants.BlendMode.NORMAL;
-      } catch (e) { /* modo de fusión opcional */ }
-      try { result.visible = true; } catch (e) { /* */ }
-      source.visible = false;
-      store(linkKey(doc.id, result.id), source.id);
-      ok = true;
+        if (oldResult) { try { await oldResult.delete(); } catch (e) { /* ya no existe */ } }
+        var result;
+        if (direct) {
+          result = await source.duplicate();
+          info = await processLayer(doc, doc, result, source, p, tex);
+        } else {
+          result = await tmpLayer.duplicate(doc);
+          if (!result) result = doc.activeLayers && doc.activeLayers[0];
+          var cb = boundsOf(tmpLayer), bb = boundsOf(result);
+          if (cb.left !== bb.left || cb.top !== bb.top) { try { await result.translate(cb.left - bb.left, cb.top - bb.top); } catch (e) { /* */ } }
+          try { await result.move(source, constants.ElementPlacement.PLACEBEFORE); } catch (e) { /* queda arriba */ }
+        }
+        result.name = source.name + RESULT_SUFFIX;
+        try {
+          var bm = resolveBlend(p, info.ink);
+          result.blendMode = bm === 'multiply' ? constants.BlendMode.MULTIPLY : constants.BlendMode.NORMAL;
+        } catch (e) { /* modo de fusión opcional */ }
+        try { result.visible = true; } catch (e) { /* */ }
+        source.visible = false;
+        ok = true;
+        store(linkKey(doc.id, result.id), source.id);
+      } finally {
+        if (suspension) { try { await hc.resumeHistory(suspension, ok); } catch (e) { /* */ } }
+      }
     } finally {
-      if (suspension) { try { await hc.resumeHistory(suspension, ok); } catch (e) { /* */ } }
+      // 3) el temporal se cierra al final, sin tocar ya el historial del documento
+      if (tmp) { try { await tmp.closeWithoutSaving(); } catch (e) { /* */ } try { app.activeDocument = doc; } catch (e) { /* */ } }
     }
     return info;
   }
