@@ -2,7 +2,10 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela.
 
-**Versión 0.7.1**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.7.2**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.7.2
+- **Goteo:** la gota sale de la letra opaca y del mismo color, empapada de su pintura, y según baja se infiltra en el papel y se vuelve más transparente. Solo nace en bases horizontales, sin repisa plana ni rendijas en las curvas.
 
 ## Novedades 0.7.1
 - **Xilografía a dos tintas:** letra de color con las líneas de talla en negro y la sombra (como en los carteles). Con tintas oscuras se usa una sola plancha.
@@ -102,7 +105,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.7.1.ccx`.
+1. Descarga `dist/AnalogFX_0.7.2.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

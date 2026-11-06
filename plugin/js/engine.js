@@ -576,6 +576,7 @@
 
   // ------------------------------------------------------------------ GOTEO: gotas que nacen de cada letra
   function dripsFromLetters(A, w, h, U, P, R, noise, dark) {
+    var Aorig = blur(A, w, h, U * 0.012 + 1.5, U * 0.012 + 1.5);
     var x, y, i, runs = [];
     // tramos de borde inferior (bases de los trazos)
     // puntos de base (tinta encima, aire limpio debajo) agrupados en tramos casi horizontales
@@ -628,7 +629,11 @@
         var rw = Math.max(0.9, U * (0.006 + 0.02 * P.thick * Math.pow(R(), 1.1)));
         var L = U * (0.03 + 1.7 * P.length * Math.pow(R(), 2.3)) + rw * 3;
         var mgn = Math.min(Math.floor(run.pts.length / 2), Math.ceil(rw * 4.5)); if (run.pts.length < 2 * mgn + 1) continue;
-        var pk = run.pts[mgn + Math.floor(R() * (run.pts.length - 2 * mgn))];
+        var kI = mgn + Math.floor(R() * (run.pts.length - 2 * mgn)), mS = Math.max(2, Math.ceil(rw * 2));
+        var kA = Math.max(0, kI - mS), kB = Math.min(run.pts.length - 1, kI + mS);
+        // solo nace donde la base es casi horizontal (en un borde curvo dejaría una rendija)
+        if (Math.abs(run.pts[kA][1] - run.pts[kB][1]) > (kB - kA) * 0.45) continue;
+        var pk = run.pts[kI];
         var cx = pk[0], y0 = pk[1], ex = cx, drift = (R() - 0.5) * 0.08;
         var thin = rw < U * 0.006;
         // el menisco: la tinta sale de la base formando un filete cóncavo que se funde con la letra
@@ -647,6 +652,14 @@
           var edgeN = 0.6 + 0.4 * noise(yy / U * 22 + d, d * 1.3);           // borde algo irregular
           for (var xx = xa; xx <= xb; xx++) {
             var dd = Math.abs(xx - ex), cov = smooth(hw + 0.9 * edgeN, hw - 0.9, dd) * (thin ? 0.85 : 1);
+            // el menisco solo existe pegado a la letra: fuera del cuerpo de la gota, exige tinta
+            // de la letra justo encima (si no, saldría una base plana que sobresale)
+            var bodyW = rw * (1 - 0.4 * tl) * belly + 0.2;
+            if (dd > bodyW && cov > 0) {
+              var up = Math.round(1 + t * 0.9), yu = yy - up;
+              var supp = (yu >= 0 && xx >= 0 && xx < w) ? Aorig[yu * w + xx] : 0;
+              cov *= smooth(0.15, 0.55, supp);
+            }
             // pigmento: nulo en la raíz (se funde con la letra), crece hacia abajo
             var dk = (0.15 + 0.35 * (1 - dd / (hw + 0.5))) * cov * P.dark * smooth(0, 0.35, tl);
             // el tramo fino es más transparente; la tinta se concentra donde la gota engorda
@@ -859,21 +872,26 @@
       dripsFromLetters(Ddr, w, h, U, DR, R, noise, DKd);
       var ab = DR.absorb || 0;
       if (ab > 0) {
-        // papel absorbente: la gota se infiltra, se abre por las fibras, se diluye y pierde el brillo
-        var add2 = new Float32Array(n);
+        // papel absorbente: la gota sale de la letra empapada de su pintura (opaca, mismo color)
+        // y, según baja, se infiltra en la fibra, se abre un poco y se vuelve más transparente
+        var add2 = new Float32Array(n), dist = new Float32Array(n);
         for (i = 0; i < n; i++) add2[i] = Math.max(0, Ddr[i] - A[i]);
+        for (x = 0; x < w; x++) { var run = 1e9; for (y = 0; y < h; y++) { i = y * w + x; if (A[i] > 0.5) run = 0; else run += 1; dist[i] = run; } }
+        var Lref = U * (0.1 + 0.9 * DR.length);
         var rAb = U * 0.006 * ab + 0.8, Bab = blur(add2, w, h, rAb, rAb), Bab2 = blur(add2, w, h, rAb * 3, rAb * 3);
         var tfa1 = physSampler('d', 280, 'fibra', 1.2), tfa2 = physSampler('d', 280, 'fibra', -1.2), tga = physSampler('b', 300, 'granul');
         for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
           i = y * w + x;
-          if (Bab2[i] < 0.004) continue;
+          if (Bab2[i] < 0.004 && add2[i] <= 0) continue;
+          var tdn = smooth(0, Lref, dist[i]);                     // 0 en la raíz -> 1 abajo
           var fbr = Math.max(smooth(0.5, 0.9, tfa1(x, y)), smooth(0.5, 0.9, tfa2(x, y)));
-          // núcleo de la gota (algo más abierto y diluido) + tinta que se infiltra por la fibra
-          var core2 = Math.max(add2[i] * 0.8, clamp01(Bab[i] * 1.6)) * (0.72 + 0.28 * tga(x, y));
-          var wick = clamp01(Bab2[i] * 2.2) * fbr * 0.55;
-          var vv = Math.max(core2, wick) * (1 - ab * 0.22);
-          if (vv > A[i]) A[i] = Math.max(A[i], vv);
-          DKd[i] *= 1 - ab * 0.7;
+          var sharp = add2[i];
+          var soft = Math.max(add2[i] * 0.8, clamp01(Bab[i] * 1.6)) * (0.72 + 0.28 * tga(x, y));
+          var wick = clamp01(Bab2[i] * 2.2) * fbr * 0.55 * tdn;
+          var body = sharp + (soft - sharp) * tdn * ab;           // se abre según baja
+          var vv = Math.max(body, wick) * (1 - ab * 0.55 * tdn);  // y se aclara según baja
+          if (vv > A[i]) A[i] = vv;
+          DKd[i] *= 1 - ab * 0.7 * tdn;
         }
       } else A = Ddr;
       shape = A;
