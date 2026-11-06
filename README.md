@@ -2,7 +2,20 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela.
 
-**Versión 0.7.2**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.7.3**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.7.3
+- **Humedad › Papel húmedo** (modo nuevo): todo el papel algo mojado. El borde de cada letra se abre poco, en un halo granuloso y desigual, con flecos que caen hacia abajo, zonas lavadas y grietas. Los otros modos de Humedad siguen igual.
+- **Intensidad del efecto** en las dos páginas (presets y ajustes detallados). Escala todos los parámetros de daño de cada técnica, también los nuevos.
+- **Variantes = efectos distintos, no niveles:**
+  - **Sello:** Goma entintada · Sello inclinado · Tinta seca.
+  - **Tinta corrida:** Por las fibras · Corrida a un lado · Borde húmedo.
+  - **Destrozado:** Roto · Corrido y goteado · Rayado y arañado.
+  - **Fotocopia:** Negros quemados · Rayas y tóner arrastrado · Copia de copia.
+  - **Mimeógrafo:** Halo de aceite · Tambor sin tinta y repinte.
+  - **Risografía:** se añade Trama riso.
+  - **Litografía:** se añade Velo de plancha.
+  - **Tipografía:** se añade Impresión hundida.
 
 ## Novedades 0.7.2
 - **Goteo:** la gota sale de la letra opaca y del mismo color, empapada de su pintura, y según baja se infiltra en el papel y se vuelve más transparente. Solo nace en bases horizontales y sale directamente del borde de la letra: ya no hay franja de tinta acumulada a lo largo de la base (la base plana que sobresalía) ni rendijas en las curvas.
@@ -105,7 +118,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.7.2.ccx`.
+1. Descarga `dist/AnalogFX_0.7.3.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

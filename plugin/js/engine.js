@@ -1043,6 +1043,7 @@
       var areaW = w * h, target = DP.amount * 0.55 * areaW, got = 0, tries = 0;
       var tzw = sampler('b', 1.2, 0, 'floracion'), gzb = grid(function (u, v) { return noise.fbm(u * 4 + 13, v * 4 - 7, 4); });
       var drops = [];
+      if (DP.global) { for (i = 0; i < n; i++) Wd[i] = 1; target = 0; }
       while (got < target && tries < 4000 && drops.length < 160) {
         tries++;
         var cxD = Rd() * w, cyD = Rd() * h, nv0 = nearD[(cyD | 0) * w + (cxD | 0)];
@@ -1077,6 +1078,14 @@
       // 2) la tinta disuelta sale de la letra a dos escalas y se queda dentro del agua
       var rN = U * (0.03 + 0.08 * DP.spread), rF = U * (0.09 + 0.3 * DP.spread);
       var tfg1 = physSampler('d', 300, 'fibra', 1.3), tfg2 = physSampler('d', 300, 'fibra', -1.3);
+      var Bdn = null, tVst = null;
+      if (DP.global) {
+        var rDn = rN * 1.3, Bv = blur(A, w, h, rDn * 0.3, rDn * 1.8), shD = rDn * 1.3;
+        Bdn = new Float32Array(n);
+        for (y = 0; y < h; y++) for (x = 0; x < w; x++) Bdn[y * w + x] = sampleBil(Bv, w, h, x, y - shD);
+        tVst = physSampler('d', 260, 'fibra', 1.5);
+        var gPatch = grid(function (u, v) { return noise.fbm(u * 1.6 + 7, v * 1.6 - 33, 3); });
+      }
       var bandW = U * 0.012 + 1.5, tideW = U * 0.008 + 1.2;
       var Bn = blur(A, w, h, rN, rN), Bf = blur(A, w, h, rF, rF);
       var tfib = sampler('d', 0.16, 0, 'fibra'), tgr2 = sampler('b', 0.22, 0, 'granul'), tgr3 = sampler('d', 0.12, 0, 'granul');
@@ -1089,18 +1098,24 @@
         // tinta disuelta (diluida): densa junto al trazo, gris y granulosa más lejos
         var g1 = tgr2(x, y) * 0.55 + tgr3(x, y) * 0.3 + tfib(x, y) * 0.15;
         var raw = clamp01(Bn[i] * 1.3) * 0.55 + clamp01(Bf[i] * 2.2) * 0.5;
+        if (Bdn) {   // papel húmedo: la tinta cae un poco hacia abajo en flecos verticales
+          var vs = smooth(0.35, 0.85, tVst(x, y));
+          raw = Math.max(raw * 0.75, clamp01(Bdn[i] * 2.0) * (0.3 + 0.9 * vs));
+        }
         var cloud = Math.min(0.85, raw) * (0.45 + 0.85 * smooth(0.2, 0.85, g1)) * DP.cloud;
         // el frente avanza en dedos a lo largo de las fibras, no como una nube redonda
         var fing = Math.max(smooth(0.45, 0.9, tfg1(x, y)), smooth(0.45, 0.9, tfg2(x, y)));
         cloud *= 0.65 + 0.6 * fing;
         // el tinte se queda atrás: franja de papel mojado sin color antes del borde del agua
         var dzv = Dz[i];
-        cloud *= smooth(bandW * 0.4, bandW * 1.6, dzv) * smooth(0.04, 0.3, Bn[i] + Bf[i] * 0.5);
+        cloud *= (DP.global ? 1 : smooth(bandW * 0.4, bandW * 1.6, dzv)) * smooth(0.04, 0.3, Bn[i] + Bf[i] * 0.5);
         // el centro de la gota se lava: el agua empujó el pigmento hacia fuera
-        var centre = smooth(U * 0.25, U * 0.7, dzv) * DP.size;
+        var centre = DP.global ? 0 : smooth(U * 0.25, U * 0.7, dzv) * DP.size;
         // la letra se abre: pierde el borde y se lava a ratos por dentro
         var lift = DP.lift * 0.85 * smooth(0.55, 0.8, tlift(x, y)) * (0.5 + 0.5 * smooth(0.3, 0.7, g1));
-        var core = Math.min(a0, smooth(0.25, 0.75, Bn[i] + (g1 - 0.5) * 0.3)) * (1 - lift) * (1 - centre * DP.lift * 0.35);
+        var core = DP.global ? a0 * (1 - lift * 0.8)
+                             : Math.min(a0, smooth(0.25, 0.75, Bn[i] + (g1 - 0.5) * 0.3)) * (1 - lift) * (1 - centre * DP.lift * 0.35);
+        if (DP.global) cloud *= 0.25 + 0.95 * smooth(0.3, 0.75, gPatch(x, y));   // más abierta en unas zonas que en otras
         var wet = Math.max(core, cloud);
         // marca del borde del agua: pigmento arrastrado y acumulado justo en el límite
         var edgeW = Math.exp(-dzv / tideW) * smooth(0.0, 1.0, dzv);
@@ -1967,7 +1982,7 @@
     engrave: { on: false, mode: 'horizontal', lightAng: -0.6, spacing: 0.35, width: 0.6, length: 0.7, skip: 0.12, wobble: 0.5, light: 1, shadow: 0.6, two: false, misreg: 0.4, key: '#161414' },
     stamp: { on: false, tilt: 0.45, uneven: 0.5, edge: 0.5, letterVar: 0.3 },
     letters: { on: false, density: 0.4, tone: 0.4 },
-    damp: { on: false, amount: 0.45, size: 0.5, spread: 0.5, cloud: 0.8, lift: 0.35, tide: 0.35 },
+    damp: { on: false, global: false, amount: 0.45, size: 0.5, spread: 0.5, cloud: 0.8, lift: 0.35, tide: 0.35, cockle: 0.5 },
     aqua: { on: false, density: 0.5, variation: 0.6, rim: 0.85, rimWidth: 0.35, granul: 0.45, blooms: 0.3, edgeWobble: 0.5, drift: 0.55, letterVar: 0.6, dry: 0.25 },
     gouge: { on: false, zone: 0.45, spacing: 0.4, length: 0.45, width: 0.7, edge: 0.75, inner: 0.35, chaos: 0.4, angle: 0 },
     rim: { on: false, amount: 0.35, width: 0.3, coverage: 0.4 },

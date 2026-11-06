@@ -309,6 +309,10 @@
       label: 'Intensidad del efecto', min: 0, max: 2, fmt: pctS,
       get: function () { return state.intensity; }, set: function (v) { state.intensity = v; }, reset: function () { state.intensity = 1; }
     }));
+    $('intensityCtl2').appendChild(makeSlider({
+      label: 'Intensidad del efecto', min: 0, max: 2, fmt: pctS,
+      get: function () { return state.intensity; }, set: function (v) { state.intensity = v; }, reset: function () { state.intensity = 1; }
+    }));
     $('btnDetails').addEventListener('click', function () { showPage('details'); });
     $('btnBack').addEventListener('click', function () { showPage('presets'); });
     // controles globales
@@ -520,6 +524,7 @@
     state.page = pg;
     $('pagePresets').className = 'col page' + (pg === 'presets' ? '' : ' hidden');
     $('pageDetails').className = 'page' + (pg === 'details' ? '' : ' hidden');
+    sliders.forEach(function (sl) { sl.update(); });
     if (pg === 'presets') syncPresetsPage();
     try { $('scroll').scrollTop = 0; } catch (e) { /* */ }
   }
