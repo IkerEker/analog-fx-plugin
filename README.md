@@ -1,8 +1,22 @@
 # Analog FX · plugin para Photoshop (UXP)
 
-Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela.
+Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.7.4**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.8.0**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.8.0
+- **Dos modos arriba del todo: Letras e Imágenes.** Letras queda exactamente igual.
+- **Imágenes** (fotos con o sin alfa, también la capa de fondo): una página sencilla con técnica, variante, tintas, fondo e intensidad. La foto sigue siendo reconocible: no hay deformación interna, solo el modelo de impresión y sus defectos.
+  - **Fotocopia punk:** Umbral duro · Copia de copia · Revista fotocopiada.
+  - **Periódico:** Periódico · Puntos gordos · Trama de líneas.
+  - **Duotono · Tritono:** Duotono · Tritono · Duotono sin trama.
+  - **Cuatricromía:** Revista · Vintage desregistrado · Cómic.
+  - **Risografía:** Grano 2 tintas · Trama 2 tintas · Una tinta.
+  - **Serigrafía póster:** 2 tintas planas · 3 tintas planas · Silueta + negro.
+  - **Tramado 1 bit:** Difusión · Ordenado (Bayer) · Mezzotinta.
+  - **Impresora rota:** Boquillas obstruidas · Cartucho agotado · Láser rayado.
+- **Fondo:** solo tinta (se multiplica sobre lo de debajo), papel blanco, papel crema o papel de periódico.
+- **Ajustes** despliega los parámetros propios de cada técnica.
 
 ## Novedades 0.7.4
 - **La tinta se extiende, no se superpone** (Humedad, Papel húmedo, Tinta corrida): la tinta de la propia letra avanza por el papel. Pegada al borde tiene la misma intensidad que la letra y se desvanece al alejarse, por zonas y por fibras.
@@ -129,12 +143,13 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.7.4.ccx`.
+1. Descarga `dist/AnalogFX_0.8.0.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
 ## Usar
-1. Selecciona una capa de texto o forma.
+Arriba elige **Letras** (texto y formas) o **Imágenes** (fotos).
+1. Selecciona una capa de texto, forma o imagen.
 2. Elige técnica y variante.
 3. Elige el color.
 4. Ajusta la intensidad.
@@ -146,6 +161,7 @@ Se crea la capa `Nombre · Analog` y el original queda oculto debajo. Si selecci
 ```
 plugin/js/engine.js    motor (módulos de efecto + color + tintas)
 plugin/js/presets.js   técnicas, variantes y paletas
+plugin/js/image.js     motor del modo Imágenes (tramas, separación, defectos)
 plugin/js/main.js      panel y Photoshop (CMYK/Lab/grises vía documento temporal)
 tools/textures_manifest.json   qué texturas usa el plugin
 textures-src/OTRAS TEXTURAS/   texturas originales
@@ -153,5 +169,5 @@ textures-src/OTRAS TEXTURAS/   texturas originales
 
 Para cambiar las texturas, edita `tools/textures_manifest.json` y ejecuta, en este orden:
 1. `python3 tools/build_textures.py`
-2. `node tools/build_thumbs.js`
+2. `node tools/build_thumbs.js` (y `python3 tools/make_photo.py && node tools/build_img_thumbs.js` para las de Imágenes)
 3. `tools/package.sh`

@@ -343,3 +343,11 @@ html, body {
 .chip.ghost { background: transparent; color: var(--green); border-style: dashed; border-color: var(--green-2); cursor: default; }
 #pageDetails { margin-top: 0; }
 #pageDetails .adv-head { margin-top: 2px; }
+
+/* ---------- selector Letras / Imágenes ---------- */
+.modebar { display: flex; margin: 8px 8px 0 8px; background: var(--card); border: 1px solid var(--line); border-radius: 9px; padding: 3px; flex: 0 0 auto; }
+.mtab { flex: 1 1 0; text-align: center; padding: 7px 0; border-radius: 7px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: var(--muted); cursor: pointer; }
+.mtab:hover { color: var(--text); }
+.mtab.active { background: var(--green); color: var(--green-ink); }
+#imgAdv { margin-top: 8px; }
+#imgAdv.hidden, .hidden { display: none; }

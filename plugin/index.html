@@ -15,8 +15,12 @@
           <div class="brand-sub" id="layerName">Sin capa seleccionada</div>
         </div>
       </div>
-      <div class="badge" id="modeBadge">v0.7.4</div>
+      <div class="badge" id="modeBadge">v0.8.0</div>
     </header>
+    <div class="modebar">
+      <div class="mtab" id="tabText">Letras</div>
+      <div class="mtab" id="tabImg">Imágenes</div>
+    </div>
 
     <div id="scroll">
       <div class="row-wrap">
@@ -35,6 +39,27 @@
             <div class="seed" id="seedLabel">Semilla 1</div>
           </div>
         </section>
+
+        <!-- IMÁGENES -->
+        <div class="col page hidden" id="pageImage">
+          <section class="card">
+            <div class="card-title">Tipo de impresión</div>
+            <div class="tech-grid" id="imgTechList"></div>
+          </section>
+          <section class="card">
+            <div class="tech-name" id="imgTechName"></div>
+            <div class="tech-desc" id="imgTechDesc"></div>
+            <div class="ctl-label sub">Variante</div>
+            <div class="chips" id="imgVariantChips"></div>
+            <div class="ctl-label sub">Tintas</div>
+            <div class="chips" id="imgPaletteChips"></div>
+            <div class="ctl-label sub">Fondo</div>
+            <div class="chips" id="imgPaperChips"></div>
+            <div id="imgIntensityCtl"></div>
+            <div class="btn outline" id="btnImgAdv">Ajustes <span class="arrow" id="imgAdvArrow">›</span></div>
+            <div id="imgAdv" class="hidden"></div>
+          </section>
+        </div>
 
         <!-- PÁGINA 1: presets -->
         <div class="col page" id="pagePresets">
@@ -98,6 +123,7 @@
 
   <script src="js/engine.js"></script>
   <script src="js/presets.js"></script>
+  <script src="js/image.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
