@@ -354,7 +354,7 @@
     for (k = 0; k < K; k++) masks.push(new Float32Array(n));
     if (p.method === 'silueta') {
       var T = blur(darkness(im), w, h, S * 0.002), th = 1 - (p.threshold == null ? 0.5 : p.threshold);
-      for (i = 0; i < n; i++) { masks[0][i] = im.A[i] > 0.5 ? smooth(0.04, 0.1, T[i] + 0.02) : 0; masks[1][i] = smooth(th - 0.04, th + 0.04, T[i]); }
+      for (i = 0; i < n; i++) { masks[0][i] = im.A[i] > 0.5 ? smooth(0.14, 0.2, T[i]) : 0; masks[1][i] = smooth(th - 0.04, th + 0.04, T[i]); }
       if (K > 2) for (i = 0; i < n; i++) masks[2][i] = 0;
     } else {
       var lut = sepLUT(p.inks, 2), o = new Float32Array(K);
@@ -509,7 +509,7 @@
       variants: [
         { id: 'dos', name: '2 tintas planas', p: { kind: 'screen', misreg: 0.25, detail: 0.2, mottle: 0.15, grain: 0.15, nInks: 2 } },
         { id: 'tres', name: '3 tintas planas', p: { kind: 'screen', misreg: 0.25, detail: 0.2, mottle: 0.15, grain: 0.15, nInks: 3 } },
-        { id: 'silueta', name: 'Silueta + negro', p: { kind: 'screen', method: 'silueta', threshold: 0.45, misreg: 0.5, detail: 0.4, mottle: 0.15, grain: 0.15, nInks: 2, inkPick: [0, 2] } }
+        { id: 'silueta', name: 'Silueta + negro', p: { kind: 'screen', method: 'silueta', threshold: 0.55, misreg: 0.5, detail: 0.4, mottle: 0.15, grain: 0.15, nInks: 2, inkPick: [0, 2] } }
       ] },
     { id: 'dither', name: 'Tramado 1 bit', desc: 'Píxeles de un solo bit, sin grises: difusión clásica (Atkinson), patrón ordenado (Bayer) o grano de mezzotinta.',
       palettes: [BK, BL, RD], keys: ['px', 'contrast', 'bright', 'detail'],
