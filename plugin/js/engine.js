@@ -455,66 +455,61 @@
   }
 
   // ------------------------------------------------------------------ AGUA QUE CAE POR ENCIMA
-  // Gotas de agua que caen desde arriba sobre las letras (papel absorbente). Encima del papel el
-  // agua es transparente; al pasar por la letra disuelve el pigmento: deja un canal más claro, con
-  // el pigmento empujado a los bordes del canal (más oscuro). No arrastra la letra hacia abajo:
-  // solo al salir de ella el agua lleva algo de tinta disuelta, diluida, que se infiltra y se apaga.
-  // Algunas gotas caen dentro de la letra: mancha lavada redonda con borde de pigmento.
+  // Gotas de agua limpia que caen desde arriba sobre las letras (papel absorbente). Encima del papel
+  // no se ven. Al tocar la letra se comen casi el 100 % del pigmento; según bajan se van cargando de
+  // la tinta que disuelven: comen cada vez menos y dejan esa tinta diluida y en estrías en su canal,
+  // hasta perderse en la letra. Dos tipos:
+  //  - mordidas: muchas, cortas; muerden el borde de arriba y se cargan enseguida.
+  //  - cruzan: canal largo; unas se pierden dentro de la letra y otras salen por abajo llevando
+  //    tinta, que se infiltra en el papel y se apaga.
   function waterRuns(A, w, h, U, DR, R, noise, PL, mott, gran) {
     var n = w * h, x, y, i, runs = DR.runs || 0;
     if (runs <= 0) return A;
     var top = new Int32Array(w).fill(-1), bot = new Int32Array(w).fill(-1), cols = [];
     for (x = 0; x < w; x++) { for (y = 0; y < h; y++) if (A[y * w + x] > 0.5) { if (top[x] < 0) top[x] = y; bot[x] = y; } if (top[x] >= 0) cols.push(x); }
     if (!cols.length) return A;
-    var O = new Float32Array(A), lift = 0.35 + 0.45 * Math.min(1, runs);
-    var nr = Math.max(1, Math.round(runs * (cols.length / U) * 8));
+    var O = new Float32Array(A), rk = Math.min(1.6, runs);
+    var nr = Math.max(1, Math.round(runs * (cols.length / U) * 10));
     for (var r = 0; r < nr; r++) {
       var x0 = cols[(R() * cols.length) | 0], sd = R() * 100;
-      var hw = U * (0.006 + 0.02 * Math.pow(R(), 1.6)) + 0.6;
-      // algunas gotas se agotan al tocar el pigmento: se comen un poco de letra y desaparecen
-      var dies = R() < 0.42, life = U * (0.04 + 0.22 * R()), entry = -1, fadeK = 1;
-      var fromAbove = R() < 0.88;
-      var ys = fromAbove ? Math.max(1, top[x0] - U * (0.05 + 0.6 * R())) : top[x0] + (bot[x0] - top[x0]) * (0.1 + 0.5 * R());
+      var bite = R() < 0.6;
+      var hw = bite ? U * (0.008 + 0.022 * Math.pow(R(), 1.3)) + 0.7 : U * (0.005 + 0.018 * Math.pow(R(), 1.5)) + 0.6;
+      var satL = bite ? U * (0.012 + 0.05 * R()) * (0.6 + 0.4 * rk) : U * (0.1 + 0.3 * R()) * (0.6 + 0.4 * rk);   // cuánto tarda en cargarse de tinta
+      var lostInside = !bite && R() < 0.5;
+      var ys = Math.max(1, top[x0] - U * (0.03 + 0.45 * R()));
       var tail = U * (0.12 + 1.1 * (DR.length || 0.4) * (0.3 + 0.7 * R()));
-      var lastInk = -1, c = 0, xc = x0, xPrev = x0;
-      // gota que cae dentro de la letra: mancha lavada
-      if (!fromAbove || R() < 0.08) {
-        var rr = U * (0.018 + 0.04 * R()), cy0 = fromAbove ? top[x0] + (bot[x0] - top[x0]) * 0.25 * R() : ys;
-        for (y = Math.max(0, (cy0 - rr * 1.5) | 0); y < Math.min(h, cy0 + rr * 1.5); y++) for (x = Math.max(0, (x0 - rr * 1.5) | 0); x < Math.min(w, x0 + rr * 1.5); x++) {
-          i = y * w + x; if (A[i] < 0.05) continue;
-          var an = Math.atan2(y - cy0, x - x0), re = rr * (0.85 + 0.25 * noise(Math.cos(an) * 1.7 + sd, Math.sin(an) * 1.7 - sd) + 0.1 * noise(Math.cos(an) * 5 + sd, Math.sin(an) * 5));
-          var dd = Math.sqrt((x - x0) * (x - x0) + (y - cy0) * (y - cy0)), inD = smooth(re + 0.8, re - 0.8, dd);
-          if (inD <= 0) continue;
-          var ringD = Math.exp(-Math.pow((re - dd) / (1 + rr * 0.08), 2)) * inD;
-          O[i] = Math.min(O[i], A[i] * (1 - lift * inD * (0.55 + 0.35 * mott(x, y)) * (1 - 0.6 * ringD)));
-          PL[i] = Math.max(PL[i], ringD * 0.55 * A[i]);
-        }
-      }
+      var lastInk = -1, entry = -1, c = 0, xc = x0;
       for (y = Math.max(0, ys | 0); y < h; y++) {
-        xc = x0 + (noise(y / (U * 0.3) + sd, sd * 0.3) - 0.5) * U * 0.12 + (noise(y / (U * 0.05) - sd, 4.1) - 0.5) * U * 0.018;
+        xc = x0 + (noise(y / (U * 0.3) + sd, sd * 0.3) - 0.5) * U * 0.1 + (noise(y / (U * 0.05) - sd, 4.1) - 0.5) * U * 0.015;
         var xi = Math.round(xc), aC = xi >= 0 && xi < w ? A[y * w + xi] : 0;
-        if (aC > 0.5) { if (entry < 0) entry = y; lastInk = y; c += (1 - c) * 0.05 * (dies ? 0 : 1); }
-        else if (lastInk >= 0) { c *= Math.exp(-1 / (tail * 0.45)); if (y - lastInk > tail) break; }
+        if (aC > 0.5) { if (entry < 0) entry = y; lastInk = y; c += (1 - c) / Math.max(1.5, satL); }
+        else if (lastInk >= 0) { if (bite) break; c *= Math.exp(-1 / (tail * 0.45)); if (y - lastInk > tail) break; }
         else if (y > ys + U * 1.2 && y > bot[x0]) break;
-        if (dies && entry >= 0) { fadeK = Math.exp(-(y - entry) / life); if (fadeK < 0.04) break; }
-        var hwy = hw * (0.55 + 0.9 * noise(y / (U * 0.09) + sd, 7.7)) * (dies ? 0.35 + 0.65 * fadeK : 1);
-        if (entry >= 0 && y - entry < hw * 3 && aC > 0.5) hwy *= 1 + 0.5 * smooth(hw * 3, 0, y - entry);   // al entrar el agua se ensancha en gota
-        if (lastInk >= 0 && aC <= 0.5) hwy *= 1 + 0.9 * Math.min(1, (y - lastInk) / tail);   // fuera de la letra se abre en el papel
+        if (bite && c > 0.9) break;                                    // la mordida ya se cargó
+        if (lostInside && c > 0.97) break;                             // se pierde dentro de la letra
+        var hwy = hw * (0.6 + 0.8 * noise(y / (U * 0.08) + sd, 7.7));
+        if (entry >= 0 && aC > 0.5) hwy *= 1 + 0.6 * smooth(hw * 3, 0, y - entry) * (bite ? 1.4 : 1);   // la gota se aplasta al llegar
+        if (lastInk >= 0 && aC <= 0.5) hwy *= 1 + 0.9 * Math.min(1, (y - lastInk) / tail);            // fuera de la letra se abre en el papel
+        var eat = Math.pow(1 - c, 1.3);                                 // agua limpia: casi todo; cargada: casi nada
         for (x = Math.max(0, Math.floor(xc - hwy - 3)); x <= Math.min(w - 1, Math.ceil(xc + hwy + 3)); x++) {
           i = y * w + x;
-          var dx = Math.abs(x - xc) + (noise(x * 0.35 + sd, y * 0.35) - 0.5) * (1 + hwy * 0.3), soft = 0.9 + hwy * 0.35, prof = smooth(hwy + soft, hwy - soft, dx);
-          var rim = Math.exp(-Math.pow((dx - hwy) / (0.8 + hwy * 0.22), 2));
+          var dx = Math.abs(x - xc) + (noise(x * 0.35 + sd, y * 0.35) - 0.5) * (0.8 + hwy * 0.3), soft = 0.5 + hwy * 0.14, prof = smooth(hwy + soft, hwy - soft, dx);
+          if (prof <= 0) continue;
+          var rim = Math.exp(-Math.pow((dx - hwy) / (0.7 + hwy * 0.2), 2));
           if (A[i] > 0.05 && (aC > 0.5 || lastInk < 0 || y - lastInk < 2)) {
-            // canal lavado dentro de la letra, pigmento empujado a los bordes del canal
-            var eat = lift * prof * (0.45 + 0.55 * mott(x, y)) * (1 - 0.6 * rim) * fadeK;
-            O[i] = Math.min(O[i], A[i] * (1 - eat));
-            PL[i] = Math.max(PL[i], rim * 0.5 * A[i] * smooth(0.3, 0.8, prof + 0.4));
+            // dentro de la letra: se come el pigmento y deja el que ya lleva disuelto, en estrías
+            var st = 0.6 + 0.4 * noise((x - xc) * 0.6 + sd, y * 0.04);
+            var left = A[i] * (1 - prof * eat * (0.9 + 0.1 * mott(x, y)));
+            var dep = A[i] * prof * c * (0.5 + 0.35 * st);
+            var v = Math.max(left, dep);
+            if (v < O[i]) O[i] = v;
+            PL[i] = Math.max(PL[i], rim * 0.55 * A[i] * eat);            // el pigmento empujado al borde del canal
           } else if (c > 0.01 && lastInk >= 0 && aC <= 0.5) {
-            // abajo: el agua lleva un poco de la tinta disuelta, diluida y granulosa
+            // abajo (o en el hueco de la letra): el agua lleva tinta disuelta, diluida y granulosa
             var tt = Math.min(1, (y - lastInk) / tail);
-            var v = c * 0.55 * prof * (1 - tt) * (0.6 + 0.4 * mott(x, y)) * (1 - 0.4 * smooth(0.45, 0.85, 1 - gran(x, y)));
-            v += c * 0.25 * rim * prof * (1 - tt);
-            if (v > O[i]) O[i] = v;
+            var v2 = c * 0.55 * prof * (1 - tt) * (0.6 + 0.4 * mott(x, y)) * (1 - 0.4 * smooth(0.45, 0.85, 1 - gran(x, y)));
+            v2 += c * 0.25 * rim * prof * (1 - tt);
+            if (v2 > O[i]) O[i] = v2;
           }
         }
       }
