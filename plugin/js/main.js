@@ -554,7 +554,7 @@
   }
   function imgParams() {
     var p = imgBase(), I = stI.intensity;
-    IM.INTENSITY.forEach(function (k) { if (typeof p[k] === 'number') p[k] = Math.max(0, Math.min(1, p[k] * I)); });
+    IM.applyIntensity(p, I);
     p.seed = state.p.seed || 1;
     return p;
   }

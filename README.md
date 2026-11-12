@@ -2,7 +2,23 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.8.1**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.8.2**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.8.2 (Imágenes)
+- **Intensidad del efecto que recorre todo el rango:**
+  - **0 %:** apenas se nota (trama finísima, sin defectos y casi la foto original).
+  - **100 %:** el preset.
+  - **200 %:** una locura (trama enorme, umbral quemado, desregistro grande, defectos a tope).
+  - Entre medias cambia de forma gradual: finura de trama y grano, dureza del umbral, ganancia, desregistro, todos los defectos y cuánto queda de la foto original.
+- **Preimpresión inteligente:** niveles automáticos (punto de luz y de sombra), contraste local para que el detalle sobreviva a la trama o al umbral, enfoque y compensación de la ganancia de punto.
+- **Tramas más finas:** puntos redondos limpios en tramas gruesas, borde del punto irregular por la fibra, radios de desenfoque fraccionarios.
+- **Por técnica:**
+  - **Fotocopia:** umbral adaptativo (se lee el detalle en luces y sombras), tóner que salpica junto a los bordes y, a tope, la sombra del borde del original en el cristal.
+  - **Periódico:** las luces pierden el punto, los medios engordan, la tinta se abre en el papel, el punto se corre y se dobla, y el papel tiene motas recicladas.
+  - **Cuatricromía:** negro por GCR. En Vintage, el magenta y el amarillo se desvanecen antes. El cómic usa tintas planas Ben-Day (puntos iguales, pocos niveles) con contornos negros.
+  - **Risografía:** el grano se abre en el papel, el desregistro es más grande y los macizos tienen poca carga.
+  - **Serigrafía:** tintas opacas tiradas de la clara a la oscura, repartidas según la luz de la propia foto, con formas más gráficas cuanto más intensa y papel visible entre colores por el desregistro.
+  - **Impresora rota:** gotitas de las cuatro tintas y pasadas del cabezal desalineadas.
 
 ## Novedades 0.8.1 (Letras)
 - **Tinta corrida rehecha por capilaridad:** la tinta avanza por las fibras de celulosa que tocan la letra (red de fibras a tamaño real y distancia por dentro del papel). Ya no es un desenfoque.
@@ -151,7 +167,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.8.1.ccx`.
+1. Descarga `dist/AnalogFX_0.8.2.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
@@ -177,5 +193,5 @@ textures-src/OTRAS TEXTURAS/   texturas originales
 
 Para cambiar las texturas, edita `tools/textures_manifest.json` y ejecuta, en este orden:
 1. `python3 tools/build_textures.py`
-2. `node tools/build_thumbs.js` (y `python3 tools/make_photo.py && node tools/build_img_thumbs.js` para las de Imágenes)
+2. `node tools/build_thumbs.js` (y `node tools/build_img_thumbs.js` para las de Imágenes, con la foto de `tools/photos/`)
 3. `tools/package.sh`
