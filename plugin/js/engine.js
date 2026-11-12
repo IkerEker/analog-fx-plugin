@@ -467,17 +467,19 @@
     for (x = 0; x < w; x++) { for (y = 0; y < h; y++) if (A[y * w + x] > 0.5) { if (top[x] < 0) top[x] = y; bot[x] = y; } if (top[x] >= 0) cols.push(x); }
     if (!cols.length) return A;
     var O = new Float32Array(A), lift = 0.35 + 0.45 * Math.min(1, runs);
-    var nr = Math.max(1, Math.round(runs * (cols.length / U) * 2.2));
+    var nr = Math.max(1, Math.round(runs * (cols.length / U) * 8));
     for (var r = 0; r < nr; r++) {
       var x0 = cols[(R() * cols.length) | 0], sd = R() * 100;
-      var hw = U * (0.018 + 0.04 * Math.pow(R(), 0.9));
-      var fromAbove = R() < 0.72;
+      var hw = U * (0.006 + 0.02 * Math.pow(R(), 1.6)) + 0.6;
+      // algunas gotas se agotan al tocar el pigmento: se comen un poco de letra y desaparecen
+      var dies = R() < 0.42, life = U * (0.04 + 0.22 * R()), entry = -1, fadeK = 1;
+      var fromAbove = R() < 0.88;
       var ys = fromAbove ? Math.max(1, top[x0] - U * (0.05 + 0.6 * R())) : top[x0] + (bot[x0] - top[x0]) * (0.1 + 0.5 * R());
       var tail = U * (0.12 + 1.1 * (DR.length || 0.4) * (0.3 + 0.7 * R()));
       var lastInk = -1, c = 0, xc = x0, xPrev = x0;
       // gota que cae dentro de la letra: mancha lavada
-      if (!fromAbove || R() < 0.3) {
-        var rr = U * (0.025 + 0.05 * R()), cy0 = fromAbove ? top[x0] + (bot[x0] - top[x0]) * 0.25 * R() : ys;
+      if (!fromAbove || R() < 0.08) {
+        var rr = U * (0.018 + 0.04 * R()), cy0 = fromAbove ? top[x0] + (bot[x0] - top[x0]) * 0.25 * R() : ys;
         for (y = Math.max(0, (cy0 - rr * 1.5) | 0); y < Math.min(h, cy0 + rr * 1.5); y++) for (x = Math.max(0, (x0 - rr * 1.5) | 0); x < Math.min(w, x0 + rr * 1.5); x++) {
           i = y * w + x; if (A[i] < 0.05) continue;
           var an = Math.atan2(y - cy0, x - x0), re = rr * (0.85 + 0.25 * noise(Math.cos(an) * 1.7 + sd, Math.sin(an) * 1.7 - sd) + 0.1 * noise(Math.cos(an) * 5 + sd, Math.sin(an) * 5));
@@ -491,11 +493,12 @@
       for (y = Math.max(0, ys | 0); y < h; y++) {
         xc = x0 + (noise(y / (U * 0.3) + sd, sd * 0.3) - 0.5) * U * 0.12 + (noise(y / (U * 0.05) - sd, 4.1) - 0.5) * U * 0.018;
         var xi = Math.round(xc), aC = xi >= 0 && xi < w ? A[y * w + xi] : 0;
-        if (aC > 0.5) { lastInk = y; c += (1 - c) * 0.05; }
+        if (aC > 0.5) { if (entry < 0) entry = y; lastInk = y; c += (1 - c) * 0.05 * (dies ? 0 : 1); }
         else if (lastInk >= 0) { c *= Math.exp(-1 / (tail * 0.45)); if (y - lastInk > tail) break; }
         else if (y > ys + U * 1.2 && y > bot[x0]) break;
-        var hwy = hw * (0.55 + 0.9 * noise(y / (U * 0.09) + sd, 7.7));
-        if (lastInk >= 0 && y - lastInk < hw * 3 && aC > 0.5) hwy *= 1 + 0.5 * smooth(hw * 3, 0, y - lastInk);   // al entrar el agua se ensancha en gota
+        if (dies && entry >= 0) { fadeK = Math.exp(-(y - entry) / life); if (fadeK < 0.04) break; }
+        var hwy = hw * (0.55 + 0.9 * noise(y / (U * 0.09) + sd, 7.7)) * (dies ? 0.35 + 0.65 * fadeK : 1);
+        if (entry >= 0 && y - entry < hw * 3 && aC > 0.5) hwy *= 1 + 0.5 * smooth(hw * 3, 0, y - entry);   // al entrar el agua se ensancha en gota
         if (lastInk >= 0 && aC <= 0.5) hwy *= 1 + 0.9 * Math.min(1, (y - lastInk) / tail);   // fuera de la letra se abre en el papel
         for (x = Math.max(0, Math.floor(xc - hwy - 3)); x <= Math.min(w - 1, Math.ceil(xc + hwy + 3)); x++) {
           i = y * w + x;
@@ -503,7 +506,7 @@
           var rim = Math.exp(-Math.pow((dx - hwy) / (0.8 + hwy * 0.22), 2));
           if (A[i] > 0.05 && (aC > 0.5 || lastInk < 0 || y - lastInk < 2)) {
             // canal lavado dentro de la letra, pigmento empujado a los bordes del canal
-            var eat = lift * prof * (0.45 + 0.55 * mott(x, y)) * (1 - 0.6 * rim);
+            var eat = lift * prof * (0.45 + 0.55 * mott(x, y)) * (1 - 0.6 * rim) * fadeK;
             O[i] = Math.min(O[i], A[i] * (1 - eat));
             PL[i] = Math.max(PL[i], rim * 0.5 * A[i] * smooth(0.3, 0.8, prof + 0.4));
           } else if (c > 0.01 && lastInk >= 0 && aC <= 0.5) {
@@ -1138,36 +1141,52 @@
       geodesic(Gw, Cw, w, h, act, 8);
       var Aw = new Float32Array(A), PW = needPool(), tgw = physSampler('b', 260, 'granul'), tlw = sampler('b', 0.9, 0, 'lavado');
       if (wMode === 'smear') {
-        // a) arrastre: cada borde se prolonga hacia un lado con estrías del dedo / del papel
+        // a) BORRÓN: una o varias pasadas de dedo/mano sobre la tinta fresca, hacia un lado.
+        //    Solo donde pasó el dedo (bandas en la dirección del arrastre). La tinta se TRANSPORTA:
+        //    se recoge de la letra (más de los trazos gruesos) y se va depositando cada vez más
+        //    diluida; pegado a la letra queda denso y luego un rastro largo con estrías de la piel
+        //    y del papel. La letra pierde tinta por donde pasó el dedo (estrías claras).
         var sa = (WK.dir == null ? 0.06 : WK.dir) * Math.PI, sdx2 = Math.cos(sa), sdy2 = Math.sin(sa);
-        var Ls = U * (0.04 + 0.32 * (WK.drag == null ? 0.5 : WK.drag)) * (0.5 + wAmt);
-        var Sm = new Float32Array(A), Lloc = new Float32Array(n), Str = new Float32Array(n), sBand = new Uint8Array(n), sMax = Ls * 3.3;
+        var Ls = U * (0.05 + 0.4 * (WK.drag == null ? 0.5 : WK.drag)), sMax = Ls * 3.2;
+        var Pm = new Float32Array(n), Str = new Float32Array(n), sBand = new Uint8Array(n);
         for (i = 0; i < n; i++) sBand[i] = Dw[i] < sMax ? 1 : 0;
         for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
           i = y * w + x; if (!sBand[i]) continue;
-          var perp = (x - ox) * -sdy2 + (y - oy) * sdx2;
-          var st1 = noise(perp / (physK * 3.5) + 17.3, 3.1), st2 = noise(perp / (U * 0.06) - 4.2, 8.7), st3 = noise(perp / (U * 0.3) + 2.2, 1.9);
-          Str[i] = clamp01(0.25 + 0.5 * st1 + 0.45 * st2);
-          Lloc[i] = Ls * (0.25 + 1.2 * smooth(0.25, 0.8, st3)) * (0.6 + 0.6 * st2) * (0.4 + 0.8 * zoneAt(x, y));
+          var perp = (x - ox) * -sdy2 + (y - oy) * sdx2, along = (x - ox) * sdx2 + (y - oy) * sdy2;
+          // estrías: crestas finas de la piel / del papel y otras más anchas
+          var st1 = noise(perp / (physK * 2.6) + 17.3, along / (U * 2) + 3.1), st2 = noise(perp / (U * 0.035) - 4.2, along / (U * 1.5) + 8.7);
+          Str[i] = clamp01(0.15 + 0.55 * st1 + 0.5 * st2);
+          // presión del dedo: bandas a lo largo del arrastre, con bordes blandos y que empiezan y acaban
+          var bn = noise(perp / (U * 0.42) + 2.2, along / (U * 3.5) + 1.9) * 0.8 + noise(perp / (U * 0.12) + 7.7, 0.3) * 0.2;
+          Pm[i] = smooth(0.66 - 0.5 * wAmt, 0.82 - 0.4 * wAmt, bn) * (0.55 + 0.45 * st2);
         }
-        for (var stp = 1; stp < Ls * 3; stp *= 2) {
-          var Sn = new Float32Array(Sm);
+        // tinta recogida (la letra) y transporte: suma con decaimiento exponencial (en log pasos)
+        var Tsum = new Float32Array(n), Tmax = new Float32Array(n), aL = Math.exp(-1 / Math.max(2, Ls)), aS = Math.exp(-1 / Math.max(1.5, Ls * 0.12));
+        for (i = 0; i < n; i++) { var pk = A[i] * Pm[i]; Tsum[i] = pk; Tmax[i] = pk; }
+        for (var stp = 1; stp < sMax; stp *= 2) {
+          var Ns = new Float32Array(Tsum), Nm = new Float32Array(Tmax), fa = Math.pow(aL, stp), fm = Math.pow(aS, stp);
           for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
-            i = y * w + x; if (!sBand[i] || A[i] >= 0.999) continue;
-            var vS = sampleBil(Sm, w, h, x - sdx2 * stp, y - sdy2 * stp) * Math.exp(-stp / Math.max(1, Lloc[i]));
-            if (vS > Sn[i]) Sn[i] = vS;
+            i = y * w + x; if (!sBand[i]) continue;
+            var sxq = x - sdx2 * stp, syq = y - sdy2 * stp;
+            Ns[i] += sampleBil(Tsum, w, h, sxq, syq) * fa;
+            var vm = sampleBil(Tmax, w, h, sxq, syq) * fm; if (vm > Nm[i]) Nm[i] = vm;
           }
-          Sm = Sn;
+          Tsum = Ns; Tmax = Nm;
         }
         for (i = 0; i < n; i++) {
-          var a0 = A[i], yq2 = (i / w) | 0, xq2 = i - yq2 * w;
-          if (a0 >= 0.5) { Aw[i] = a0 * (1 - 0.3 * wAmt * (1 - Str[i]) * smooth(0.3, 0.9, zoneAt(xq2, yq2))); continue; }   // el arrastre levanta algo de tinta de la letra
-          var dO2 = Dw[i], tail = Sm[i];
-          if (tail <= 0.002) continue;
-          var tk = smooth(0, Math.max(2, Lloc[i] * 0.5), dO2);
-          tail *= 1 - tk * (1 - Str[i]) * 0.85;                 // estrías
-          tail *= 1 - tk * 0.4 * smooth(0.45, 0.85, 1 - tgw(xq2, yq2));   // el papel se queda el pigmento a trozos
-          if (tail > Aw[i]) Aw[i] = tail;
+          var a0 = A[i], yq2 = (i / w) | 0, xq2 = i - yq2 * w, pr = Pm[i];
+          if (a0 >= 0.5) {   // la letra pierde tinta por donde pasó el dedo, en estrías
+            if (pr > 0) Aw[i] = a0 * (1 - 0.45 * pr * (0.35 + 0.65 * (1 - Str[i])));
+            continue;
+          }
+          if (!sBand[i]) continue;
+          var dense = Tmax[i];                                    // pegado a la letra: denso, casi su tinta
+          var trail = Tsum[i] * (1 - aL) * 1.6;                   // el rastro: depende de cuánta tinta había
+          var tk = smooth(0, Math.max(2, Ls * 0.35), Dw[i]);
+          trail *= (0.3 + 0.7 * Str[i]) * (1 - 0.22 * smooth(0.5, 0.9, 1 - tgw(xq2, yq2)));   // estrías y papel que coge el pigmento a trozos
+          trail = Math.min(0.8, trail);
+          var vv = Math.max(dense * (1 - 0.35 * tk * (1 - Str[i])), trail);
+          if (vv > Aw[i]) Aw[i] = vv;
         }
         // y un poco de capilaridad en el borde, como en todo papel
         for (i = 0; i < n; i++) { if (A[i] >= 0.5) continue; var gv0 = Gw[i]; if (gv0 > 1e8) continue; var fv0 = Math.exp(-Math.pow(gv0 / (rW * 0.35), 1.6)); if (fv0 > Aw[i]) Aw[i] = fv0; }

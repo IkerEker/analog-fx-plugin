@@ -2,7 +2,16 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.8.2**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.8.3**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.8.3
+- **Interfaz:**
+  - Sin vista previa, en los dos modos.
+  - El panel se ancla a la ventana y **APLICAR** queda siempre fijo abajo, aunque el panel sea muy pequeño.
+  - Con anchura, las tarjetas se ponen en columnas; en ventanas bajas o estrechas, modo compacto.
+- **Fotocopia punk:** sin bordes ni marcos, solo la imagen. Copia de copia conserva mejor el detalle.
+- **Goteo absorbente:** muchas más gotas de agua que se comen el pigmento, más finas; algunas se agotan y se desvanecen al poco de tocar la letra.
+- **Tinta corrida › Corrida a un lado rehecha:** es una pasada de dedo sobre la tinta fresca, en bandas, no en todas las letras. La tinta se transporta: los trazos gruesos dejan más borrón, densa junto a la letra y luego un rastro diluido con estrías. La letra pierde tinta en estrías por donde pasó el dedo.
 
 ## Novedades 0.8.2 (Imágenes)
 - **Intensidad del efecto que recorre todo el rango:**
@@ -167,7 +176,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.8.2.ccx`.
+1. Descarga `dist/AnalogFX_0.8.3.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
@@ -179,7 +188,7 @@ Arriba elige **Letras** (texto y formas) o **Imágenes** (fotos).
 4. Ajusta la intensidad.
 5. Pulsa **APLICAR**.
 
-Se crea la capa `Nombre · Analog` y el original queda oculto debajo. Si seleccionas el resultado y vuelves a aplicar, se regenera desde el original.
+Arriba eliges el modo; abajo, **APLICAR** siempre está visible. Se crea la capa `Nombre · Analog` y el original queda oculto debajo. Si seleccionas el resultado y vuelves a aplicar, se regenera desde el original.
 
 ## Estructura
 ```

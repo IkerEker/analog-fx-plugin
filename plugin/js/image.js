@@ -12,7 +12,7 @@
  * INTENSIDAD (applyIntensity): e = 0..1 (0 % … 200 % del deslizador; 100 % = 0,5).
  *   e≈0   apenas se nota: trama finísima, sin defectos y casi la foto original.
  *   e=0,5 el preset tal cual.
- *   e=1   una locura: trama enorme, umbral quemado, desregistro grande, defectos a tope.
+ *   e=1   una locura: trama enorme, umbral quemado, desregistro grande, defectos a tope (nunca bordes ni marcos).
  * Todas las medidas son relativas al lado corto de la imagen: la vista previa reducida y el
  * resultado a tamaño real se ven igual.
  */
@@ -351,7 +351,7 @@
 
   // 1 · Fotocopia punk: umbral (más o menos duro según la intensidad), umbral adaptativo para que
   // el detalle no se pierda, copia de copia (cada pasada empasta y redondea), tóner que salpica,
-  // huecos, rayas, velo y sombra del borde del original en el cristal.
+  // huecos, rayas y velo (sin bordes: solo la imagen).
   TECH.xerox = function (im, p) {
     var w = im.w, h = im.h, S = im.S, n = im.n, e = p.e, seed = p.seed, i, T = darkness(im);
     // umbral adaptativo: el fondo local se lleva hacia el medio, así el detalle de luces y sombras se lee
@@ -362,7 +362,7 @@
     var passes = 1 + Math.min(4, Math.round((p.gen || 0) * 1.6)), thr = 1 - (p.threshold == null ? 0.5 : p.threshold);
     var J = noiseField(w, h, S * 0.05, seed, true);
     for (var g = 0; g < passes; g++) {
-      if (g > 0 || p.method !== 'trama') T = blur(T, w, h, Math.max(0.5, S * 0.0011 * (1 + (p.gen || 0) * 1.2)));
+      if (g > 0 || p.method !== 'trama') T = blur(T, w, h, Math.max(0.5, S * 0.0008 * (1 + Math.min(1.5, p.gen || 0) * 0.6)));
       var th = g === 0 ? thr : 0.5;                                        // las copias siguientes no mueven el borde
       for (i = 0; i < n; i++) {
         var tj = th + (J[i] - 0.5) * 0.05 * (0.5 + e);
@@ -378,16 +378,6 @@
     addSpecks(T, near, im, p.specks || 0, seed, true);
     streaksV(T, im, p.streaks || 0, seed, false);
     if ((p.haze || 0) > 0) for (i = 0; i < n; i++) T[i] = Math.max(T[i], Math.min(1, p.haze) * 0.2 * smooth(0, 0.5, near[i]));
-    // sombra del borde del original en el cristal (solo fotos sin recorte)
-    var fr = (p.frame || 0) * smooth(0.55, 1, e);
-    if (fr > 0 && im.A[0] > 0.5 && im.A[n - 1] > 0.5) {
-      var Fn = noiseField(w, h, S * 0.04, seed + 91, true);
-      for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
-        i = y * w + x; var d = Math.min(x, y, w - 1 - x, h - 1 - y) / S;
-        var band = smooth(0.012 + 0.05 * fr * Fn[i], 0.004, d) * fr;
-        if (band > 0) T[i] = Math.max(T[i], band * (0.85 + 0.15 * hash2(x, y, seed)));
-      }
-    }
     return [{ cov: defects(T, im, p, 0, seed), ink: p.inks[0] }];
   };
 
@@ -648,7 +638,7 @@
   // Lo que cambia con el deslizador. Los defectos crecen de 0 a mucho más que el preset; las tramas
   // y los granos se hacen más finos (casi invisibles) o enormes; con intensidad baja además se
   // conserva parte de la foto original. Así el 0 % casi no se nota y el 200 % es una locura.
-  var DEFECTS = ['misreg', 'mottle', 'grain', 'specks', 'streaks', 'bands', 'haze', 'dropout', 'fade', 'ghost', 'gen', 'slur', 'double', 'starve', 'frame'];
+  var DEFECTS = ['misreg', 'mottle', 'grain', 'specks', 'streaks', 'bands', 'haze', 'dropout', 'fade', 'ghost', 'gen', 'slur', 'double', 'starve'];
   function applyIntensity(p, I) {
     var e = clamp01((I == null ? 1 : I) / 2);
     p.e = e;
@@ -678,16 +668,16 @@
   var DEFAULTS = {
     kind: 'xerox', method: '', contrast: 0, bright: 0, detail: 0.3, clarity: 0.3, auto: 1, punch: 0.5, threshold: 0.5, gen: 0.3, adapt: 0.35,
     lines: 90, shape: 'round', angle: 45, gain: 0.2, px: 0.3, misreg: 0, mottle: 0.2, grain: 0.2, specks: 0, streaks: 0, bands: 0, haze: 0,
-    dropout: 0, fade: 0, ghost: 0, slur: 0, double: 0, starve: 0, frame: 0, mesh: 0.4, comic: false, channel: 1, inks: ['#151515'], paper: 'ink', seed: 1
+    dropout: 0, fade: 0, ghost: 0, slur: 0, double: 0, starve: 0, mesh: 0.4, comic: false, channel: 1, inks: ['#151515'], paper: 'ink', seed: 1
   };
   var BK = { name: 'Negro', inks: ['#151515'] }, RD = { name: 'Rojo', inks: ['#c8292b'] }, BL = { name: 'Azul', inks: ['#1f3a93'] };
   var TECHS = [
-    { id: 'xerox', name: 'Fotocopia punk', desc: 'Blanco y negro a umbral, como un flyer fotocopiado: el negro se come el detalle, el tóner salpica junto a los bordes, huecos, rayas del cristal y, a tope, la sombra del borde del original.',
+    { id: 'xerox', name: 'Fotocopia punk', desc: 'Blanco y negro a umbral, como un flyer fotocopiado: el negro se come el detalle, el tóner salpica junto a los bordes, huecos y rayas del cristal. Sin bordes: solo la imagen.',
       palettes: [BK, RD, BL], keys: ['threshold', 'gen', 'adapt', 'contrast', 'detail', 'specks', 'dropout', 'streaks', 'haze', 'grain'],
       variants: [
-        { id: 'umbral', name: 'Umbral duro', p: { kind: 'xerox', threshold: 0.5, gen: 0.2, adapt: 0.4, detail: 0.5, clarity: 0.5, specks: 0.35, dropout: 0.2, streaks: 0.15, haze: 0.08, grain: 0.15, mottle: 0.1, frame: 0.6 } },
-        { id: 'copia', name: 'Copia de copia', p: { kind: 'xerox', threshold: 0.56, gen: 1, adapt: 0.45, detail: 0.3, clarity: 0.3, specks: 0.7, dropout: 0.45, streaks: 0.35, haze: 0.25, grain: 0.25, mottle: 0.2, frame: 1 } },
-        { id: 'trama', name: 'Revista fotocopiada', p: { kind: 'xerox', method: 'trama', lines: 55, threshold: 0.5, gen: 0.25, adapt: 0.15, detail: 0.3, clarity: 0.3, specks: 0.3, dropout: 0.15, streaks: 0.1, haze: 0.1, grain: 0.15, mottle: 0.1, frame: 0.5 } }
+        { id: 'umbral', name: 'Umbral duro', p: { kind: 'xerox', threshold: 0.5, gen: 0.2, adapt: 0.4, detail: 0.5, clarity: 0.5, specks: 0.35, dropout: 0.2, streaks: 0.15, haze: 0.08, grain: 0.15, mottle: 0.1 } },
+        { id: 'copia', name: 'Copia de copia', p: { kind: 'xerox', threshold: 0.53, gen: 1, adapt: 0.45, detail: 0.3, clarity: 0.3, specks: 0.7, dropout: 0.45, streaks: 0.35, haze: 0.25, grain: 0.25, mottle: 0.2 } },
+        { id: 'trama', name: 'Revista fotocopiada', p: { kind: 'xerox', method: 'trama', lines: 55, threshold: 0.5, gen: 0.25, adapt: 0.15, detail: 0.3, clarity: 0.3, specks: 0.3, dropout: 0.15, streaks: 0.1, haze: 0.1, grain: 0.15, mottle: 0.1 } }
       ] },
     { id: 'news', name: 'Periódico', desc: 'Trama de puntos de una tinta en papel de periódico: las luces pierden el punto, los medios engordan, las sombras se empastan; el punto se corre y a veces se dobla.',
       palettes: [{ name: 'Tinta de periódico', inks: ['#262423'] }, RD, BL], keys: ['lines', 'gain', 'slur', 'contrast', 'detail', 'mottle', 'grain'],

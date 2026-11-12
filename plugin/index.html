@@ -15,7 +15,7 @@
           <div class="brand-sub" id="layerName">Sin capa seleccionada</div>
         </div>
       </div>
-      <div class="badge" id="modeBadge">v0.8.2</div>
+      <div class="badge" id="modeBadge">v0.8.3</div>
     </header>
     <div class="modebar">
       <div class="mtab" id="tabText">Letras</div>
@@ -24,21 +24,11 @@
 
     <div id="scroll">
       <div class="row-wrap">
-        <!-- Vista previa -->
-        <section class="card preview-card">
-          <div class="preview" id="previewBox">
-            <img id="previewImg" alt="">
-            <div class="preview-empty" id="previewEmpty">
-              <div class="empty-icon">T</div>
-              <div>Selecciona una capa de <b>texto</b>, <b>forma</b> o <b>línea</b></div>
-            </div>
-            <div class="preview-busy" id="previewBusy"></div>
-          </div>
-          <div class="preview-bar">
-            <div class="pill" id="compareBtn">Mantén para ver original</div>
-            <div class="seed" id="seedLabel">Semilla 1</div>
-          </div>
-        </section>
+        <!-- (la vista previa se ha quitado: estos nodos ocultos solo mantienen las referencias) -->
+        <div class="hidden" id="previewHolder">
+          <div id="previewBox"><img id="previewImg" alt=""><div id="previewEmpty"></div><div id="previewBusy"></div></div>
+          <div id="compareBtn"></div><div id="seedLabel"></div>
+        </div>
 
         <!-- IMÁGENES -->
         <div class="col page hidden" id="pageImage">

@@ -351,3 +351,34 @@ html, body {
 .mtab.active { background: var(--green); color: var(--green-ink); }
 #imgAdv { margin-top: 8px; }
 #imgAdv.hidden, .hidden { display: none; }
+
+/* ---------- 0.8.3: el panel se acopla a la ventana y APLICAR siempre queda fijo abajo ---------- */
+/* En UXP la altura 100 % del documento no siempre se respeta: se ancla el panel a los cuatro lados. */
+#app { position: absolute; top: 0; right: 0; bottom: 0; left: 0; height: auto; overflow: hidden; }
+#scroll { flex: 1 1 0; }
+.bottom { flex: 0 0 auto; position: relative; z-index: 2; box-shadow: 0 -6px 10px rgba(0, 0, 0, 0.25); }
+#previewHolder { display: none; }
+/* sin vista previa: las tarjetas de cada página se reparten en columnas si hay anchura */
+.row-wrap > .col { flex: 1 1 100%; }
+.col { flex-direction: row; flex-wrap: wrap; align-items: flex-start; margin: 0 -4px; }
+.col > .card { flex: 1 1 260px; min-width: 0; margin: 0 4px 8px 4px; }
+/* tarjetas de técnica: más pequeñas para que quepan más */
+.tcard { flex: 1 1 68px; min-width: 58px; max-width: 104px; }
+/* compacto (ventana baja o estrecha): menos aire para que se vean más botones */
+body.compact .top { padding: 6px 10px 5px 10px; }
+body.compact .logo { width: 20px; height: 20px; margin-right: 7px; }
+body.compact .brand-sub { display: none; }
+body.compact .modebar { margin: 5px 6px 0 6px; padding: 2px; }
+body.compact .mtab { padding: 5px 0; font-size: 11px; }
+body.compact #scroll { padding: 6px 6px 2px 6px; }
+body.compact .card { padding: 8px; margin-bottom: 6px; }
+body.compact .col > .card { margin-bottom: 6px; }
+body.compact .tcard img { height: 30px; object-fit: cover; }
+body.compact .tcard .tname { font-size: 9px; padding: 2px 4px 3px 4px; }
+body.compact .foot-note { display: none; }
+body.compact .bottom { padding: 5px 6px; }
+body.compact .status { margin-bottom: 4px; }
+body.compact .btn { height: 28px; }
+body.compact .btn.icon { flex-basis: 28px; width: 28px; }
+body.tiny .status { display: none; }
+body.tiny .card-title, body.tiny .tech-desc { display: none; }

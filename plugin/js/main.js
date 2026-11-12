@@ -847,9 +847,10 @@
     previewTimer = setTimeout(function () { renderPreview(fast); }, fast ? 16 : 40);
   }
 
+  var NO_PREVIEW = true;   // la vista previa se ha quitado del panel (no servía): no se calcula
   function renderPreview(fast) {
     var s = state.src;
-    if (!s) return;
+    if (!s || NO_PREVIEW) return;
     if (state.rendering) { state.dirty = fast ? 'fast' : 'full'; return; }
     state.rendering = true;
     if (state.mode === 'img') return renderPreviewImg(s, fast);
@@ -1142,7 +1143,17 @@
   }
 
   // ---------------------------------------------------------------- arranque
+  // el panel se adapta al tamaño de la ventana: compacto si es baja o estrecha
+  function fitPanel() {
+    var w = window.innerWidth || document.documentElement.clientWidth || 300, h = window.innerHeight || document.documentElement.clientHeight || 600;
+    var b = document.body; if (!b) return;
+    var cls = (h < 640 || w < 250 ? ' compact' : '') + (h < 430 ? ' tiny' : '');
+    if (b.className !== cls.trim()) b.className = cls.trim();
+  }
   function init() {
+    fitPanel();
+    try { window.addEventListener('resize', fitPanel); } catch (e) { /* sin evento de tamaño */ }
+    setInterval(fitPanel, 700);   // UXP no siempre avisa del cambio de tamaño del panel
     buildUI();
     buildImageUI();
     syncAll();
