@@ -2,7 +2,15 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.8.0**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.8.1**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.8.1 (Letras)
+- **Tinta corrida rehecha por capilaridad:** la tinta avanza por las fibras de celulosa que tocan la letra (red de fibras a tamaño real y distancia por dentro del papel). Ya no es un desenfoque.
+  - **Por las fibras:** pelillos finos de largo muy distinto, agrupados por zonas, con la intensidad de la letra en la raíz.
+  - **Corrida a un lado:** la tinta fresca arrastrada hacia un lado, con estrías del dedo y del papel. El arrastre levanta algo de tinta de la letra.
+  - **Borde húmedo:** junto a la letra, su misma tinta; luego el tinte diluido y moteado, que se para en un borde fibroso y desigual.
+- **Xilografía › Contorno tallado rehecho:** una sola línea de gubia paralela al borde. Engorda del lado de la luz, se afila hasta desaparecer en el de sombra y se corta a tramos. Los bordes de la madera quedan nítidos.
+- **Goteo en papel absorbente** (Papel absorbente e Infiltrado largo): agua que cae desde arriba sobre las letras y se come el pigmento. Deja canales lavados con los bordes más cargados y algunas manchas redondas donde cae la gota. Al salir de la letra sigue como una marca diluida. Se regula con el nuevo control **Agua que cae encima**.
 
 ## Novedades 0.8.0
 - **Dos modos arriba del todo: Letras e Imágenes.** Letras queda exactamente igual.
@@ -143,7 +151,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.8.0.ccx`.
+1. Descarga `dist/AnalogFX_0.8.1.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

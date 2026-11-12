@@ -140,6 +140,10 @@
     { id: 'seep', title: 'Tinta corrida (fibras)', ctl: [
       { k: 'amount', label: 'Tramos donde se corre' }, { k: 'reach', label: 'Hasta dónde llega' },
       { k: 'density', label: 'Densidad de la tinta corrida' }, { k: 'front', label: 'Línea del frente' }] },
+    { id: 'wick', title: 'Tinta corrida (capilaridad)', ctl: [
+      { k: 'amount', label: 'Tramos donde se corre' }, { k: 'reach', label: 'Hasta dónde llega' },
+      { k: 'front', label: 'Frente cargado (borde húmedo)' }, { k: 'drag', label: 'Largo del arrastre (a un lado)' },
+      { k: 'dir', label: 'Dirección del arrastre', min: -1, max: 1, fmt: function (v) { return Math.round(v * 180) + '°'; } }] },
     { id: 'engrave', title: 'Talla (xilografía)', ctl: [
       { k: 'spacing', label: 'Separación de las líneas' }, { k: 'width', label: 'Grosor de las líneas' },
       { k: 'length', label: 'Cuánto entran en la letra' }, { k: 'skip', label: 'Líneas que faltan' },
@@ -171,7 +175,7 @@
       { k: 'streaks', label: 'Rayas del tambor' }, { k: 'haze', label: 'Velo gris' }, { k: 'slur', label: 'Tóner arrastrado' }] },
     { id: 'drip', title: 'Goteo desde las letras', ctl: [
       { k: 'amount', label: 'Cantidad de gotas' }, { k: 'length', label: 'Longitud' }, { k: 'thick', label: 'Grosor' },
-      { k: 'sag', label: 'Tinta acumulada en la base' }, { k: 'beads', label: 'Gotitas que se desprenden' }, { k: 'dark', label: 'Pigmento en la gota' }, { k: 'absorb', label: 'Papel absorbente (se infiltra)' }] },
+      { k: 'sag', label: 'Tinta acumulada en la base' }, { k: 'beads', label: 'Gotitas que se desprenden' }, { k: 'dark', label: 'Pigmento en la gota' }, { k: 'absorb', label: 'Papel absorbente (se infiltra)' }, { k: 'runs', label: 'Agua que cae encima (se come el pigmento)' }] },
     { id: 'aqua', title: 'Acuarela', ctl: [
       { k: 'density', label: 'Densidad del pigmento' }, { k: 'variation', label: 'Manchas del lavado' },
       { k: 'rim', label: 'Aro oscuro del borde' }, { k: 'rimWidth', label: 'Ancho del aro' },
