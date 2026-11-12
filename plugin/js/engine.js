@@ -1142,7 +1142,7 @@
         //    diluida; pegado a la letra queda denso y luego un rastro largo con estrías de la piel
         //    y del papel. La letra pierde tinta por donde pasó el dedo (estrías claras).
         var sa = (WK.dir == null ? 0.06 : WK.dir) * Math.PI, sdx2 = Math.cos(sa), sdy2 = Math.sin(sa);
-        var Ls = U * (0.05 + 0.4 * (WK.drag == null ? 0.5 : WK.drag)), sMax = Ls * 3.2;
+        var Ls = U * (0.035 + 0.25 * (WK.drag == null ? 0.5 : WK.drag)), sMax = Ls * 3.2;
         var Pm = new Float32Array(n), Str = new Float32Array(n), sBand = new Uint8Array(n);
         for (i = 0; i < n; i++) sBand[i] = Dw[i] < sMax ? 1 : 0;
         for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
@@ -1153,7 +1153,7 @@
           Str[i] = clamp01(0.15 + 0.55 * st1 + 0.5 * st2);
           // presión del dedo: bandas a lo largo del arrastre, con bordes blandos y que empiezan y acaban
           var bn = noise(perp / (U * 0.42) + 2.2, along / (U * 3.5) + 1.9) * 0.8 + noise(perp / (U * 0.12) + 7.7, 0.3) * 0.2;
-          Pm[i] = smooth(0.66 - 0.5 * wAmt, 0.82 - 0.4 * wAmt, bn) * (0.55 + 0.45 * st2);
+          Pm[i] = smooth(0.74 - 0.4 * wAmt, 0.88 - 0.32 * wAmt, bn) * (0.55 + 0.45 * st2);   // pocas pasadas, presión suave
         }
         // tinta recogida (la letra) y transporte: suma con decaimiento exponencial (en log pasos)
         var Tsum = new Float32Array(n), Tmax = new Float32Array(n), aL = Math.exp(-1 / Math.max(2, Ls)), aS = Math.exp(-1 / Math.max(1.5, Ls * 0.12));
@@ -1171,15 +1171,15 @@
         for (i = 0; i < n; i++) {
           var a0 = A[i], yq2 = (i / w) | 0, xq2 = i - yq2 * w, pr = Pm[i];
           if (a0 >= 0.5) {   // la letra pierde tinta por donde pasó el dedo, en estrías
-            if (pr > 0) Aw[i] = a0 * (1 - 0.45 * pr * (0.35 + 0.65 * (1 - Str[i])));
+            if (pr > 0) Aw[i] = a0 * (1 - 0.3 * pr * (0.35 + 0.65 * (1 - Str[i])));
             continue;
           }
           if (!sBand[i]) continue;
           var dense = Tmax[i];                                    // pegado a la letra: denso, casi su tinta
-          var trail = Tsum[i] * (1 - aL) * 1.6;                   // el rastro: depende de cuánta tinta había
+          var trail = Tsum[i] * (1 - aL) * 1.25;                   // el rastro: depende de cuánta tinta había
           var tk = smooth(0, Math.max(2, Ls * 0.35), Dw[i]);
           trail *= (0.3 + 0.7 * Str[i]) * (1 - 0.22 * smooth(0.5, 0.9, 1 - tgw(xq2, yq2)));   // estrías y papel que coge el pigmento a trozos
-          trail = Math.min(0.8, trail);
+          trail = Math.min(0.6, trail);
           var vv = Math.max(dense * (1 - 0.35 * tk * (1 - Str[i])), trail);
           if (vv > Aw[i]) Aw[i] = vv;
         }

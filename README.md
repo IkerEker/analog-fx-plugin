@@ -2,7 +2,11 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.8.6**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.8.7**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.8.7
+- **Corrida a un lado** mucho más contenida: pocas pasadas, presión suave, rastro corto y diluido. Muchas letras quedan limpias.
+- **APLICAR** nunca se sale del panel: el texto de estado va en su propia fila y el botón se ajusta al ancho que queda.
 
 ## Novedades 0.8.6
 - **Goteo absorbente:** gotas más cortas; el tramo opaco sin infiltrar junto a la letra es corto y enseguida la gota se infiltra y se abre. Los rastros de agua bajo la letra también son más cortos.
@@ -188,7 +192,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.8.6.ccx`.
+1. Descarga `dist/AnalogFX_0.8.7.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

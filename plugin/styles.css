@@ -382,3 +382,9 @@ body.compact .btn { height: 28px; }
 body.compact .btn.icon { flex-basis: 28px; width: 28px; }
 body.tiny .status { display: none; }
 body.tiny .card-title, body.tiny .tech-desc { display: none; }
+
+/* ---------- 0.8.7: pie a prueba de UXP: el estado va en su propia fila y APLICAR nunca se sale ---------- */
+.bottom { display: flex; flex-direction: column; align-items: stretch; }
+.bottom .status { display: block; width: auto; flex: 0 0 auto; }
+.actions { display: flex; flex-direction: row; align-items: center; width: 100%; flex: 0 0 auto; }
+.btn.primary { flex: 1 1 0; width: 10px; min-width: 60px; }
