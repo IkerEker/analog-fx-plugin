@@ -477,7 +477,7 @@
       var satL = bite ? U * (0.012 + 0.05 * R()) * (0.6 + 0.4 * rk) : U * (0.1 + 0.3 * R()) * (0.6 + 0.4 * rk);   // cuánto tarda en cargarse de tinta
       var lostInside = !bite && R() < 0.5;
       var ys = Math.max(1, top[x0] - U * (0.03 + 0.45 * R()));
-      var tail = U * (0.12 + 1.1 * (DR.length || 0.4) * (0.3 + 0.7 * R()));
+      var tail = U * (0.06 + 0.5 * (DR.length || 0.4) * (0.3 + 0.7 * R()));
       var lastInk = -1, entry = -1, c = 0, xc = x0;
       for (y = Math.max(0, ys | 0); y < h; y++) {
         xc = x0 + (noise(y / (U * 0.3) + sd, sd * 0.3) - 0.5) * U * 0.1 + (noise(y / (U * 0.05) - sd, 4.1) - 0.5) * U * 0.015;
@@ -1033,7 +1033,7 @@
         var add2 = new Float32Array(n), dist = new Float32Array(n);
         for (i = 0; i < n; i++) add2[i] = Math.max(0, Ddr[i] - A[i]);
         for (x = 0; x < w; x++) { var run = 1e9; for (y = 0; y < h; y++) { i = y * w + x; if (A[i] > 0.5) run = 0; else run += 1; dist[i] = run; } }
-        var Lref = U * (0.15 + 1.1 * DR.length);
+        var Lref = U * (0.05 + 0.35 * DR.length);   // la gota se infiltra pronto: el tramo opaco es corto
         // la gota se va abriendo: desenfoque creciente con la distancia a la letra (mezcla de 3 escalas)
         var r1 = 0.8 + U * 0.004 * ab, r2 = 1 + U * 0.018 * ab, r3 = 1.5 + U * 0.04 * ab;
         var B1 = blur(add2, w, h, r1, r1), B2 = blur(add2, w, h, r2, r2 * 0.8), B3 = blur(add2, w, h, r3, r3 * 0.7);
