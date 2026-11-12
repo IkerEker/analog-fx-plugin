@@ -469,7 +469,7 @@
     for (x = 0; x < w; x++) { for (y = 0; y < h; y++) if (A[y * w + x] > 0.5) { if (top[x] < 0) top[x] = y; bot[x] = y; } if (top[x] >= 0) cols.push(x); }
     if (!cols.length) return A;
     var O = new Float32Array(A), rk = Math.min(1.6, runs);
-    var nr = Math.max(1, Math.round(runs * (cols.length / U) * 10));
+    var nr = Math.max(1, Math.round(runs * (cols.length / U) * 32));
     for (var r = 0; r < nr; r++) {
       var x0 = cols[(R() * cols.length) | 0], sd = R() * 100;
       var bite = R() < 0.6;
