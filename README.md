@@ -2,7 +2,28 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.4**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.5**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.5
+- **Ningún efecto marca ya la caja de la capa:** todo lo que no es la letra se desvanece de forma irregular antes del borde. Comprobado en todas las técnicas.
+- **Sello gastado:** tres sellos distintos.
+  - **Goma entintada.**
+  - **Inclinado y doble golpe.**
+  - **Tinta seca:** solo marca el borde de la goma.
+- **Acuarelado:** tres técnicas reales y más pigmento.
+  - **Lavado con aro:** borde oscurecido y granulación.
+  - **Pincel seco:** solo pinta las crestas del papel, con estrías y huecos.
+  - **Mojado sobre mojado:** plumas de pigmento hacia fuera y floraciones con borde oscuro.
+- **Sobre agua:** Tinta en agua (dendritas con frente fractal) · Anillos flotantes (suminagashi) · Sedimento seco.
+- **Destrozado › Rayado y arañado:** arañazos reales en grupos, con borde desconchado y restos arrastrados.
+- **Maraña:** Estropajo · Pelo peinado · Raíces sueltas, muy distintas entre sí.
+- **Tinta corrida › Borde húmedo:** más fino, con fibras de detalle.
+- **Serigrafía (malla):** tinta plana, estrías de rasqueta, nudos de malla y poros.
+- **Xilografía:**
+  - **Contorno tallado:** muescas de gubia, borde mordido y veta.
+  - **Sello de madera:** recorte irregular hecho a mano.
+- **Mimeógrafo:** repinte a trozos con grano y halo de aceite que sigue la fibra.
+- **Fotocopia:** menos rayas, y solo cerca de la tinta.
 
 ## Novedades 0.9.4
 - **Corregido:** Acuarelado cortaba los textos anchos (más anchos que altos). Era un error del motor al leer un campo de ruido con las coordenadas cambiadas.
@@ -244,7 +265,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.4.ccx`.
+1. Descarga `dist/AnalogFX_0.9.5.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

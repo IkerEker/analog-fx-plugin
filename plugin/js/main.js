@@ -153,7 +153,7 @@
     { id: 'stamp', title: 'Sello de goma', ctl: [
       { k: 'tilt', label: 'Inclinación (presión desigual)' }, { k: 'uneven', label: 'Irregularidad' },
       { k: 'edge', label: 'Tinta cargada en el borde' }, { k: 'letterVar', label: 'Diferencia entre letras' },
-      { k: 'periph', label: 'Marca del canto del sello' }] },
+      { k: 'periph', label: 'Marca del canto del sello' }, { k: 'double', label: 'Doble golpe' }, { k: 'dry', label: 'Tinta seca (solo borde)' }] },
     { id: 'letters', title: 'Variación entre letras', ctl: [
       { k: 'density', label: 'Carga de tinta' }, { k: 'tone', label: 'Tono' }] },
     { id: 'damp', title: 'Humedad (gotas de agua)', ctl: [
