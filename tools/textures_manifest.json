@@ -1,37 +1,242 @@
 {
-  "_doc": "Texturas que usa el plugin. family: uso en el motor; size: lado en px (potencia de 2).",
-  "families": {
-    "desgaste": { "label": "Desgaste", "size": 1024 },
-    "aguada": { "label": "Aguada", "size": 1024 },
-    "grano": { "label": "Grano", "size": 512 },
-    "rodillo": { "label": "Rodillo", "size": 512 }
+ "_doc": "Texturas que usa el plugin. family: uso en el motor; size: lado en px (potencia de 2).",
+ "families": {
+  "desgaste": {
+   "label": "Desgaste",
+   "size": 1024,
+   "seamless": true
   },
-  "textures": [
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Grises_6_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_4_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_9_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_10_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_11_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_12_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Frias_7_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Calidas_1_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Calidas_4_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Calidas_5_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Grises_9_Basecolor.png"],
-    ["desgaste", "OTRAS TEXTURAS/Guache_Pinceladas_Grises_2_Basecolor.png"],
-    ["aguada", "OTRAS TEXTURAS/Acuarela_Base_3_Basecolor.png"],
-    ["aguada", "OTRAS TEXTURAS/Acuarela_Base_4_Basecolor.png"],
-    ["aguada", "OTRAS TEXTURAS/Acuarela_manchas_2_Basecolor.png"],
-    ["aguada", "OTRAS TEXTURAS/Acuarela_manchas_3_Basecolor.png"],
-    ["aguada", "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/ACUARELAS_BASE_3_Basecolor.png"],
-    ["aguada", "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/ACUARELAS_BASE_6_Basecolor.png"],
-    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_1_Basecolor.png"],
-    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_2_Basecolor.png"],
-    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_3_Basecolor.png"],
-    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_5_Basecolor.png"],
-    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_6_Basecolor.png"],
-    ["grano", "OTRAS TEXTURAS/Acuarela_Grano_7_Basecolor.png"],
-    ["rodillo", "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/Bruchazos_Guache_2_Basecolor.png"],
-    ["rodillo", "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/Bruchazos_Guache_8_Basecolor.png"]
+  "aguada": {
+   "label": "Aguada",
+   "size": 1024,
+   "seamless": true
+  },
+  "grano": {
+   "label": "Grano",
+   "size": 512,
+   "seamless": true
+  },
+  "rodillo": {
+   "label": "Rodillo",
+   "size": 512,
+   "seamless": true
+  },
+  "goteo": {
+   "label": "Goteo",
+   "size": 1024,
+   "seamless": true
+  },
+  "toner": {
+   "label": "Tóner",
+   "size": 512,
+   "seamless": true
+  },
+  "fibra": {
+   "label": "Fibra",
+   "size": 512,
+   "seamless": true
+  },
+  "floracion": {
+   "label": "Floración",
+   "size": 1024,
+   "seamless": true
+  },
+  "granul": {
+   "label": "Granulación",
+   "size": 512,
+   "seamless": true
+  },
+  "lavado": {
+   "label": "Lavado",
+   "size": 512,
+   "seamless": true
+  },
+  "gubia": {
+   "label": "Gubia",
+   "size": 1024,
+   "seamless": true
+  }
+ },
+ "textures": [
+  [
+   "desgaste",
+   "OTRAS TEXTURAS/Guache_Pinceladas_Grises_6_Basecolor.png"
+  ],
+  [
+   "desgaste",
+   "OTRAS TEXTURAS/Guache_Pinceladas_Frias_4_Basecolor.png"
+  ],
+  [
+   "desgaste",
+   "OTRAS TEXTURAS/Guache_Pinceladas_Frias_9_Basecolor.png"
+  ],
+  [
+   "desgaste",
+   "OTRAS TEXTURAS/Guache_Pinceladas_Frias_10_Basecolor.png"
+  ],
+  [
+   "desgaste",
+   "OTRAS TEXTURAS/Guache_Pinceladas_Frias_12_Basecolor.png"
+  ],
+  [
+   "desgaste",
+   "OTRAS TEXTURAS/Guache_Pinceladas_Grises_2_Basecolor.png"
+  ],
+  [
+   "aguada",
+   "OTRAS TEXTURAS/Acuarela_Base_3_Basecolor.png"
+  ],
+  [
+   "aguada",
+   "OTRAS TEXTURAS/Acuarela_Base_4_Basecolor.png"
+  ],
+  [
+   "aguada",
+   "OTRAS TEXTURAS/Acuarela_manchas_2_Basecolor.png"
+  ],
+  [
+   "aguada",
+   "OTRAS TEXTURAS/Acuarela_manchas_3_Basecolor.png"
+  ],
+  [
+   "aguada",
+   "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/ACUARELAS_BASE_3_Basecolor.png"
+  ],
+  [
+   "aguada",
+   "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/ACUARELAS_BASE_6_Basecolor.png"
+  ],
+  [
+   "grano",
+   "OTRAS TEXTURAS/Acuarela_Grano_1_Basecolor.png"
+  ],
+  [
+   "grano",
+   "OTRAS TEXTURAS/Acuarela_Grano_2_Basecolor.png"
+  ],
+  [
+   "grano",
+   "OTRAS TEXTURAS/Acuarela_Grano_3_Basecolor.png"
+  ],
+  [
+   "grano",
+   "OTRAS TEXTURAS/Acuarela_Grano_5_Basecolor.png"
+  ],
+  [
+   "grano",
+   "OTRAS TEXTURAS/Acuarela_Grano_6_Basecolor.png"
+  ],
+  [
+   "grano",
+   "OTRAS TEXTURAS/Acuarela_Grano_7_Basecolor.png"
+  ],
+  [
+   "rodillo",
+   "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/Bruchazos_Guache_2_Basecolor.png"
+  ],
+  [
+   "rodillo",
+   "OTRAS TEXTURAS/TEXTURAS REALISTAS TILEABLES/Bruchazos_Guache_8_Basecolor.png"
+  ],
+  [
+   "goteo",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_1rjusi1rjusi1rju.jpg"
+  ],
+  [
+   "goteo",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_5u9yva5u9yva5u9y.jpg"
+  ],
+  [
+   "goteo",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_ecfqylecfqylecfq.jpg"
+  ],
+  [
+   "goteo",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_bmolwabmolwabmol.jpg"
+  ],
+  [
+   "goteo",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_v9cxn1v9cxn1v9cx.jpg"
+  ],
+  [
+   "toner",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_v3ebosv3ebosv3eb.jpg"
+  ],
+  [
+   "toner",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_idpfooidpfooidpf.jpg"
+  ],
+  [
+   "toner",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_gjquzfgjquzfgjqu.jpg"
+  ],
+  [
+   "fibra",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_2kqay92kqay92kqa.jpg"
+  ],
+  [
+   "fibra",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_7k4e7x7k4e7x7k4e.jpg"
+  ],
+  [
+   "fibra",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_36cw3g36cw3g36cw.jpg"
+  ],
+  [
+   "floracion",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_dkn2wudkn2wudkn2.jpg"
+  ],
+  [
+   "floracion",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_l0b4lbl0b4lbl0b4.jpg"
+  ],
+  [
+   "floracion",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_vobr5qvobr5qvobr.jpg"
+  ],
+  [
+   "floracion",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_uf5mpuf5mpuf5mpu.jpg"
+  ],
+  [
+   "granul",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_9bueey9bueey9bue (1).jpg"
+  ],
+  [
+   "granul",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_f4lp1of4lp1of4lp.jpg"
+  ],
+  [
+   "granul",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_zc2zgwzc2zgwzc2z.jpg"
+  ],
+  [
+   "granul",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Textura abstracta de tinta granulada.png"
+  ],
+  [
+   "lavado",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Textura abstracta de acuarela en escala de grises.png"
+  ],
+  [
+   "lavado",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Textura abstracta de acuarela gris.png"
+  ],
+  [
+   "lavado",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_7w8c4f7w8c4f7w8c.jpg"
+  ],
+  [
+   "lavado",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_kihujckihujckihu.jpg"
+  ],
+  [
+   "gubia",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_ozdrg6ozdrg6ozdr.jpg"
+  ],
+  [
+   "gubia",
+   "OTRAS TEXTURAS/TEXTURAS EN 9-16 NO TILEABLES/Gemini_Generated_Image_t99b7yt99b7yt99b.jpg"
   ]
+ ]
 }

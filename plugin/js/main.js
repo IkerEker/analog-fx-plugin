@@ -6,7 +6,7 @@
  */
 (function () {
   'use strict';
-  var E = window.AFXEngine, PR = window.AFXPresets;
+  var E = window.AFXEngine, PR = window.AFXPresets, IM = window.AFXImage;
 
   // ---------------------------------------------------------------- entorno
   var ps = null, uxp = null;
@@ -118,22 +118,71 @@
       { k: 'count', label: 'Número de tintas', min: 1, max: 3, fmt: function (v) { return String(Math.round(v)); }, plain: true, step: 1 },
       { k: 'd2', label: 'Densidad de las otras tintas' }, { k: 'tone', label: 'Densidad general' },
       { sep: 'Trama de semitono' },
+      { k: 'lpi', label: 'Lineatura (líneas por pulgada)', min: 0, max: 150, step: 1, plain: true, fmt: function (v) { return v > 0 ? Math.round(v) + ' lpp' : 'Auto'; } },
+      { k: 'toneVar', label: 'Variación del tono' },
       { k: 'screen', label: 'Trama' }, { k: 'cell', label: 'Tamaño del punto' }, { k: 'gain', label: 'Ganancia de punto' },
-      { k: 'donut', label: 'Puntos donut (flexo)' },
+      { k: 'donut', label: 'Puntos donut (flexo)' }, { k: 'slur', label: 'Corrido del punto (slur)' },
+      { k: 'double', label: 'Doble impresión del punto' }, { k: 'hickeys', label: 'Motas de suciedad (hickeys)' },
       { sep: 'Registro' },
       { k: 'misreg', label: 'Desregistro' }, { k: 'misAng', label: 'Dirección', min: -1, max: 1, fmt: degFmt }] },
     { id: 'press', title: 'Prensa · relieve', ctl: [
       { k: 'squeeze', label: 'Tinta acumulada en el borde' }, { k: 'halo', label: 'Halo aplastado' },
-      { k: 'starve', label: 'Poca tinta en macizos' }] },
+      { k: 'starve', label: 'Poca tinta en macizos' }, { k: 'deboss', label: 'Hundimiento en el papel' }] },
     { id: 'mesh', title: 'Malla de serigrafía', ctl: [
-      { k: 'sawtooth', label: 'Dentado de la malla' }, { k: 'mesh', label: 'Malla visible' }, { k: 'voids', label: 'Huecos' }] },
+      { k: 'sawtooth', label: 'Dentado de la malla' }, { k: 'mesh', label: 'Malla visible' }, { k: 'voids', label: 'Huecos' },
+      { k: 'ridge', label: 'Cresta de la rasqueta' }] },
     { id: 'wood', title: 'Madera', ctl: [
       { k: 'grain', label: 'Veta' }, { k: 'angle', label: 'Ángulo de la veta', min: -1, max: 1, fmt: degFmt },
       { k: 'spacing', label: 'Separación de la veta' }, { k: 'chips', label: 'Restos de talla' }] },
     { id: 'stone', title: 'Piedra litográfica', ctl: [
       { k: 'amount', label: 'Grano de piedra' }, { k: 'size', label: 'Tamaño del grano' }, { k: 'tone', label: 'Densidad' },
       { k: 'greasy', label: 'Borde graso' }, { k: 'veil', label: 'Velo de plancha' }] },
-    { id: 'wash', title: 'Acuarela', ctl: [
+    { id: 'seep', title: 'Tinta corrida (fibras)', ctl: [
+      { k: 'amount', label: 'Tramos donde se corre' }, { k: 'reach', label: 'Hasta dónde llega' },
+      { k: 'density', label: 'Densidad de la tinta corrida' }, { k: 'front', label: 'Línea del frente' }] },
+    { id: 'wick', title: 'Tinta corrida (capilaridad)', ctl: [
+      { k: 'amount', label: 'Tramos donde se corre' }, { k: 'reach', label: 'Hasta dónde llega' },
+      { k: 'front', label: 'Frente cargado (borde húmedo)' }, { k: 'drag', label: 'Largo del arrastre (a un lado)' },
+      { k: 'dir', label: 'Dirección del arrastre', min: -1, max: 1, fmt: function (v) { return Math.round(v * 180) + '°'; } }] },
+    { id: 'engrave', title: 'Talla (xilografía)', ctl: [
+      { k: 'spacing', label: 'Separación de las líneas' }, { k: 'width', label: 'Grosor de las líneas' },
+      { k: 'length', label: 'Cuánto entran en la letra' }, { k: 'skip', label: 'Líneas que faltan' },
+      { k: 'wobble', label: 'Pulso de la mano' }, { k: 'light', label: 'Lado de la luz (rayado horizontal)', min: -1, max: 1, fmt: function (v) { return v >= 0 ? 'Derecha' : 'Izquierda'; } },
+      { k: 'lightAng', label: 'Dirección de la luz', min: -1, max: 1, fmt: function (v) { return Math.round(v * 180) + '°'; } },
+      { k: 'shadow', label: 'Sombra negra' }, { k: 'misreg', label: 'Desregistro del color' }] },
+    { id: 'stamp', title: 'Sello de goma', ctl: [
+      { k: 'tilt', label: 'Inclinación (presión desigual)' }, { k: 'uneven', label: 'Irregularidad' },
+      { k: 'edge', label: 'Tinta cargada en el borde' }, { k: 'letterVar', label: 'Diferencia entre letras' },
+      { k: 'periph', label: 'Marca del canto del sello' }] },
+    { id: 'letters', title: 'Variación entre letras', ctl: [
+      { k: 'density', label: 'Carga de tinta' }, { k: 'tone', label: 'Tono' }] },
+    { id: 'damp', title: 'Humedad (gotas de agua)', ctl: [
+      { k: 'amount', label: 'Zona mojada' }, { k: 'size', label: 'Tamaño de las gotas' }, { k: 'spread', label: 'Cuánto se abre la tinta' },
+      { k: 'cloud', label: 'Tinta disuelta en el papel' }, { k: 'lift', label: 'Tinta lavada en la letra' }, { k: 'tide', label: 'Marca del borde del agua' },
+      { k: 'cockle', label: 'Papel abombado' }] },
+    { id: 'gouge', title: 'Gubia (xilografía)', ctl: [
+      { k: 'edge', label: 'Cortes desde el borde' }, { k: 'inner', label: 'Cortes interiores' },
+      { k: 'length', label: 'Largo del corte' }, { k: 'width', label: 'Ancho de la cuña' }, { k: 'spacing', label: 'Separación' },
+      { k: 'zone', label: 'Tamaño de las zonas' }, { k: 'chaos', label: 'Variedad de direcciones' },
+      { k: 'angle', label: 'Dirección interior', min: -1, max: 1, fmt: degFmt }] },
+    { id: 'rim', title: 'Pigmento en el borde', ctl: [
+      { k: 'amount', label: 'Cantidad' }, { k: 'width', label: 'Ancho' }, { k: 'coverage', label: 'Tramos con pigmento' }] },
+    { id: 'stencil', title: 'Esténcil (mimeógrafo)', ctl: [
+      { k: 'fiber', label: 'Fibra del esténcil' }, { k: 'density', label: 'Desigualdad de tinta' },
+      { k: 'spread', label: 'Tinta que se abre' }, { k: 'setoff', label: 'Repinte' }, { k: 'oil', label: 'Halo de aceite' }, { k: 'starve', label: 'Zonas con poca tinta' }] },
+    { id: 'copy', title: 'Fotocopia', ctl: [
+      { k: 'gen', label: 'Copia de copia' }, { k: 'dropout', label: 'Huecos de tóner' }, { k: 'toner', label: 'Motas de tóner' },
+      { k: 'streaks', label: 'Rayas del tambor' }, { k: 'haze', label: 'Velo gris' }, { k: 'slur', label: 'Tóner arrastrado' }] },
+    { id: 'drip', title: 'Goteo desde las letras', ctl: [
+      { k: 'amount', label: 'Cantidad de gotas' }, { k: 'length', label: 'Longitud' }, { k: 'thick', label: 'Grosor' },
+      { k: 'sag', label: 'Tinta acumulada en la base' }, { k: 'beads', label: 'Gotitas que se desprenden' }, { k: 'dark', label: 'Pigmento en la gota' }, { k: 'absorb', label: 'Papel absorbente (se infiltra)' }, { k: 'runs', label: 'Agua que cae encima (se come el pigmento)' }] },
+    { id: 'aqua', title: 'Acuarela', ctl: [
+      { k: 'density', label: 'Densidad del pigmento' }, { k: 'variation', label: 'Manchas del lavado' },
+      { k: 'rim', label: 'Aro oscuro del borde' }, { k: 'rimWidth', label: 'Ancho del aro' },
+      { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' }, { k: 'edgeWobble', label: 'Borde ondulado' },
+      { k: 'drift', label: 'Pigmento que se va a un lado' }, { k: 'letterVar', label: 'Diferencia entre letras' },
+      { k: 'dry', label: 'Pincel seco' }] },
+    { id: 'wash', title: 'Aguada (litografía)', ctl: [
       { k: 'wash', label: 'Manchas de aguada' }, { k: 'granul', label: 'Granulación' }, { k: 'blooms', label: 'Floraciones' },
       { k: 'transp', label: 'Transparencia' }] },
     { id: 'print', title: 'Impresión · fotocopia', ctl: [
@@ -264,6 +313,10 @@
       label: 'Intensidad del efecto', min: 0, max: 2, fmt: pctS,
       get: function () { return state.intensity; }, set: function (v) { state.intensity = v; }, reset: function () { state.intensity = 1; }
     }));
+    $('intensityCtl2').appendChild(makeSlider({
+      label: 'Intensidad del efecto', min: 0, max: 2, fmt: pctS,
+      get: function () { return state.intensity; }, set: function (v) { state.intensity = v; }, reset: function () { state.intensity = 1; }
+    }));
     $('btnDetails').addEventListener('click', function () { showPage('details'); });
     $('btnBack').addEventListener('click', function () { showPage('presets'); });
     // controles globales
@@ -318,7 +371,7 @@
     $('btnSeed').addEventListener('click', function () {
       state.p.seed = 1 + Math.floor(Math.random() * 99999); syncAll(); onParamChange(false);
     });
-    $('btnReset').addEventListener('click', function () { applyVariant(state.variant); });
+    $('btnReset').addEventListener('click', function () { if (state.mode === 'img') { stI.over = {}; stI.paper = null; imgChanged(); } else applyVariant(state.variant); });
     // comparar (mantener pulsado)
     var cmp = $('compareBtn');
     function cmpOn(e) { state.showOriginal = true; cmp.className = 'pill active'; renderPreview(false); if (e.preventDefault) e.preventDefault(); }
@@ -473,14 +526,101 @@
   }
   function showPage(pg) {
     state.page = pg;
+    if (state.mode === 'img') return;
     $('pagePresets').className = 'col page' + (pg === 'presets' ? '' : ' hidden');
     $('pageDetails').className = 'page' + (pg === 'details' ? '' : ' hidden');
+    sliders.forEach(function (sl) { sl.update(); });
     if (pg === 'presets') syncPresetsPage();
     try { $('scroll').scrollTop = 0; } catch (e) { /* */ }
   }
 
+  // ================================================================ MODO IMÁGENES
+  var stI = {
+    tech: load('img.tech', 'xerox'), variant: load('img.variant', null), palette: load('img.palette', 0),
+    paper: load('img.paper', null), intensity: load('img.intensity', 1), over: load('img.over', {}), advOpen: false
+  };
+  state.mode = load('mode', 'text');
+  function imTech() { return IM.byId(stI.tech); }
+  function imVariant() { var t = imTech(); return t.variants.filter(function (v) { return v.id === stI.variant; })[0] || t.variants[0]; }
+  function saveImg() {
+    store('img.tech', stI.tech); store('img.variant', stI.variant); store('img.palette', stI.palette);
+    store('img.paper', stI.paper); store('img.intensity', stI.intensity); store('img.over', stI.over); store('mode', state.mode);
+  }
+  function imgBase() {
+    var t = imTech(), p = IM.build(t, imVariant(), stI.palette);
+    for (var k in stI.over) p[k] = stI.over[k];
+    if (stI.paper) p.paper = stI.paper;
+    return p;
+  }
+  function imgParams() {
+    var p = imgBase(), I = stI.intensity;
+    IM.applyIntensity(p, I);
+    p.seed = state.p.seed || 1;
+    return p;
+  }
+  var PAPER_OPTS = [{ v: 'ink', label: 'Solo tinta' }, { v: 'white', label: 'Papel blanco' }, { v: 'cream', label: 'Papel crema' }, { v: 'news', label: 'Periódico' }];
+  function buildImageUI() {
+    var list = $('imgTechList');
+    IM.TECHS.forEach(function (t) {
+      var card = el('div', 'tcard'); card.setAttribute('data-itech', t.id);
+      var img = el('img'); img.src = 'thumbs/img_' + t.id + '.jpg';
+      card.appendChild(img); card.appendChild(el('div', 'tname', t.name));
+      card.addEventListener('click', function () { stI.tech = t.id; stI.variant = null; stI.palette = 0; stI.over = {}; stI.paper = null; imgChanged(); });
+      list.appendChild(card);
+    });
+    $('imgIntensityCtl').appendChild(makeSlider({
+      label: 'Intensidad del efecto', min: 0, max: 2, fmt: pctS,
+      get: function () { return stI.intensity; }, set: function (v) { stI.intensity = v; }, reset: function () { stI.intensity = 1; }
+    }));
+    $('btnImgAdv').addEventListener('click', function () { stI.advOpen = !stI.advOpen; syncImagePage(); });
+  }
+  function syncImagePage() {
+    var t = imTech(), v = imVariant(), base = imgBase();
+    var cards = document.querySelectorAll('[data-itech]');
+    for (var i = 0; i < cards.length; i++) cards[i].className = 'tcard' + (cards[i].getAttribute('data-itech') === t.id ? ' active' : '');
+    $('imgTechName').textContent = t.name; $('imgTechDesc').textContent = t.desc;
+    chipRow($('imgVariantChips'), t.variants.map(function (x) { return { id: x.id, label: x.name }; }), function (o) { return o.id === v.id; },
+      function (o) { stI.variant = o.id; stI.over = {}; stI.paper = null; imgChanged(); });
+    chipRow($('imgPaletteChips'), t.palettes.map(function (pl, k) {
+      var sw = pl.inks.length ? pl.inks.map(function (h) { return '<span class="sw" style="background:' + h + '"></span>'; }).join('') : '';
+      return { k: k, html: sw + pl.name };
+    }), function (o) { return o.k === stI.palette; }, function (o) { stI.palette = o.k; imgChanged(); });
+    chipRow($('imgPaperChips'), PAPER_OPTS, function (o) { return base.paper === o.v; }, function (o) { stI.paper = o.v; imgChanged(); });
+    $('imgAdvArrow').textContent = stI.advOpen ? '▾' : '›';
+    var adv = $('imgAdv'); adv.className = stI.advOpen ? '' : 'hidden'; adv.innerHTML = '';
+    if (stI.advOpen) t.keys.forEach(function (k) {
+      var d = IM.PARAMS[k]; if (!d) return;
+      adv.appendChild(makeSlider({
+        label: d.label, min: d.min == null ? 0 : d.min, max: d.max == null ? 1 : d.max, step: d.step, plain: !!d.int,
+        fmt: d.int ? function (x) { return String(Math.round(x)); } : (d.min < 0 ? signed : pct),
+        get: function () { var b = imgBase(); return b[k] == null ? 0 : b[k]; },
+        set: function (x) { stI.over[k] = x; }, reset: function () { delete stI.over[k]; }
+      }));
+    });
+    var cmpR = $('btnReset'); if (cmpR) cmpR.title = 'Restablecer la variante';
+  }
+  function imgChanged() { saveImg(); syncImagePage(); schedulePreview(false); }
+  function chipRow(box, opts, isOn, onPick) {
+    box.innerHTML = '';
+    opts.forEach(function (o) {
+      var c = el('div', 'chip' + (isOn(o) ? ' active' : ''), o.html || o.label);
+      c.addEventListener('click', function () { onPick(o); });
+      box.appendChild(c);
+    });
+  }
+  function setMode(m) {
+    state.mode = m; saveImg();
+    $('tabText').className = 'mtab' + (m === 'text' ? ' active' : '');
+    $('tabImg').className = 'mtab' + (m === 'img' ? ' active' : '');
+    if (m === 'img') {
+      $('pagePresets').className = 'col page hidden'; $('pageDetails').className = 'page hidden';
+      $('pageImage').className = 'col page'; syncImagePage();
+    } else { $('pageImage').className = 'col page hidden'; showPage(state.page || 'presets'); }
+    if (!IN_PS) demoSource(); else refreshSource();
+  }
+
   function onParamChange(fast) {
-    if (!fast) saveState();
+    if (!fast) { saveState(); if (state.mode === 'img') saveImg(); }
     schedulePreview(fast);
   }
 
@@ -517,7 +657,8 @@
   // texturas de todas las familias que usa el motor
   function getTexs(p) {
     function first(fam) { var t = state.textures.filter(function (x) { return x.family === fam; })[0]; return t ? t.id : null; }
-    var ids = { desgaste: p.texture || first('desgaste'), aguada: first('aguada'), grano: first('grano'), rodillo: first('rodillo') }, out = {};
+    var ids = { desgaste: p.texture || first('desgaste') }, out = {};
+    ['aguada', 'grano', 'rodillo', 'goteo', 'toner', 'fibra', 'floracion', 'granul', 'lavado', 'gubia'].forEach(function (f) { ids[f] = first(f); });
     return Promise.all(Object.keys(ids).map(function (f) {
       if (!ids[f]) return null;
       return getTexture(ids[f]).then(function (t) { out[f] = t; }).catch(function () { /* sin esa textura: ruido */ });
@@ -547,7 +688,7 @@
   var OK_KINDS = ['pixel', 'normal', 'text', 'smartobject', 'solidcolor', 'gradientfill', 'patternfill'];
   function checkLayer(layer) {
     if (!layer) return 'Selecciona una capa';
-    if (layer.isBackgroundLayer) return 'El fondo no se puede usar: selecciona una capa de texto o forma';
+    if (layer.isBackgroundLayer && state.mode !== 'img') return 'El fondo no se puede usar: selecciona una capa de texto o forma (o cambia a Imágenes)';
     var kind = String(layer.kind || '').toLowerCase();
     if (kind === 'group') return 'Es un grupo: selecciona una capa dentro de él';
     if (kind && OK_KINDS.indexOf(kind) < 0) return 'Tipo de capa no compatible (' + kind + ')';
@@ -654,7 +795,7 @@
     }
     reading.then(function (d) {
       if (token !== srcToken) return;
-      setSource({ px: d.px, w: d.w, h: d.h, comps: d.comps, layerId: r.source.id, docId: doc.id, isResult: !!r.result });
+      setSource({ px: d.px, w: d.w, h: d.h, comps: d.comps, layerId: r.source.id, docId: doc.id, isResult: !!r.result, scale: d.w / Math.max(1, bw), dpi: Number(doc.resolution) || 300 });
       if ($('status').className.indexOf('ok') < 0) setStatus(r.result ? 'Resultado seleccionado: al aplicar se regenera desde el original' : '', null);
     }).catch(function (e) {
       if (token !== srcToken) return;
@@ -706,11 +847,13 @@
     previewTimer = setTimeout(function () { renderPreview(fast); }, fast ? 16 : 40);
   }
 
+  var NO_PREVIEW = true;   // la vista previa se ha quitado del panel (no servía): no se calcula
   function renderPreview(fast) {
     var s = state.src;
-    if (!s) return;
+    if (!s || NO_PREVIEW) return;
     if (state.rendering) { state.dirty = fast ? 'fast' : 'full'; return; }
     state.rendering = true;
+    if (state.mode === 'img') return renderPreviewImg(s, fast);
     var pEff = effParams();
     getTexs(pEff).then(function (tex) {
       var useHalf = fast && s.halfMeasure;
@@ -718,6 +861,7 @@
       var m = useHalf ? s.halfMeasure : s.measure;
       var p = pEff;
       var inp = E.prepare(px, w, h, s.comps, p, null, m);
+      inp.dpi = s.dpi || 300; inp.pxScale = (s.scale || 1) * (useHalf ? s.half.w / s.w : 1);
       var rgba;
       if (state.showOriginal) {
         rgba = new Uint8Array(inp.w * inp.h * 4);
@@ -770,6 +914,25 @@
     });
   }
 
+  function renderPreviewImg(s, fast) {
+    Promise.resolve().then(function () {
+      var useHalf = fast && s.half, px = useHalf ? s.half.px : s.px, w = useHalf ? s.half.w : s.w, h = useHalf ? s.half.h : s.h;
+      var rgba, blend = 'normal', n = w * h, bg = [236, 233, 224];
+      if (state.showOriginal) { rgba = new Uint8Array(n * 4); for (var i = 0; i < n; i++) { rgba[i * 4] = px[i * s.comps]; rgba[i * 4 + 1] = px[i * s.comps + 1]; rgba[i * 4 + 2] = px[i * s.comps + 2]; rgba[i * 4 + 3] = s.comps === 4 ? px[i * 4 + 3] : 255; } }
+      else { var r = IM.render(px, w, h, s.comps, imgParams()); rgba = r.rgba; blend = r.blend; }
+      $('previewBox').className = 'preview';
+      var rgb = new Uint8Array(n * 3);
+      for (var j = 0; j < n; j++) {
+        var a = rgba[j * 4 + 3] / 255, ia = 1 - a;
+        for (var k = 0; k < 3; k++) rgb[j * 3 + k] = blend === 'multiply' ? bg[k] * (ia + a * rgba[j * 4 + k] / 255) : rgba[j * 4 + k] * a + bg[k] * ia;
+      }
+      return toImageURL(rgb, w, h);
+    }).then(function (url) {
+      var img = $('previewImg'); img.src = url; img.className = 'on'; $('previewEmpty').style.display = 'none';
+    }).catch(function (e) { setStatus('Vista previa no disponible: ' + errMsg(e), 'err'); })
+      .then(function () { state.rendering = false; if (state.dirty) { var f = state.dirty === 'fast'; state.dirty = false; renderPreview(f); } });
+  }
+
   var B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   function bytesToBase64(b) {
     var out = '', i;
@@ -820,9 +983,10 @@
     var btn = $('btnApply');
     btn.className = 'btn primary busy'; btn.textContent = 'Aplicando…';
     setStatus('Procesando…', null);
-    var p = effParams(), t0 = Date.now();
+    var isImg = state.mode === 'img', p = isImg ? imgParams() : effParams(), t0 = Date.now();
+    if (isImg) p.__img = true;
 
-    getTexs(p).then(function (tex) {
+    (isImg ? Promise.resolve({}) : getTexs(p)).then(function (tex) {
       return core.executeAsModal(function (ctx) {
         return runApply(ctx, doc, r.source, r.result, p, tex);
       }, { commandName: 'Analog FX' });
@@ -837,40 +1001,60 @@
     });
   }
 
+  // Todo lo que cambia el documento del usuario ocurre dentro de UNA sola entrada de historial
+  // ("Analog FX"), con el documento activo todo el rato: así Ctrl+Z deshace el efecto completo
+  // (capa nueva, original oculto y nombre) de una vez y deja todo como estaba.
   async function runApply(ctx, doc, source, oldResult, p, tex) {
-    var hc = ctx.hostControl, suspension = null, ok = false, info = null;
-    try { suspension = await hc.suspendHistory({ documentID: doc.id, name: 'Analog FX' }); } catch (e) { suspension = null; }
+    var hc = ctx.hostControl, info = null, tmp = null, tmpLayer = null;
+    var direct = isDirectDoc(doc);
     try {
-      if (oldResult) { try { await oldResult.delete(); } catch (e) { /* ya no existe */ } }
-      var result;
-      if (isDirectDoc(doc)) {
-        var dup = await source.duplicate();
-        info = await processLayer(doc, doc, dup, source, p, tex);
-        result = dup;
-      } else {
-        // CMYK / Lab / grises / 16-32 bits: se procesa en un RGB temporal y se devuelve al documento
-        result = await withTempCopy(doc, source, async function (tmp, copy) {
-          info = await processLayer(tmp, doc, copy, source, p, tex);
-          var back = await copy.duplicate(doc);
-          if (!back) back = doc.activeLayers && doc.activeLayers[0];
-          // comprobar que la posición se mantiene al pasar de un documento a otro
-          var cb = boundsOf(copy), bb = boundsOf(back);
-          if (cb.left !== bb.left || cb.top !== bb.top) { try { await back.translate(cb.left - bb.left, cb.top - bb.top); } catch (e) { /* */ } }
-          return back;
+      if (!direct) {
+        // 1) CMYK / Lab / grises / 16-32 bits: el efecto se calcula ANTES, en un documento temporal RGB
+        tmp = await app.documents.add({
+          name: 'Analog FX (temporal)',
+          width: Math.round(Number(doc.width)), height: Math.round(Number(doc.height)),
+          resolution: Number(doc.resolution) || 72,
+          mode: constants.NewDocumentMode.RGB, fill: constants.DocumentFill.TRANSPARENT, depth: 8
         });
-        try { await result.move(source, constants.ElementPlacement.PLACEBEFORE); } catch (e) { /* queda arriba del todo */ }
+        tmpLayer = await source.duplicate(tmp);
+        if (!tmpLayer) tmpLayer = tmp.activeLayers && tmp.activeLayers[0];
+        try { tmpLayer.visible = true; } catch (e) { /* */ }
+        var lb = boundsOf(source), cb0 = boundsOf(tmpLayer);
+        if (lb.left !== cb0.left || lb.top !== cb0.top) { try { await tmpLayer.translate(lb.left - cb0.left, lb.top - cb0.top); } catch (e) { /* */ } }
+        info = await processLayer(tmp, doc, tmpLayer, source, p, tex);
+        try { app.activeDocument = doc; } catch (e) { /* */ }
       }
-      result.name = source.name + RESULT_SUFFIX;
+      // 2) cambios en el documento del usuario: una sola entrada de historial
+      var suspension = null, ok = false;
+      try { suspension = await hc.suspendHistory({ documentID: doc.id, name: 'Analog FX' }); } catch (e) { suspension = null; }
       try {
-        var bm = resolveBlend(p, info.ink);
-        result.blendMode = bm === 'multiply' ? constants.BlendMode.MULTIPLY : constants.BlendMode.NORMAL;
-      } catch (e) { /* modo de fusión opcional */ }
-      try { result.visible = true; } catch (e) { /* */ }
-      source.visible = false;
-      store(linkKey(doc.id, result.id), source.id);
-      ok = true;
+        if (oldResult) { try { await oldResult.delete(); } catch (e) { /* ya no existe */ } }
+        var result;
+        if (direct) {
+          result = await source.duplicate();
+          info = await processLayer(doc, doc, result, source, p, tex);
+        } else {
+          result = await tmpLayer.duplicate(doc);
+          if (!result) result = doc.activeLayers && doc.activeLayers[0];
+          var cb = boundsOf(tmpLayer), bb = boundsOf(result);
+          if (cb.left !== bb.left || cb.top !== bb.top) { try { await result.translate(cb.left - bb.left, cb.top - bb.top); } catch (e) { /* */ } }
+          try { await result.move(source, constants.ElementPlacement.PLACEBEFORE); } catch (e) { /* queda arriba */ }
+        }
+        result.name = source.name + RESULT_SUFFIX;
+        try {
+          var bm = p.__img ? info.blend : resolveBlend(p, info.ink);
+          result.blendMode = bm === 'multiply' ? constants.BlendMode.MULTIPLY : constants.BlendMode.NORMAL;
+        } catch (e) { /* modo de fusión opcional */ }
+        try { result.visible = true; } catch (e) { /* */ }
+        source.visible = false;
+        ok = true;
+        store(linkKey(doc.id, result.id), source.id);
+      } finally {
+        if (suspension) { try { await hc.resumeHistory(suspension, ok); } catch (e) { /* */ } }
+      }
     } finally {
-      if (suspension) { try { await hc.resumeHistory(suspension, ok); } catch (e) { /* */ } }
+      // 3) el temporal se cierra al final, sin tocar ya el historial del documento
+      if (tmp) { try { await tmp.closeWithoutSaving(); } catch (e) { /* */ } try { app.activeDocument = doc; } catch (e) { /* */ } }
     }
     return info;
   }
@@ -878,6 +1062,21 @@
   // Rasteriza la copia, aplica el efecto y escribe los píxeles (siempre en un documento RGB 8 bits).
   // workDoc: documento donde está la copia; origDoc: documento original (para el tamaño del lienzo).
   async function processLayer(workDoc, origDoc, dup, source, p, tex) {
+    if (p.__img) {   // IMÁGENES: mismo tamaño que la capa, sin márgenes ni deformación
+      try { dup.visible = true; } catch (e) { /* */ }
+      var kindI = String(source.kind || '').toLowerCase();
+      if (kindI !== 'pixel' && kindI !== 'normal') await dup.rasterize(constants.RasterizeType.ENTIRELAYER);
+      var bI = boundsOf(dup);
+      if (bI.right - bI.left <= 0 || bI.bottom - bI.top <= 0) throw new Error('La capa está vacía');
+      var dI = await grabPixels({ documentID: workDoc.id, layerID: dup.id, sourceBounds: bI, componentSize: 8 });
+      var sbI = dI.bounds || bI, rI = IM.render(dI.px, dI.w, dI.h, dI.comps, p);
+      var optsI = { width: dI.w, height: dI.h, components: 4, chunky: true, colorSpace: 'RGB' };
+      if (dI.profile && dI.comps >= 3) optsI.colorProfile = dI.profile;
+      var outI = await Promise.resolve(imaging.createImageDataFromBuffer(rI.rgba, optsI));
+      await Promise.resolve(imaging.putPixels({ documentID: workDoc.id, layerID: dup.id, imageData: outI, replace: true, targetBounds: { left: sbI.left, top: sbI.top } }));
+      try { outI.dispose(); } catch (e) { /* */ }
+      return { w: dI.w, h: dI.h, ink: [0, 0, 0], blend: rI.blend };
+    }
     {
       try { dup.visible = true; } catch (e) { /* */ }
       var kind = String(source.kind || '').toLowerCase();
@@ -900,6 +1099,7 @@
         };
       }, m);
       var pad = inp.pad;
+      inp.dpi = Number(origDoc.resolution) || 300; inp.pxScale = 1;
       var rgba = E.render(inp, p, tex);
       var opts = { width: inp.w, height: inp.h, components: 4, chunky: true, colorSpace: 'RGB' };
       if (d.profile && d.comps >= 3) opts.colorProfile = d.profile;
@@ -915,6 +1115,21 @@
 
   // ---------------------------------------------------------------- modo demo (navegador)
   function demoSource() {
+    if (state.mode === 'img') {
+      var cv2 = document.createElement('canvas'), W2 = 520, H2 = 360; cv2.width = W2; cv2.height = H2;
+      var g = cv2.getContext('2d'), sky = g.createLinearGradient(0, 0, 0, H2);
+      sky.addColorStop(0, '#8fb0d8'); sky.addColorStop(0.5, '#d9cbb5'); sky.addColorStop(1, '#a89a86');
+      g.fillStyle = sky; g.fillRect(0, 0, W2, H2);
+      [[150, 200, 80, '#d0503a'], [300, 170, 105, '#3a6db5'], [430, 230, 55, '#e8c45a']].forEach(function (b) {
+        var rg = g.createRadialGradient(b[0] - b[2] * 0.35, b[1] - b[2] * 0.4, b[2] * 0.05, b[0], b[1], b[2]);
+        rg.addColorStop(0, '#ffffff'); rg.addColorStop(0.18, b[3]); rg.addColorStop(1, '#120e0c');
+        g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.ellipse(b[0] + b[2] * 0.4, b[1] + b[2] * 0.95, b[2] * 1.1, b[2] * 0.22, 0, 0, 6.3); g.fill();
+        g.fillStyle = rg; g.beginPath(); g.arc(b[0], b[1], b[2], 0, 6.3); g.fill();
+      });
+      $('layerName').textContent = 'Demo · foto';
+      setSource({ px: new Uint8Array(g.getImageData(0, 0, W2, H2).data.buffer.slice(0)), w: W2, h: H2, comps: 4, layerId: 0, docId: 0, scale: 1, dpi: 300 });
+      return;
+    }
     var cv = document.createElement('canvas'), W = 520, H = 150;
     cv.width = W; cv.height = H;
     var c = cv.getContext('2d');
@@ -924,14 +1139,30 @@
     c.fillText('REKT', W / 2, H / 2 + 6);
     var data = c.getImageData(0, 0, W, H).data;
     $('layerName').textContent = 'Demo · REKT';
-    setSource({ px: new Uint8Array(data.buffer.slice(0)), w: W, h: H, comps: 4, layerId: 0, docId: 0 });
+    setSource({ px: new Uint8Array(data.buffer.slice(0)), w: W, h: H, comps: 4, layerId: 0, docId: 0, scale: 1, dpi: 300 });
   }
 
   // ---------------------------------------------------------------- arranque
+  // el panel se adapta al tamaño de la ventana: compacto si es baja o estrecha
+  function fitPanel() {
+    var w = window.innerWidth || document.documentElement.clientWidth || 300, h = window.innerHeight || document.documentElement.clientHeight || 600;
+    var b = document.body; if (!b) return;
+    var cls = (h < 640 || w < 250 ? ' compact' : '') + (h < 430 ? ' tiny' : '');
+    if (b.className !== cls.trim()) b.className = cls.trim();
+  }
   function init() {
+    fitPanel();
+    try { window.addEventListener('resize', fitPanel); } catch (e) { /* sin evento de tamaño */ }
+    setInterval(fitPanel, 700);   // UXP no siempre avisa del cambio de tamaño del panel
     buildUI();
+    buildImageUI();
     syncAll();
     showPage('presets');
+    $('tabText').addEventListener('click', function () { setMode('text'); });
+    $('tabImg').addEventListener('click', function () { setMode('img'); });
+    $('tabText').className = 'mtab' + (state.mode === 'text' ? ' active' : '');
+    $('tabImg').className = 'mtab' + (state.mode === 'img' ? ' active' : '');
+    if (state.mode === 'img') { $('pagePresets').className = 'col page hidden'; $('pageDetails').className = 'page hidden'; $('pageImage').className = 'col page'; syncImagePage(); }
     if (!IN_PS) { $('modeBadge').textContent = 'DEMO'; $('modeBadge').className = 'badge demo'; }
     readPluginFile('textures/textures.json', false).then(function (txt) {
       state.textures = JSON.parse(txt);
