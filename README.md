@@ -2,7 +2,13 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.1**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.2**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.2
+- **Negativo rehecho como tinta que se infiltra en el papel:** la tinta avanza por una red de fibras desde el borde de la letra.
+  - Junto a la letra el pigmento es negro, macizo y duro, con un frente orgánico y desigual. Su alcance cambia por zonas y se cierra entre letras.
+  - Más allá quedan fibras sueltas y un velo gris con la textura del papel.
+  - Las raíces son más irregulares.
 
 ## Novedades 0.9.1 (Letras)
 - **Negativo** pasa a ser técnica propia (Agua), rehecha: halo negro de pelillos perpendiculares al borde que se deshace en humo, letra clara y mojada con bisel y brillos, y raíces ramificadas. Variantes: Halo y raíces · Halo de pelo · Reserva en humo.
@@ -219,7 +225,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.1.ccx`.
+1. Descarga `dist/AnalogFX_0.9.2.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

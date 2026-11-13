@@ -1750,17 +1750,42 @@
         var gZ4 = grid(function (u, v) { return noise.fbm(u * 1.1 + 17, v * 1.1 - 23, 3); });
         var gL4 = grid(function (u, v) { return noise.fbm(u * 3.5 - 5, v * 3.5 + 12, 3); });
         var R0 = U * (0.05 + 0.07 * skA);                                        // grosor del núcleo negro
-        // 1) fondo del halo: núcleo negro + humo gris (cambia por zonas)
+        // 1) la tinta se INFILTRA en el papel desde el borde de la letra: avanza por una red de
+        //    fibras (distancia por dentro del papel), así el frente es orgánico y desigual. Junto a la
+        //    letra el pigmento es negro y duro; más allá, pelillos de fibra y un velo gris con la
+        //    textura del papel. El alcance cambia mucho por zonas y entre letras se cierra en negro.
+        var reachMax4 = R0 * 2.6, band4 = new Uint8Array(n), act4 = new Uint8Array(n);
+        for (i = 0; i < n; i++) { var dq = Do4[i]; band4[i] = dq < reachMax4 * 2.2 + 4 ? 1 : 0; act4[i] = dq > 0 && dq < reachMax4 * 2.2 ? 1 : 0; }
+        var zoneAt4 = function (x2, y2) { return 0.35 + 0.65 * gZ4(x2, y2); };
+        var Fw4 = fiberNet(w, h, band4, { len: physK * 30, cover: 0.35, thick: 0.3 }, R, zoneAt4);
+        var tP4 = physSampler('b', 200, 'granul'), C4 = new Float32Array(n), G4 = new Float32Array(n);
+        for (i = 0; i < n; i++) {
+          if (!band4[i]) { C4[i] = 1e3; G4[i] = 1e9; continue; }
+          var yq4 = (i / w) | 0, xq4 = i - yq4 * w;
+          var bg4 = 2.2 * (0.7 + 0.6 * tP4(xq4, yq4)) / (0.45 + 1.1 * zoneAt4(xq4, yq4));
+          C4[i] = 1 / (1 / bg4 + Fw4[i] * 1.6);
+          G4[i] = A[i] >= 0.5 ? 0 : 1e9;
+        }
+        geodesic(G4, C4, w, h, act4, 8);
+        var gH4 = grid(function (u, v) { return noise.fbm(u * 9 + 3, v * 9 - 1, 3); });
         for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
           i = y * w + x;
           if (A[i] >= 0.5) continue;
-          var dq4 = Do4[i]; if (dq4 > 1e8) continue;
-          var zone = 0.45 + 1.1 * gZ4(x, y), r0z = R0 * zone;
-          var core4 = smooth(r0z * 1.1, r0z * 0.35, dq4);
-          var smoke4 = smokeK * 0.7 * Math.exp(-dq4 / (r0z * 3.5)) * (0.55 + 0.45 * tsl(x, y)) * (0.7 + 0.3 * tsg(x, y));
-          Ao[i] = Math.max(core4 * 0.92, smoke4);
+          var g4 = G4[i]; if (g4 > 1e8) continue;
+          var zA = zoneAt4(x, y), rl4 = R0 * (0.6 + 1.6 * zA * zA) * (0.85 + 0.3 * gH4(x, y)), fadeB = smooth(reachMax4 * 2.2, reachMax4 * 1.2, Do4[i]);
+          var paper = tP4(x, y), fib4 = Fw4[i];
+          // pigmento duro: macizo negro con frente nítido pero irregular
+          var core4 = smooth(rl4 * 1.1, rl4 * 0.7, g4 + (paper - 0.5) * rl4 * 0.25);
+          // pelillos: la tinta sigue avanzando por las fibras más allá del frente
+          var hair4 = Math.exp(-Math.pow(g4 / (rl4 * 1.7), 1.8)) * (0.25 + 0.55 * smooth(0.3, 0.9, fib4)) * hairK;
+          // velo gris que empapa el papel, con su grano
+          var veil4 = smokeK * 0.75 * Math.exp(-g4 / (rl4 * 2.1)) * (0.45 + 0.55 * paper) * (0.6 + 0.4 * tsl(x, y)) * fadeB;
+          var v4 = Math.max(core4, hair4 * 0.95, veil4);
+          // el negro no es plano: zonas algo más cargadas y algún poro del papel sin tinta
+          v4 *= 1 - 0.06 * smooth(0.6, 0.9, 1 - paper) * core4;
+          Ao[i] = Math.min(1, v4);
         }
-        // 2) pelillos: trazos finos que salen perpendiculares al borde (como limaduras o pelo)
+        // 2) pelillos sueltos: algunas fibras largas que salen del frente en direcciones irregulares
         function plot(px, py, c) {
           var xi = Math.floor(px), yi = Math.floor(py), fx = px - xi, fy = py - yi;
           if (xi < 0 || yi < 0 || xi + 1 >= w || yi + 1 >= h) return;
@@ -1777,18 +1802,17 @@
         }
         var edges = [];
         for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) { i = y * w + x; if (A[i] < 0.5 && Do4[i] <= 1.5) edges.push(i); }
-        var nHair = Math.round(edges.length * 2.2 * hairK), budgetH = 3000000;
+        var nHair = Math.round(edges.length * 0.5 * hairK), budgetH = 1500000;
         for (var hq = 0; hq < nHair && budgetH > 0; hq++) {
-          var e0 = edges[(R() * edges.length) | 0], hx = (e0 % w) + R() - 0.5, hy = ((e0 / w) | 0) + R() - 0.5;
-          var zone2 = 0.45 + 1.1 * gZ4(hx | 0, hy | 0);
-          var Lh = R0 * zone2 * (0.8 + 3.6 * Math.pow(R(), 2)), ch = 0.45 + 0.45 * R(), wob = (R() - 0.5) * 0.06;
-          var g0 = gradAt(hx, hy), ang = Math.atan2(g0[1], g0[0]) + (R() - 0.5) * 0.35;
+          var e0 = edges[(R() * edges.length) | 0], g0 = gradAt(e0 % w, (e0 / w) | 0);
+          var zone2 = zoneAt4(e0 % w, (e0 / w) | 0), st0 = R0 * (0.35 + 1.5 * zone2 * zone2) * (0.6 + 0.4 * R());
+          var hx = (e0 % w) + g0[0] * st0, hy = ((e0 / w) | 0) + g0[1] * st0;
+          var Lh = R0 * (0.4 + 2.2 * Math.pow(R(), 2.5)), ch = 0.3 + 0.5 * R(), ang = Math.atan2(g0[1], g0[0]) + (R() - 0.5) * 1.4;
           for (var k = 0; k < Lh && budgetH > 0; k++, budgetH--) {
-            var g1 = gradAt(hx, hy), ga = Math.atan2(g1[1], g1[0]);
-            ang += Math.atan2(Math.sin(ga - ang), Math.cos(ga - ang)) * 0.12 + wob + (R() - 0.5) * 0.12;
+            ang += (R() - 0.5) * 0.35;
             hx += Math.cos(ang) * 0.8; hy += Math.sin(ang) * 0.8;
             var jh = (hy | 0) * w + (hx | 0); if (jh < 0 || jh >= n || A[jh] >= 0.5) break;
-            plot(hx, hy, ch * Math.pow(1 - k / Lh, 0.8));
+            plot(hx, hy, ch * Math.pow(1 - k / Lh, 0.7));
           }
         }
         // 3) la letra: gris claro mojado, moteado, bisel oscuro junto al borde y brillos de líquido
@@ -1810,12 +1834,12 @@
           var xx = x0, yy = y0, seg = 0, segL = 4 + R() * 10, turn = 0;
           for (var k = 0; k < len && budgetR > 0; k++, budgetR--) {
             if (++seg > segL) { seg = 0; segL = 4 + R() * 12; turn = (R() - 0.5) * 0.9; }   // en quiebros, como un rayo
-            ang += turn * 0.15 + (R() - 0.5) * 0.08;
+            ang += turn * 0.18 + (R() - 0.5) * 0.22;
             ang += Math.atan2(Math.sin(Math.PI / 2 - ang), Math.cos(Math.PI / 2 - ang)) * 0.012;  // tienden a bajar
             xx += Math.cos(ang); yy += Math.sin(ang);
             if (xx < 1 || yy < 1 || xx >= w - 1 || yy >= h - 1) return;
             var jr = (yy | 0) * w + (xx | 0); if (A[jr] >= 0.5) return;
-            plot(xx, yy, ink * (1 - 0.65 * k / len));
+            plot(xx, yy, ink * (1 - 0.65 * k / len) * (0.6 + 0.4 * tsg(xx | 0, yy | 0)));
             if (depth < 6 && R() < 0.022) grow(xx, yy, ang + (R() < 0.5 ? 1 : -1) * (0.35 + 0.6 * R()), len * (0.3 + 0.45 * R()), ink * 0.85, depth + 1);
           }
         }
