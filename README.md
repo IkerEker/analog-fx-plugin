@@ -2,7 +2,12 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.3**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.4**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.4
+- **Corregido:** Acuarelado cortaba los textos anchos (más anchos que altos). Era un error del motor al leer un campo de ruido con las coordenadas cambiadas.
+- Los campos de ruido del motor ya no pueden leer fuera de su rango (protege a todos los efectos).
+- Comprobado con texto ancho en todas las técnicas: ninguna corta.
 
 ## Novedades 0.9.3 (Letras)
 - **Técnicas unificadas** (3 variantes muy distintas en cada una):
@@ -239,7 +244,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.3.ccx`.
+1. Descarga `dist/AnalogFX_0.9.4.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

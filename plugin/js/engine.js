@@ -140,9 +140,17 @@
   function makeGrid(w, h, step, fn) {
     var gw = Math.ceil(w / step) + 2, gh = Math.ceil(h / step) + 2, g = new Float32Array(gw * gh);
     for (var j = 0; j < gh; j++) for (var i = 0; i < gw; i++) g[j * gw + i] = fn(i * step, j * step);
-    var inv = 1 / step;
+    var inv = 1 / step, mx = gw - 2, my = gh - 2;
+    function refl(v, m) {   // fuera del rango se refleja (continuo, nunca lee fuera de la rejilla)
+      if (m <= 0) return 0;
+      var p2 = 2 * m; v = v % p2; if (v < 0) v += p2;
+      return v > m ? p2 - v : v;
+    }
     return function (x, y) {
-      var gx = x * inv, gy = y * inv, xi = gx | 0, yi = gy | 0, fx = gx - xi, fy = gy - yi, k = yi * gw + xi;
+      var gx = x * inv, gy = y * inv;
+      if (gx < 0 || gx >= mx) gx = Math.min(mx - 1e-6, refl(gx, mx));
+      if (gy < 0 || gy >= my) gy = Math.min(my - 1e-6, refl(gy, my));
+      var xi = gx | 0, yi = gy | 0, fx = gx - xi, fy = gy - yi, k = yi * gw + xi;
       var top = g[k] + (g[k + 1] - g[k]) * fx, bot = g[k + gw] + (g[k + gw + 1] - g[k + gw]) * fx;
       return top + (bot - top) * fy;
     };
@@ -1499,12 +1507,12 @@
       var Ms = new Float32Array(n);
       for (i = 0; i < n; i++) Ms[i] = A[i];                              // forma nítida (sin desenfoque)
       // borde cortante con pequeñas irregularidades del pincel (desplazamiento, no suavizado)
-      var tlvE = sampler('d', 0.35, 0, 'lavado'), gE = grid(function (u, v) { return noise.fbm(u * 3.5 + 7, v * 3.5 - 2, 2); });
+      var tlvE = sampler('d', 0.35, 0, 'lavado'), gE = grid(function (u, v) { return noise.fbm(u * 3.5 + 7, v * 3.5 - 2, 2); }), gE2 = grid(function (u, v) { return noise.fbm(u * 2.45 - 31, v * 2.45 + 17, 2); });
       var dmax = U * 0.012 * AQ.edgeWobble + 0.4, Aq = new Float32Array(n);
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
         i = y * w + x;
         var dxq = (gE(x, y) - 0.5) * 2 * dmax + (tlvE(x, y) - 0.5) * dmax * 0.6;
-        var dyq = (gE(y * 0.7, x * 0.7) - 0.5) * 2 * dmax;
+        var dyq = (gE2(x, y) - 0.5) * 2 * dmax;
         var v0 = sampleBil(Ms, w, h, x + dxq, y + dyq);
         Aq[i] = smooth(0.46, 0.54, v0);                                    // corte seco y nítido
       }
