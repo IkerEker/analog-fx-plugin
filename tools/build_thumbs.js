@@ -6,6 +6,7 @@ const out = path.join(__dirname, 'out'), TEX = path.join(__dirname, '../plugin/t
 fs.mkdirSync(DST, { recursive: true }); fs.mkdirSync(out, { recursive: true });
 execFileSync('python3', ['-I', path.join(__dirname, 'make_sample.py'), 'Aa', '170']);
 const meta = JSON.parse(fs.readFileSync(path.join(out, 'sample.json'))), px = fs.readFileSync(path.join(out, 'sample.rgba'));
+const DRIPS = E.prepareDrips(JSON.parse(fs.readFileSync(path.join(__dirname, '../plugin/drips/drips.json'))), fs.readFileSync(path.join(__dirname, '../plugin/drips/drips.bin')));
 const index = JSON.parse(fs.readFileSync(path.join(TEX, 'textures.json'))), cache = {};
 function tex(id) { const m = index.find(t => t.id === id); if (!cache[id]) cache[id] = E.prepareTexture(fs.readFileSync(path.join(TEX, id + '.bin')), m.size); return cache[id]; }
 for (const t of P.TECHS) {
@@ -13,7 +14,7 @@ for (const t of P.TECHS) {
   const pal = t.palettes.find(x => x.ink !== 'original') || t.palettes[0];
   p.out.color = pal.ink === 'original' ? '#151515' : pal.ink; if (pal.c2) p.tintas.c2 = pal.c2; if (pal.c3) p.tintas.c3 = pal.c3;
   const inp = E.prepare(px, meta.w, meta.h, 4, p); inp.dpi = 300; inp.pxScale = 1;
-  const tx = { desgaste: tex(p.texture) }; for (const f of ['aguada', 'grano', 'rodillo', 'goteo', 'toner', 'fibra', 'floracion', 'granul', 'lavado', 'gubia']) tx[f] = tex(f + '_1');
+  const tx = { desgaste: tex(p.texture), drips: DRIPS }; for (const f of ['aguada', 'grano', 'rodillo', 'goteo', 'toner', 'fibra', 'floracion', 'granul', 'lavado', 'gubia']) tx[f] = tex(f + '_1');
   const rgba = E.render(inp, p, tx);
   let x0 = inp.w, y0 = inp.h, x1 = -1, y1 = -1;
   for (let y = 0; y < inp.h; y++) for (let x = 0; x < inp.w; x++) if (rgba[(y * inp.w + x) * 4 + 3] > 8) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }

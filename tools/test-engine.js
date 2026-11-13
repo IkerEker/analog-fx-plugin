@@ -7,7 +7,8 @@ const meta = JSON.parse(fs.readFileSync(path.join(out, 'sample.json'))), px = fs
 const index = JSON.parse(fs.readFileSync(path.join(TEX, 'textures.json'))), cache = {};
 function tex(id) { const m = index.find(t => t.id === id); if (!cache[id]) cache[id] = E.prepareTexture(fs.readFileSync(path.join(TEX, id + '.bin')), m.size); return cache[id]; }
 const FAMS = ['aguada', 'grano', 'rodillo', 'goteo', 'toner', 'fibra', 'floracion', 'granul', 'lavado', 'gubia'];
-function texs(p) { const o = { desgaste: tex(p.texture || 'desgaste_1') }; for (const f of FAMS) o[f] = tex(f + '_1'); return o; }
+const DRIPS = process.env.NODRIPS ? null : E.prepareDrips(JSON.parse(fs.readFileSync(path.join(__dirname, '../plugin/drips/drips.json'))), fs.readFileSync(path.join(__dirname, '../plugin/drips/drips.bin')));
+function texs(p) { const o = { desgaste: tex(p.texture || 'desgaste_1') }; for (const f of FAMS) o[f] = tex(f + '_1'); if (DRIPS) o.drips = DRIPS; return o; }
 const only = process.argv[2], palIdx = Number(process.argv[3] || 0), tiles = [];
 for (const t of P.TECHS) {
   if (only && only !== t.id && !only.split(',').includes(t.id)) continue;

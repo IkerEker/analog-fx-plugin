@@ -2,7 +2,14 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.8.7**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.8.8**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.8.8
+- **Gotas reales:** todas las funciones que dibujan gotas usan ahora gotas de pintura de verdad, extraídas de las fotos de `GOTAS/`: Goteo (Papel absorbente, Infiltrado largo y Chorreado), Destrozado › Corrido y goteado, y el módulo Goteo de Ajustes detallados.
+  - Hay 219 gotas en 6 clases: lágrima, fina, serpenteante, seca, impacto y suelta.
+  - Cada gota se elige por clase y proporción, se escala casi uniforme y se une a la letra con un menisco, sin repisa.
+  - Los brillos de la pintura brillante salen del sombreado real de la foto. Las gotitas que se desprenden también son reales.
+- **Banco reutilizable** en `BIBLIOTECA/goteos/` (PNG por gota, `catalogo.json`, hojas de contactos y guía de uso), generado con `python3 tools/build_drips.py`.
 
 ## Novedades 0.8.7
 - **Corrida a un lado** mucho más contenida: pocas pasadas, presión suave, rastro corto y diluido. Muchas letras quedan limpias.
@@ -192,7 +199,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.8.7.ccx`.
+1. Descarga `dist/AnalogFX_0.8.8.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
@@ -210,6 +217,8 @@ Arriba eliges el modo; abajo, **APLICAR** siempre está visible. Se crea la capa
 ```
 plugin/js/engine.js    motor (módulos de efecto + color + tintas)
 plugin/js/presets.js   técnicas, variantes y paletas
+plugin/drips/           banco ligero de gotas reales (lo genera tools/build_drips.py)
+BIBLIOTECA/goteos/      banco completo de gotas reales, reutilizable (ver su README)
 plugin/js/image.js     motor del modo Imágenes (tramas, separación, defectos)
 plugin/js/main.js      panel y Photoshop (CMYK/Lab/grises vía documento temporal)
 tools/textures_manifest.json   qué texturas usa el plugin

@@ -1,6 +1,6 @@
 # Analog FX: contexto completo para seguir en un chat nuevo
 
-> **Para el asistente del chat nuevo:** lee este archivo entero antes de tocar nada. Resume todo lo hecho hasta la **v0.8.7** (12-nov-2026), las reglas que ha fijado el usuario y cómo probar. El usuario escribe en español, es exigente con el realismo y quiere que cada cambio se pruebe y se entregue empaquetado.
+> **Para el asistente del chat nuevo:** lee este archivo entero antes de tocar nada. Resume todo lo hecho hasta la **v0.8.8** (13-nov-2026), las reglas que ha fijado el usuario y cómo probar. El usuario escribe en español, es exigente con el realismo y quiere que cada cambio se pruebe y se entregue empaquetado.
 
 ---
 
@@ -11,7 +11,7 @@
 - Trabaja en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits. Los documentos que no son RGB 8 bits se procesan en un documento temporal RGB 8.
 - **Repositorio:** `https://github.com/IkerEker/analog-fx-plugin` (público, rama `main`).
 - **Autor de los commits:** `IkerEker`, con el email del usuario.
-- **Instalable actual:** `dist/AnalogFX_0.8.7.ccx`. Se instala con doble clic (Creative Cloud) y se abre en Photoshop desde **Plugins › Analog FX**.
+- **Instalable actual:** `dist/AnalogFX_0.8.8.ccx`. Se instala con doble clic (Creative Cloud) y se abre en Photoshop desde **Plugins › Analog FX**.
 - **Uso:**
   1. Arriba se elige el modo: **Letras** o **Imágenes**.
   2. Se elige técnica, variante, color e intensidad.
@@ -23,7 +23,7 @@
 
 | Qué | Dónde |
 |---|---|
-| Plugin instalable v0.8.7 | `dist/AnalogFX_0.8.7.ccx` en el repo, o descarga directa: https://github.com/IkerEker/analog-fx-plugin/raw/main/dist/AnalogFX_0.8.7.ccx |
+| Plugin instalable v0.8.7 | `dist/AnalogFX_0.8.8.ccx` en el repo, o descarga directa: https://github.com/IkerEker/analog-fx-plugin/raw/main/dist/AnalogFX_0.8.8.ccx |
 | Código completo (zip) | https://github.com/IkerEker/analog-fx-plugin/archive/refs/heads/main.zip |
 | Este documento | `CONTEXTO.md` en la raíz del repo |
 | Historial de cambios | `README.md` (sección "Novedades" de cada versión) |
@@ -49,6 +49,10 @@ tools/make_sample.py       texto de prueba -> tools/out/sample.rgba/.json  (uso:
 tools/test-engine.js       hoja de todas las variantes de letras -> tools/out/v4_<tec>_<pal>.png (SEED=n)
 tools/test-image.js        hoja de imágenes con la foto sintética (make_photo.py)
 tools/dev/                 bancos de prueba (ver §8)
+GOTAS/                     45 fotos de goteos reales (fuente)
+BIBLIOTECA/goteos/         banco de 219 gotas reales clasificadas + guía (README.md)  ← REUTILIZABLE
+plugin/drips/              banco ligero para el plugin (drips.bin + drips.json)
+tools/build_drips.py       extrae/clasifica GOTAS/ -> BIBLIOTECA/goteos + plugin/drips
 tools/package.sh           empaqueta dist/AnalogFX_<versión>.ccx
 ```
 
@@ -115,6 +119,18 @@ tools/package.sh           empaqueta dist/AnalogFX_<versión>.ccx
   - `waterRuns`: agua desde arriba, `nr = runs*(cols/U)*32`, 60 % mordidas.
   - Presets: `fino` (length 0.22, runs 0.5) y `largo` (length 0.45, runs 0.55).
   - Control UI: `drip.runs` = "Agua que cae encima".
+
+### Gotas reales (v0.8.8)
+
+Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pickDrip` y `stampDrip`, y el panel lo carga con `getDrips()` en `main.js`.
+
+- **Clases por variante:**
+  - Chorreado: lágrima 55 %, fina 30 %, serpenteante 15 %.
+  - Absorbente: fina 60 %, lágrima 40 %.
+  - Con `drip.dry`, también entran gotas secas.
+- **Gotitas desprendidas:** son de la clase `suelta`.
+- Si el banco no carga, el motor vuelve a las gotas dibujadas.
+- Para probar sin el banco: `NODRIPS=1 node tools/test-engine.js goteo`.
 
 ## 6. Modo IMÁGENES (image.js)
 

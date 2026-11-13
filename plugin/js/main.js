@@ -654,6 +654,15 @@
     return texLoading[meta.id];
   }
 
+  // banco de goteos reales (plugin/drips): se carga una vez y solo si la técnica gotea
+  var dripLib = null, dripLoading = null;
+  function getDrips() {
+    if (dripLib) return Promise.resolve(dripLib);
+    if (!dripLoading) dripLoading = Promise.all([readPluginFile('drips/drips.json', false), readPluginFile('drips/drips.bin', true)]).then(function (r) {
+      dripLib = E.prepareDrips(JSON.parse(r[0]), new Uint8Array(r[1])); return dripLib;
+    }).catch(function () { dripLoading = null; return null; });   // sin banco: gotas dibujadas
+    return dripLoading;
+  }
   // texturas de todas las familias que usa el motor
   function getTexs(p) {
     function first(fam) { var t = state.textures.filter(function (x) { return x.family === fam; })[0]; return t ? t.id : null; }
@@ -662,7 +671,7 @@
     return Promise.all(Object.keys(ids).map(function (f) {
       if (!ids[f]) return null;
       return getTexture(ids[f]).then(function (t) { out[f] = t; }).catch(function () { /* sin esa textura: ruido */ });
-    })).then(function () { return out; });
+    }).concat([((p.drip && p.drip.on) || (p.drips && p.drips.on && p.drips.drops > 0)) ? getDrips().then(function (d) { if (d) out.drips = d; }) : null])).then(function () { return out; });
   }
 
   // ---------------------------------------------------------------- Photoshop: capas

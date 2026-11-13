@@ -735,9 +735,80 @@
     return out;
   }
 
+  // ------------------------------------------------------------------ BANCO DE GOTEOS REALES
+  // plugin/drips/drips.json + drips.bin (generados por tools/build_drips.py desde GOTAS/).
+  // Cada gota: máscara (w*h bytes) y sombreado (w*h bytes). La raíz es el borde de arriba,
+  // salvo en las clases 'suelta' e 'impacto'. Clases: lagrima, fina, serpenteante, seca, impacto, suelta.
+  function prepareDrips(index, buf) {
+    var bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf), items = [], byClass = {};
+    (index.items || []).forEach(function (it) {
+      var n = it.w * it.h; if (it.o + 2 * n > bytes.length) return;
+      var a = bytes.subarray(it.o, it.o + n), s = bytes.subarray(it.o + n, it.o + 2 * n);
+      // centro de la raíz (primeras filas con pintura) y alto real ocupado
+      var sx = 0, sw = 0, top = -1, bot = 0, x, y;
+      for (y = 0; y < it.h; y++) {
+        var any = false;
+        for (x = 0; x < it.w; x++) { var v = a[y * it.w + x]; if (v > 127) { any = true; if (top < 0 || y - top < 4) { sx += x * v; sw += v; } } }
+        if (any) { if (top < 0) top = y; bot = y; }
+      }
+      if (top < 0) return;
+      var d = { id: it.id, c: it.c, w: it.w, h: it.h, a: a, s: s, top: top, len: bot - top + 1, rx: sw ? sx / sw : it.w / 2,
+                rw: Math.max(1, it.rw || it.mw || 2), mw: Math.max(1, it.mw || 2), bw: it.bw || it.mw || 2 };
+      d.asp = d.len / d.mw;
+      d.cg = it.cg == null ? 1 : it.cg; d.gp = it.gp || 0;
+      items.push(d);
+      // para colgar de una letra solo valen las que cuelgan de verdad y no se tuercen en diagonal
+      // (recortes con dos gotas o gotas inclinadas quedan fuera); las sueltas van aparte
+      var straight = d.c === 'serpenteante' ? d.w <= d.mw * 7 + 30 : d.w <= d.mw * 3 + 14;
+      if (d.c === 'suelta' || (d.cg && straight && d.gp < 0.02 && d.c !== 'impacto')) (byClass[d.c] = byClass[d.c] || []).push(d);
+    });
+    return { items: items, byClass: byClass };
+  }
+  // elige una gota de las clases pedidas (pesos), con la proporción largo/ancho más parecida
+  function pickDrip(lib, weights, aspect, R) {
+    var tot = 0, k, cls = null;
+    for (k in weights) if (lib.byClass[k] && lib.byClass[k].length) tot += weights[k];
+    if (tot <= 0) return null;
+    var r = R() * tot;
+    for (k in weights) { if (!lib.byClass[k] || !lib.byClass[k].length) continue; r -= weights[k]; if (r <= 0) { cls = k; break; } }
+    var list = lib.byClass[cls || Object.keys(lib.byClass)[0]], best = [], i;
+    for (i = 0; i < list.length; i++) best.push({ d: list[i], e: Math.abs(Math.log(list[i].asp / Math.max(0.5, aspect))) + R() * 0.5 });
+    best.sort(function (p1, p2) { return p1.e - p2.e; });
+    return best[Math.min(best.length - 1, Math.floor(R() * Math.min(4, best.length)))].d;
+  }
+  // muestreo bilineal de la máscara (ch='a') o del sombreado (ch='s') de una gota
+  function dripAt(d, ch, x, y) {
+    var F = d[ch], xf = Math.floor(x), yf = Math.floor(y);
+    if (xf < 0 || yf < 0 || xf + 1 >= d.w || yf + 1 >= d.h) return 0;
+    var fx = x - xf, fy = y - yf, k = yf * d.w + xf;
+    var t = F[k] + (F[k + 1] - F[k]) * fx, b = F[k + d.w] + (F[k + d.w + 1] - F[k + d.w]) * fx;
+    return (t + (b - t) * fy) / 255;
+  }
+  // estampa la gota d con su raíz (centro rx, fila top) en (cx, y0); ancho de raíz -> rootW px y
+  // largo -> len px (escala casi uniforme). put(x, y, cobertura, sombreado, fracción de largo)
+  function stampDrip(d, cx, y0, rootW, len, flip, put) {
+    var sx = rootW / d.mw, sy = len / d.len;
+    var k = Math.sqrt(sx * sy); sx = Math.max(k * 0.7, Math.min(k * 1.4, sx)); sy = Math.max(k * 0.7, Math.min(k * 1.4, sy));
+    var x0 = Math.floor(cx - (d.rx + 1) * sx), x1 = Math.ceil(cx + (d.w - d.rx + 1) * sx);
+    var ya = Math.floor(y0 - 1), yb = Math.ceil(y0 + (d.h - d.top) * sy);
+    for (var yy = ya; yy <= yb; yy++) {
+      var v = (yy - y0) / sy + d.top; if (v < d.top - 0.5) v = d.top;   // por encima de la raíz: la raíz repetida (se funde en la letra)
+      for (var xx = x0; xx <= x1; xx++) {
+        var u = (flip ? -(xx - cx) : (xx - cx)) / sx + d.rx;
+        var c = dripAt(d, 'a', u, v);
+        if (c > 0.004) put(xx, yy, c, dripAt(d, 's', u, v), (v - d.top) / d.len);
+      }
+    }
+    return { sx: sx, sy: sy, end: y0 + d.len * sy };
+  }
+
   // ------------------------------------------------------------------ GOTEO: gotas que nacen de cada letra
-  function dripsFromLetters(A, w, h, U, P, R, noise, dark) {
+  function dripsFromLetters(A, w, h, U, P, R, noise, dark, lib) {
     var Aorig = new Float32Array(A);
+    var useLib = lib && lib.items && lib.items.length && P.lib !== 0, absP = P.absorb || 0;
+    // qué clases de gota real usa cada goteo: espeso y brillante -> lágrimas; absorbente -> finas
+    var W8 = absP > 0.4 ? { fina: 0.6, lagrima: 0.4 } : { lagrima: 0.55, fina: 0.3, serpenteante: 0.15 };
+    if (P.dry) W8.seca = P.dry;
     var x, y, i, runs = [];
     // tramos de borde inferior (bases de los trazos)
     // puntos de base (tinta encima, aire limpio debajo) agrupados en tramos casi horizontales
@@ -793,7 +864,9 @@
         var Lf = rw * (3 + 3 * R()) + U * 0.01, Fw = rw * (2.2 + 2.5 * R());
         var bph = R() * 6.28, bfr = 1.5 + 2.5 * R(), bamp = 0.12 + 0.18 * R();   // cuello y barriga
         var stops = R() < 0.25;                                                      // algunas se paran sin lágrima
-        for (var t = 0; t <= L; t++) {
+        var real = useLib ? pickDrip(lib, W8, L / (2 * rw), R) : null;              // gota REAL del banco
+        var Ldraw = real ? Math.min(L, Lf) : L;
+        for (var t = 0; t <= Ldraw; t++) {
           var yy = Math.round(y0 + t); if (yy >= h || yy < 0) continue;
           var tl = Math.max(0, t) / L;
           var tf = t / Lf, fil = tf < 1 ? (1 - Math.sqrt(1 - (1 - tf) * (1 - tf))) : 0;
@@ -809,6 +882,7 @@
             // el menisco solo existe pegado a la letra: fuera del cuerpo de la gota, exige tinta
             // de la letra justo encima (si no, saldría una base plana que sobresale)
             var bodyW = rw * (1 - 0.4 * tl * (1 - abs) + abs * 2.4 * smooth(0, U * 0.7, t) * (0.6 + 0.4 * tl)) * belly + 0.2;
+            if (real && dd <= bodyW) continue;                                // el cuerpo lo pone la gota real
             if (dd > bodyW && cov > 0) {
               var up = Math.round(1 + t * 0.9), yu = yy - up;
               var supp = 0;
@@ -821,6 +895,29 @@
             if (abs > 0.4) cov *= 1 - smooth(0.6, 1, tl);   // en papel absorbente la punta se desvanece, sin corte
             if (cov > 0) put(xx, yy, cov * (hw < 1.6 ? 0.8 : 1) * (0.88 + 0.12 * belly), dk);
           }
+        }
+        if (real) {
+          // cuerpo de la gota real, escalado a este goteo; la raíz entra un poco en la letra
+          var flipD = R() < 0.5, glossy = absP <= 0.25, absF = absP > 0.4;
+          var st = stampDrip(real, cx, y0 - 1, 2 * rw, L, flipD, function (px2, py2, c2, sh2, tl2) {
+            var cv = c2;
+            if (absF) cv *= 1 - smooth(0.6, 1, tl2);                           // en papel absorbente la punta se desvanece
+            var dk2 = P.dark * cv * smooth(0, 0.35, tl2) * (0.25 + 0.45 * (1 - sh2));
+            put(px2, py2, cv, dk2);
+            if (glossy && sh2 > 0.86 && tl2 > 0.2) {                          // brillo real de la pintura (lente de tinta)
+              var jg = py2 * w + px2; if (jg >= 0 && jg < A.length) { A[jg] *= 1 - 0.28 * smooth(0.86, 1, sh2) * cv; if (dark) dark[jg] *= 0.6; }
+            }
+          });
+          // a veces se desprenden gotitas reales por debajo
+          if (!absF && R() < P.beads && lib.byClass.suelta) {
+            var nb2 = 1 + Math.floor(R() * 2), yb3 = st.end + rw * 2;
+            for (var b2 = 0; b2 < nb2; b2++) {
+              var gd = lib.byClass.suelta[Math.floor(R() * lib.byClass.suelta.length)], rr2 = rw * (0.6 + 0.6 * R());
+              yb3 += rr2 * (2 + 4 * R());
+              stampDrip(gd, cx + (R() - 0.5) * rw, yb3, 2 * rr2, 2 * rr2 * gd.asp, R() < 0.5, function (px3, py3, c3, sh3) { put(px3, py3, c3, 0.5 * P.dark * c3); });
+            }
+          }
+          continue;
         }
         // gota final alargada (lágrima): más pigmento, más oscura
         if (stops || (P.absorb || 0) > 0.4) continue;
@@ -846,7 +943,8 @@
 
   // ------------------------------------------------------------------ gotas discretas
   // Pinta gotas verticales con raíz ensanchada y bulbo final (pintura que chorrea)
-  function paintDrops(A, w, h, U, amount, length, R, noise, wetW, thick) {
+  function paintDrops(A, w, h, U, amount, length, R, noise, wetW, thick, lib) {
+    var useLib = lib && lib.items && lib.items.length;
     var tk = thick == null ? 1 : 0.35 + 1.3 * thick;
     var stepX = Math.max(1, Math.round(U * 0.012)), placed = [], maxDrops = 220;
     for (var x = 1; x < w - 1 && placed.length < maxDrops; x += stepX) {
@@ -867,6 +965,15 @@
     }
     for (var d = 0; d < placed.length; d++) {
       var P = placed[d], cx = P.x, y0 = P.y, Ld = P.L, wdd = P.wd, ex = cx;
+      var real = useLib ? pickDrip(lib, { lagrima: 0.6, fina: 0.25, serpenteante: 0.15 }, Ld / (2 * wdd), R) : null;
+      if (real) {   // gota real del banco
+        stampDrip(real, cx, y0 - 1, 2 * wdd, Ld, R() < 0.5, function (px2, py2, c2) {
+          if (px2 < 0 || py2 < 0 || px2 >= w || py2 >= h) return;
+          var j2 = py2 * w + px2; if (c2 > A[j2]) A[j2] = c2;
+          if (wetW) wetW[j2] = Math.max(wetW[j2], c2 * 0.35);
+        });
+        continue;
+      }
       for (var t = 0; t <= Ld; t++) {
         var yy = Math.round(y0 + t); if (yy >= h) break;
         var tt = t / Ld;
@@ -1025,7 +1132,7 @@
     // 1a · GOTEO desde las letras (antes del papel, para que la gota y la letra compartan borde)
     if (DR.on) {
       var Ddr = new Float32Array(A), DKd = needDark();
-      dripsFromLetters(Ddr, w, h, U, DR, R, noise, DKd);
+      dripsFromLetters(Ddr, w, h, U, DR, R, noise, DKd, texs.drips);
       var ab = DR.absorb || 0;
       if (ab > 0) {
         // papel absorbente: la gota sale de la letra empapada de su pintura (opaca, mismo color)
@@ -1494,7 +1601,7 @@
       }
     }
     if (p.drips.on && p.drips.drops > 0) {
-      paintDrops(A, w, h, U, p.drips.drops, Math.max(0.05, p.drips.length), R, noise, wetW, p.drips.thick);
+      paintDrops(A, w, h, U, p.drips.drops, Math.max(0.05, p.drips.length), R, noise, wetW, p.drips.thick, texs.drips);
     }
 
     // 4 · Salpicaduras: manchas de textura + gotas redondas -----------------
@@ -2265,7 +2372,7 @@
   var api = {
     VERSION: '0.5.0',
     DEFAULTS: DEFAULTS, prepareTexture: prepareTexture, measure: measure, margin: margin,
-    render: render, buildInput: buildInput, averageInk: averageInk, hexToRgb: hexToRgb, prepare: prepare
+    render: render, buildInput: buildInput, prepareDrips: prepareDrips, averageInk: averageInk, hexToRgb: hexToRgb, prepare: prepare
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.AFXEngine = api;
