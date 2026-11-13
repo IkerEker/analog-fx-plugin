@@ -2,7 +2,21 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.2**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.3**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.3 (Letras)
+- **Técnicas unificadas** (3 variantes muy distintas en cada una):
+  - **Serigrafía · Tipografía · Flexo:** Serigrafía (malla) · Tipografía (hundida) · Flexografía (goma y trama).
+  - **Linograbado · Mimeógrafo:** Linóleo (rodillo) · Mimeógrafo (halo de aceite) · Mimeógrafo gastado.
+- **Maraña:** la letra está hecha solo de hilos rizados (miles), densa en el centro, deshilachada en el borde y con hilos que cuelgan.
+- **Xilografía › Sello de madera tallado** (antes Talla suelta): cortes de gubia en cuña con crestas entre ellos, veta de la madera, presión desigual y borde del taco astillado.
+- **Fotocopia más contundente:** huecos de tóner a manchas, borde comido, rayas visibles, polvo de tóner.
+- **Láser roto** rehecho (módulo propio): Tambor rayado · Fusor y fantasma · Tóner agotado.
+- **Impresión loca:** Collage con textura de tóner real (grano duro, rayas finas, bocados, manchas); Arrastre de escáner más contenido; Doble pasada con estrías de rodillo y grano.
+- **Negativo:** halo más fino e irregular; ya no marca la caja de la capa.
+- **Sobre agua:** tinta reticulada al secar, granulación, anillo de secado y líneas de marea.
+- **Lavado vertical:** más franjas limpias, arrastre tintado desde la letra y sin marca de la caja.
+- **Goteo absorbente:** gotas y regueros más finos.
 
 ## Novedades 0.9.2
 - **Negativo rehecho como tinta que se infiltra en el papel:** la tinta avanza por una red de fibras desde el borde de la letra.
@@ -225,7 +239,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.2.ccx`.
+1. Descarga `dist/AnalogFX_0.9.3.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

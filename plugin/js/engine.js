@@ -300,9 +300,10 @@
     if (p.stencil && p.stencil.on) m += U * 0.15 * (p.stencil.setoff || 0) + U * 0.02;
     if (p.aqua && p.aqua.on) m += U * 0.05;
     if (p.damp && p.damp.on) m += U * (0.1 + 0.35 * (p.damp.spread || 0));
+    if (p.laser && p.laser.on) m += p.laser.mode === 'fuser' ? U * 0.8 : U * 0.3;
     if (p.tangle && p.tangle.on) m += U * 0.6 * (p.tangle.amount || 0);
     if (p.glitch && p.glitch.on) m += p.glitch.mode === 'drag' ? U * 1.4 : U * 0.5;
-    if (p.soak && p.soak.on) m += p.soak.mode === 'water' ? U * (0.35 + 0.2 * (p.soak.amount || 0)) : p.soak.mode === 'resist' ? U * (0.4 + 1.5 * (p.soak.roots == null ? 0.7 : p.soak.roots)) : p.soak.mode === 'runs' ? U * 0.8 : U * 0.25;
+    if (p.soak && p.soak.on) m += p.soak.mode === 'water' ? U * (0.35 + 0.2 * (p.soak.amount || 0)) : p.soak.mode === 'resist' ? U * (1.0 + 1.3 * (p.soak.roots == null ? 0.7 : p.soak.roots)) : p.soak.mode === 'runs' ? U * 1.4 : U * 0.25;
     if (p.seep && p.seep.on) m += U * (0.02 + 0.15 * (p.seep.reach || 0));
     if (p.wick && p.wick.on) m += p.wick.mode === 'wet' ? U * (0.06 + 0.35 * (p.wick.reach || 0)) : p.wick.mode === 'smear' ? U * (0.1 + 0.9 * (p.wick.drag || 0)) : U * (0.03 + 0.16 * (p.wick.reach || 0)) + 6;
     if (p.engrave && p.engrave.on) m += U * 0.06 * ((p.engrave.shadow || 0) + (p.engrave.misreg || 0));
@@ -477,7 +478,7 @@
     for (var r = 0; r < nr; r++) {
       var x0 = cols[(R() * cols.length) | 0], sd = R() * 100;
       var bite = R() < 0.6;
-      var hw = bite ? U * (0.008 + 0.022 * Math.pow(R(), 1.3)) + 0.7 : U * (0.005 + 0.018 * Math.pow(R(), 1.5)) + 0.6;
+      var hw = bite ? U * (0.005 + 0.015 * Math.pow(R(), 1.5)) + 0.6 : U * (0.003 + 0.011 * Math.pow(R(), 1.7)) + 0.5;
       var satL = bite ? U * (0.012 + 0.05 * R()) * (0.6 + 0.4 * rk) : U * (0.1 + 0.3 * R()) * (0.6 + 0.4 * rk);   // cuánto tarda en cargarse de tinta
       var lostInside = !bite && R() < 0.5;
       var ys = Math.max(1, top[x0] - U * (0.03 + 0.45 * R()));
@@ -645,10 +646,10 @@
     for (i = 0; i < n; i++) inv0[i] = 1 - dil[i];
     var clo = maxFilter(inv0, w, h, r1 * 0.55);
     for (i = 0; i < n; i++) clo[i] = 1 - clo[i];
-    var cloB = blur(clo, w, h, 2, 2);
+    var cloB = blur(clo, w, h, Math.max(2, U * 0.02), Math.max(2, U * 0.02));
     for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
       i = y * w + x;
-      band[i] = smooth(0.4, 0.6, cloB[i] + (gr(x, y) - 0.5) * 0.3 + (gb(x, y) - 0.5) * 0.35);
+      band[i] = smooth(0.47, 0.53, cloB[i] + (gr(x, y) - 0.5) * 0.22 + (gb(x, y) - 0.5) * 0.2 + (hash(((x >> 2) * 31 + (y >> 2)) ^ seed) - 0.5) * 0.08);
     }
     // 2) líneas de gubia que siguen el contorno, pegadas a la letra (una siempre, otra a ratos)
     var off1 = U * (0.012 + 0.03 * (E.spacing == null ? 0.4 : E.spacing)), lw = Math.max(0.9, U * 0.011);
@@ -661,54 +662,54 @@
       var c2 = on2 * clamp01(lwl * 0.8 - Math.abs(d2 - wob - off1 * 2.6) + 0.5);
       cut[i] = Math.max(c1, c2);
     }
-    // 3) garabatos: trazos rápidos de gubia (blancos) dentro de la franja, que siguen el contorno,
-    //    se curvan, se cruzan y a veces dan la vuelta
-    var area = 0; for (i = 0; i < n; i++) area += band[i] * (M[i] < 0.5 ? 1 : 0);
-    var dens = E.length == null ? 0.7 : E.length, nStr = Math.min(9000, Math.round(area / (U * U) * 260 * dens)), placedS = 0, tries = 0;
+    // 3) cortes de GUBIA en la madera sobrante: cuñas (entran anchas, salen en punta) que siguen el
+    //    contorno de la letra a distintas distancias, apretadas; entre ellas quedan crestas de madera
+    //    que imprimen como líneas negras irregulares. Cerca del borde del taco, cortes más largos.
+    var dens = E.length == null ? 0.7 : E.length, area = 0;
+    for (i = 0; i < n; i++) if (band[i] > 0.5 && M[i] < 0.5) area++;
+    var nCut = Math.min(14000, Math.round(area / (U * U) * 340 * dens));
     function grad(px, py) {
       var xi = Math.max(1, Math.min(w - 2, px | 0)), yi = Math.max(1, Math.min(h - 2, py | 0)), j = yi * w + xi;
       var a = Dout[j + 1], b = Dout[j - 1], c = Dout[j + w], e = Dout[j - w];
       if (a > 1e8 || b > 1e8 || c > 1e8 || e > 1e8) return [0, 0];
       return [(a - b) * 0.5, (c - e) * 0.5];
     }
-    while (placedS < nStr && tries++ < nStr * 40) {
+    var placed = 0;
+    for (var tries = 0; placed < nCut && tries < nCut * 30; tries++) {
       var px0 = R() * w, py0 = R() * h, j0 = (py0 | 0) * w + (px0 | 0);
-      if (M[j0] > 0.5 || band[j0] < 0.5) continue;
-      if (R() > 1 - 0.5 * Math.min(1, Dout[j0] / (bandW * 1.5))) continue;    // más denso pegado a la letra
-      placedS++;
-      var g = grad(px0, py0), ang = Math.atan2(g[0], -g[1]) + (R() < 0.5 ? Math.PI : 0);
-      if (R() < 0.25) ang = R() * 6.283;                                     // algunos cruzan
-      ang += (R() - 0.5) * 0.9;
-      var len = U * (0.05 + 0.4 * Math.pow(R(), 1.4)), r0 = Math.max(0.55, U * (0.0028 + 0.0055 * R())), curv = (R() - 0.5) * 0.16;
-      var xx = px0, yy = py0, steps = Math.ceil(len / 1.2);
+      if (M[j0] > 0.5 || band[j0] < 0.6 || Dout[j0] < off1 * 1.8) continue;
+      placed++;
+      var g = grad(px0, py0), ang = Math.atan2(g[0], -g[1]) + (R() < 0.5 ? Math.PI : 0) + (R() - 0.5) * 0.35;
+      var len = U * (0.04 + 0.16 * Math.pow(R(), 1.2)), wmax = Math.max(0.9, U * (0.006 + 0.012 * R()));
+      var xx = px0, yy = py0, steps = Math.ceil(len / 0.8), curv = (R() - 0.5) * 0.05;
       for (var k = 0; k < steps; k++) {
-        var tt = k / steps, rr = r0 * Math.min(1, Math.min(tt, 1 - tt) * 5 + 0.25);
-        // estampa un disco de corte
+        var tt = k / steps;
+        // cuña: la gubia entra rápida (0..0.15), sostiene y sale en punta larga
+        var rr = wmax * smooth(0, 0.12, tt) * Math.pow(1 - tt, 0.7) + 0.25;
         var xa = Math.floor(xx - rr - 1), xb = Math.ceil(xx + rr + 1), ya = Math.floor(yy - rr - 1), yb = Math.ceil(yy + rr + 1);
         for (var y2 = ya; y2 <= yb; y2++) { if (y2 < 0 || y2 >= h) continue; for (var x2 = xa; x2 <= xb; x2++) { if (x2 < 0 || x2 >= w) continue;
-          var j2 = y2 * w + x2; if (M[j2] > 0.5) continue;
+          var j2 = y2 * w + x2; if (M[j2] > 0.5 || Dout[j2] < off1 * 1.4) continue;
           var cv = clamp01(rr + 0.5 - Math.sqrt((x2 - xx) * (x2 - xx) + (y2 - yy) * (y2 - yy)));
           if (cv > cut[j2]) cut[j2] = cv; } }
-        // sigue el contorno con algo de curva propia; si se aleja mucho, gira hacia la letra
         var g2 = grad(xx, yy), tang = Math.atan2(g2[0], -g2[1]);
         var da = Math.atan2(Math.sin(tang - ang), Math.cos(tang - ang)), da2 = Math.atan2(Math.sin(tang + Math.PI - ang), Math.cos(tang + Math.PI - ang));
-        ang += (Math.abs(da) < Math.abs(da2) ? da : da2) * 0.08 + curv + (R() - 0.5) * 0.18;
-        var jj = (yy | 0) * w + (xx | 0);
-        if (jj >= 0 && jj < n && Dout[jj] > bandW * 1.3) ang += (Math.abs(da) < Math.abs(da2) ? 1 : -1) * 0.3;
-        xx += Math.cos(ang) * 1.2; yy += Math.sin(ang) * 1.2;
+        ang += (Math.abs(da) < Math.abs(da2) ? da : da2) * 0.12 + curv;
+        xx += Math.cos(ang) * 0.8; yy += Math.sin(ang) * 0.8;
         if (xx < 0 || yy < 0 || xx >= w || yy >= h) break;
       }
     }
-    // 4) tinta: letra y franja negras con vetas verticales de la madera y zonas con menos carga
-    var gv = makeGrid(w, h, 1, function (gx2, gy2) { var u2 = (gx2 - ox) * invU, v2 = (gy2 - oy) * invU; return noise(u2 * 30 + noise(u2 * 2, v2 * 2) * 3 + 7, v2 * 0.9 - 3) * 0.6 + noise(u2 * 70 + 1, v2 * 2.5) * 0.4; });
-    var gm = makeGrid(w, h, gstep, function (gx2, gy2) { return noise.fbm((gx2 - ox) * invU * 2.2 - 17, (gy2 - oy) * invU * 2.2 + 29, 3); });
+    // 4) tinta del sello: veta horizontal de la madera, presión desigual (zonas más pálidas), poros
+    var gGrain = makeGrid(w, h, 1, function (gx2, gy2) { var u2 = (gx2 - ox) * invU, v2 = (gy2 - oy) * invU; return noise(u2 * 1.5 + noise(u2 * 0.8, v2 * 3) * 1.5, v2 * 38) * 0.65 + noise(u2 * 4, v2 * 90 + 3) * 0.35; });
+    var gPress = makeGrid(w, h, gstep, function (gx2, gy2) { return noise.fbm((gx2 - ox) * invU * 0.9 - 17, (gy2 - oy) * invU * 0.9 + 29, 3); });
     var grainA = E.grain == null ? 0.5 : E.grain;
     for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
       i = y * w + x;
       var inkv = Math.max(M[i], band[i]) * (1 - cut[i]);
       if (inkv <= 0) continue;
-      var vt = smooth(0.62, 0.9, gv(x, y)) * grainA * 0.25 + smooth(0.6, 0.92, gm(x, y)) * grainA * 0.35;
-      K[i] = inkv * (1 - vt);
+      var gv = gGrain(x, y), pr = gPress(x, y);
+      var lift = grainA * (0.45 * smooth(0.55, 0.85, gv) + 0.35 * smooth(0.6, 0.85, pr) * (0.5 + 0.5 * gv));
+      if (hash(i * 7 + seed) < 0.015 * grainA) lift = Math.max(lift, 0.8);           // poros de la madera
+      K[i] = inkv * (1 - Math.min(0.85, lift));
     }
     // 5) papel fuera: parches rectangulares de taco con tinta gris estriada y arrastres verticales
     var blocks = E.blocks == null ? 0.5 : E.blocks;
@@ -1670,6 +1671,7 @@
         }
         var Ab1 = blur(Aw2, w, h, U * 0.006, U * 0.006), Ab2 = blur(Aw2, w, h, U * 0.04, U * 0.04), Ab3 = blur(Aw2, w, h, U * 0.1, U * 0.1);
         var Ain5 = new Float32Array(n); for (i = 0; i < n; i++) Ain5[i] = 1 - Aw2[i];
+        var Din5 = distInside(Aw2, w, h, 0.5, true); for (i = 0; i < n; i++) if (Din5[i] > 1e8) Din5[i] = 0;
         var Dout5 = distInside(Ain5, w, h, 0.5, true);
         var gSoft = grid(function (u, v) { return noise.fbm(u * 1.4 - 61, v * 1.4 + 5, 3); });
         var gFilm = grid(function (u, v) { var q1 = noise.fbm(u * 1.8 + 7, v * 1.8, 3), q2 = noise.fbm(u * 1.8 - 3, v * 1.8 + 11, 3); return noise.fbm(u * 2.6 + q1 * 2.5, v * 2.6 + q2 * 2.5, 4); });
@@ -1686,6 +1688,15 @@
           var cont = Math.exp(-Math.pow((fv - 0.47) / 0.005, 2)) * filmK * smooth(0.4, 0.7, gSw(x + 40, y));          // contorno fino de la lámina
           var swirl = (gSw(x, y) - 0.5) * 0.5 * thin;
           var dens = 1 - thin * (0.62 + 0.18 * tsl(x, y)) - swirl + cont * 0.45;
+          // reticulado de la tinta al secar (red de crestas finas) y granulación en las zonas finas
+          var u7 = (x - ox) * invU, v7 = (y - oy) * invU;
+          var ret = Math.abs(noise.fbm(u7 * 9 + gWx(x, y) * 2, v7 * 9 + gWy(x, y) * 2, 3) - 0.5);
+          var retL = smooth(0.035, 0.0, ret) * (0.3 + 0.7 * thin);
+          var gran = smooth(0.5, 0.85, 1 - tsg(x, y)) * thin * 0.35;
+          dens = dens - gran + retL * 0.35;
+          // la tinta se acumula en el borde de la letra (anillo de secado por dentro)
+          var rimW = Math.exp(-Math.max(0, Din5[i]) / (U * 0.012)) * (Din5[i] > 0 ? 0.35 : 0) * (0.5 + 0.5 * gSw(x, y));
+          dens += rimW;
           var inkW = edgeA * clamp01(dens);
           // costra de sedimento fuera de la letra
           var dO5 = Dout5[i] > 1e8 ? U * 3 : Dout5[i];
@@ -1696,6 +1707,8 @@
           var crustEdge = Math.exp(-Math.pow((dO5 - reach) / 1.1, 2)) * smooth(0.45, 0.8, gCr(x, y)) * crustK * 0.5;
           // halo gris suave donde el agua llevó tinta
           var halo5 = smooth(0.02, 0.35, Ab3[i]) * 0.22 * soft;
+          var tl5 = Ab3[i] * 14 + gSw(x, y) * 1.5, tlf = Math.abs(tl5 - Math.round(tl5));
+          halo5 = Math.max(halo5, smooth(0.07, 0.0, tlf) * smooth(0.01, 0.12, Ab3[i]) * smooth(0.6, 0.2, Ab3[i]) * 0.3 * smooth(0.4, 0.7, gCr(x + 30, y)) * (Aw2[i] < 0.5 ? 1 : 0));
           var vW = Math.max(inkW, crust + crustEdge, halo5);
           Ao[i] = clamp01(vW);
           if (cont > 0.2 || crustEdge > 0.1) PW2[i] = Math.max(PW2[i], Math.max(cont, crustEdge) * 0.6);
@@ -1747,14 +1760,14 @@
         var Ainv4 = new Float32Array(n); for (i = 0; i < n; i++) Ainv4[i] = 1 - A[i];
         var Do4 = distInside(Ainv4, w, h, 0.5, true), Di4 = distInside(A, w, h, 0.5, true);
         var Dsm4 = blur(Do4.map(function (v) { return v > 1e8 ? U * 3 : v; }), w, h, 2, 2);
-        var gZ4 = grid(function (u, v) { return noise.fbm(u * 1.1 + 17, v * 1.1 - 23, 3); });
+        var gZ4 = grid(function (u, v) { return noise.fbm(u * 1.1 + 17, v * 1.1 - 23, 3) * 0.6 + noise.fbm(u * 4.5 - 3, v * 4.5 + 9, 3) * 0.4; });
         var gL4 = grid(function (u, v) { return noise.fbm(u * 3.5 - 5, v * 3.5 + 12, 3); });
-        var R0 = U * (0.05 + 0.07 * skA);                                        // grosor del núcleo negro
+        var R0 = U * (0.025 + 0.035 * skA);                                        // grosor del núcleo negro
         // 1) la tinta se INFILTRA en el papel desde el borde de la letra: avanza por una red de
         //    fibras (distancia por dentro del papel), así el frente es orgánico y desigual. Junto a la
         //    letra el pigmento es negro y duro; más allá, pelillos de fibra y un velo gris con la
         //    textura del papel. El alcance cambia mucho por zonas y entre letras se cierra en negro.
-        var reachMax4 = R0 * 2.6, band4 = new Uint8Array(n), act4 = new Uint8Array(n);
+        var reachMax4 = R0 * 4.5, band4 = new Uint8Array(n), act4 = new Uint8Array(n);
         for (i = 0; i < n; i++) { var dq = Do4[i]; band4[i] = dq < reachMax4 * 2.2 + 4 ? 1 : 0; act4[i] = dq > 0 && dq < reachMax4 * 2.2 ? 1 : 0; }
         var zoneAt4 = function (x2, y2) { return 0.35 + 0.65 * gZ4(x2, y2); };
         var Fw4 = fiberNet(w, h, band4, { len: physK * 30, cover: 0.35, thick: 0.3 }, R, zoneAt4);
@@ -1772,10 +1785,10 @@
           i = y * w + x;
           if (A[i] >= 0.5) continue;
           var g4 = G4[i]; if (g4 > 1e8) continue;
-          var zA = zoneAt4(x, y), rl4 = R0 * (0.6 + 1.6 * zA * zA) * (0.85 + 0.3 * gH4(x, y)), fadeB = smooth(reachMax4 * 2.2, reachMax4 * 1.2, Do4[i]);
+          var zA = zoneAt4(x, y), rl4 = R0 * (0.3 + 2.4 * zA * zA * zA) * (0.7 + 0.6 * gH4(x, y)), fadeB = smooth(reachMax4 * 2.1, reachMax4 * 0.8, Do4[i]);
           var paper = tP4(x, y), fib4 = Fw4[i];
           // pigmento duro: macizo negro con frente nítido pero irregular
-          var core4 = smooth(rl4 * 1.1, rl4 * 0.7, g4 + (paper - 0.5) * rl4 * 0.25);
+          var core4 = smooth(rl4 * 1.05, rl4 * 0.6, g4 + (paper - 0.5) * rl4 * 0.5 + (gH4(x + 60, y) - 0.5) * rl4 * 0.9);
           // pelillos: la tinta sigue avanzando por las fibras más allá del frente
           var hair4 = Math.exp(-Math.pow(g4 / (rl4 * 1.7), 1.8)) * (0.25 + 0.55 * smooth(0.3, 0.9, fib4)) * hairK;
           // velo gris que empapa el papel, con su grano
@@ -1858,21 +1871,22 @@
         var band5 = new Float32Array(w), Ld5 = new Float32Array(w), Lu5 = new Float32Array(w), er5 = new Float32Array(w);
         for (x = 0; x < w; x++) {
           var u5 = (x - ox) * invU;
-          var f1 = smooth(0.66, 0.72, noise(u5 * 55 + 3, 1.7)), f2 = smooth(0.58, 0.7, noise(u5 * 16 - 9, 4.1)), f3 = smooth(0.56, 0.74, noise(u5 * 4 + 21, 8.8));
+          var f1 = smooth(0.7, 0.75, noise(u5 * 55 + 3, 1.7)), f2 = smooth(0.66, 0.74, noise(u5 * 16 - 9, 4.1)), f3 = smooth(0.66, 0.78, noise(u5 * 4 + 21, 8.8));
           var b5 = Math.max(f1 * 0.5, f2 * 0.85, f3);
           band5[x] = b5 * (0.55 + 0.45 * noise(u5 * 90 + 5, 2.2)) * Math.min(1, skA * 1.2);
-          Ld5[x] = U * (0.08 + 0.5 * noise(u5 * 7 + 11, 8.3)) * (0.5 + 0.7 * skA);
+          Ld5[x] = U * (0.06 + 0.4 * noise(u5 * 7 + 11, 8.3)) * (0.5 + 0.6 * skA);
           Lu5[x] = Ld5[x] * (0.25 + 0.45 * noise(u5 * 9 - 4, 3.3));
           er5[x] = 0.3 + 0.6 * noise(u5 * 25 + 40, 1.1);
         }
         var Abase = blur(A, w, h, U * 0.008, U * 0.012), Dn5 = new Float32Array(n), Up5 = new Float32Array(n);
         for (x = 0; x < w; x++) {
           var kd = Math.exp(-1 / Math.max(1.5, Ld5[x])), ku = Math.exp(-1 / Math.max(1.5, Lu5[x])), cD = 0, cU = 0;
-          for (y = 0; y < h; y++) { i = y * w + x; cD = cD * kd + Abase[i] * (1 - kd); Dn5[i] = cD; }
-          for (y = h - 1; y >= 0; y--) { i = y * w + x; cU = cU * ku + Abase[i] * (1 - ku); Up5[i] = cU; }
+          var hD = 0, hU = 0;
+          for (y = 0; y < h; y++) { i = y * w + x; cD = cD * kd + Abase[i] * (1 - kd); hD = Math.max(Abase[i], hD * kd); Dn5[i] = Math.max(cD * 2, hD * 0.85); }
+          for (y = h - 1; y >= 0; y--) { i = y * w + x; cU = cU * ku + Abase[i] * (1 - ku); hU = Math.max(Abase[i], hU * ku); Up5[i] = Math.max(cU * 2, hU * 0.8); }
         }
         var Sm5 = new Float32Array(n);
-        for (i = 0; i < n; i++) Sm5[i] = Math.min(1, (Dn5[i] * 0.6 + Up5[i] * 0.4) * 2.3);
+        for (i = 0; i < n; i++) { var yE = (i / w) | 0, edgeF = smooth(0, U * 0.3, Math.min(yE, h - 1 - yE)); Sm5[i] = Math.min(1, Math.max(Dn5[i], Up5[i] * 0.85)) * edgeF; }
         Sm5 = blur(Sm5, w, h, U * 0.003, U * 0.01);
         for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
           i = y * w + x;
@@ -1927,43 +1941,65 @@
       A = Ao; shape = A;
     }
 
-    // 1e · MARAÑA: la letra hecha de una maraña de hilos finos y rizados (como alambre o raíces):
-    // densa y negra dentro (legible), hilos sueltos que se escapan por el borde y cuelgan hacia abajo,
-    // peinado horizontal a ratos y sombra suave sobre el papel.
+    // 1e · MARAÑA: la letra está hecha SOLO de hilos finos, rizados y quebrados (alambre, estropajo,
+    // raíces). Miles de hilos se acumulan: donde se cruzan muchos sale negro (el centro del trazo),
+    // en el borde quedan ralos y deshilachados, algunos se escapan y cuelgan; en algunas franjas los
+    // hilos están peinados en horizontal. Los hilos están algo levantados: sombra suave en el papel.
     var TG = p.tangle || {};
     if (TG.on && (TG.amount || 0) > 0) {
-      var tA = Math.min(1.6, TG.amount), Dt = distInside(A, w, h, 0.5, true), Ain = new Float32Array(n), At = new Float32Array(n);
-      for (i = 0; i < n; i++) Ain[i] = 1 - A[i];
-      var Dto = distInside(Ain, w, h, 0.5, true), area = 0;
+      var tA = Math.min(1.6, TG.amount), comb = TG.comb == null ? 0.4 : TG.comb;
+      var Ain = new Float32Array(n); for (i = 0; i < n; i++) Ain[i] = 1 - A[i];
+      var Dto = distInside(Ain, w, h, 0.5, true), Dti = distInside(A, w, h, 0.5, true), area = 0;
       for (i = 0; i < n; i++) if (A[i] > 0.5) area++;
-      // cuerpo: casi macizo en el centro, se abre hacia el borde
-      var gT = grid(function (u, v) { return noise.fbm(u * 6 + 3, v * 6 - 8, 3); }), gT2 = grid(function (u, v) { return noise.fbm(u * 30 + 9, v * 30 + 1, 2); });
-      for (i = 0; i < n; i++) if (A[i] > 0.5) { var yt = (i / w) | 0, xt = i - yt * w, dd5 = Dt[i] > 1e8 ? U : Dt[i]; At[i] = smooth(0, U * 0.02, dd5) * (0.62 + 0.18 * gT(xt, yt) + 0.2 * smooth(0.35, 0.7, gT2(xt, yt))); }
-      function line(x0, y0, x1, y1, c) {
-        var L = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) | 0;
-        for (var k = 0; k <= L; k++) { var tx = L ? k / L : 0, xx = Math.round(x0 + (x1 - x0) * tx), yy = Math.round(y0 + (y1 - y0) * tx); if (xx >= 0 && yy >= 0 && xx < w && yy < h) { var j = yy * w + xx; if (c > At[j]) At[j] = c; } }
+      var Dts = blur(Dto.map(function (v) { return v > 1e8 ? U : v; }), w, h, 1.5, 1.5);
+      var At = new Float32Array(n);
+      var gCo = grid(function (u, v) { return noise(u * 0.4 + 3, v * 7 - 2); });            // franjas peinadas
+      var gDe = grid(function (u, v) { return noise.fbm(u * 3 + 11, v * 3 - 5, 3); });       // densidad por zonas
+      var wire = Math.max(0.55, U * 0.0035);                                                 // grosor del hilo
+      function dep(px, py, a) {   // deposita un hilo (antialias); la tinta se acumula
+        var xi = Math.floor(px), yi = Math.floor(py), fx = px - xi, fy = py - yi;
+        if (xi < 0 || yi < 0 || xi + 1 >= w || yi + 1 >= h) return;
+        var j = yi * w + xi, ws = [(1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy], js = [j, j + 1, j + w, j + w + 1];
+        for (var q = 0; q < 4; q++) { var c = a * ws[q] * 1.6; if (c > 0.002) At[js[q]] = 1 - (1 - At[js[q]]) * (1 - Math.min(1, c)); }
       }
-      var nH = Math.round(area / (U * U) * 2600 * tA), budget2 = 4000000;
-      for (var hq = 0; hq < nH && budget2 > 0; hq++) {
-        var hx = R() * w, hy = R() * h, j0 = (hy | 0) * w + (hx | 0);
+      var nS = Math.round(area / (U * U) * 6000 * tA), budget = Math.round(area * 40 * tA) + 50000, escN = 0;
+      for (var sq = 0, tries = 0; sq < nS && budget > 0 && tries < nS * 20; tries++) {
+        var sx = R() * w, sy = R() * h, j0 = (sy | 0) * w + (sx | 0);
         if (A[j0] < 0.5) continue;
-        var escape = R() < 0.12 * tA && Dt[j0] < U * 0.05, ang = R() * 6.283, len = U * (0.04 + 0.18 * R()) * (escape ? 3.5 : 1), c = 0.85 + 0.15 * R();
-        var curl = (R() - 0.5) * 0.9, px = hx, py = hy;
-        for (var k = 0; k < len && budget2 > 0; k++, budget2--) {
-          ang += curl * (R() - 0.3) + (R() - 0.5) * 1.1;                      // rizado y quebrado
-          if (escape) ang += Math.sin(Math.PI / 2 - ang) * 0.07;              // cuelga hacia abajo
-          var nx = px + Math.cos(ang) * 1.3, ny = py + Math.sin(ang) * 1.3, jn = (ny | 0) * w + (nx | 0);
-          if (!escape && (jn < 0 || jn >= n || (A[jn] < 0.5 && Dto[jn] > U * (0.012 + 0.04 * gT(nx | 0, ny | 0))))) { ang += Math.PI * (0.6 + 0.4 * R()); continue; }
-          line(px, py, nx, ny, c * (escape ? 0.9 : 1)); px = nx; py = ny;
-          if (nx < 0 || ny < 0 || nx >= w || ny >= h) break;
+        // más hilos en el centro del trazo y en las zonas densas
+        var cen = smooth(0, U * 0.05, Dti[j0] > 1e8 ? U : Dti[j0]);
+        if (R() > 0.35 + 0.65 * cen * (0.5 + 0.7 * gDe(sx | 0, sy | 0))) continue;
+        sq++;
+        var combed = gCo(sx | 0, sy | 0) > 1 - comb * 0.45;
+        var ang = combed ? (R() < 0.5 ? 0 : Math.PI) + (R() - 0.5) * 0.4 : R() * 6.283;
+        var esc = R() < 0.008 * tA + 0.03 * (TG.hang || 0), len = U * (combed ? 0.12 + 0.3 * R() : 0.04 + 0.16 * R()) * (esc ? 3 : 1);
+        var ink = 0.4 + 0.45 * R(), margin = U * (0.004 + 0.03 * Math.pow(R(), 2)), segL = 0, kink = 0;
+        var px = sx, py = sy, k;
+        for (k = 0; k < len && budget > 0; k++, budget--) {
+          // quiebros cortos: el hilo es rizado y crespo, no una curva suave
+          if (--segL <= 0) { segL = 1 + R() * (combed ? 6 : 3.5); kink = (R() - 0.5) * (combed ? 1.0 : 2.4); }
+          ang += kink * 0.45 + (R() - 0.5) * 0.35;
+          if (combed) ang += Math.atan2(Math.sin(-ang), Math.cos(ang) > 0 ? Math.cos(ang) : -Math.cos(ang)) * 0.05;
+          if (esc && k > len * 0.2) ang += Math.atan2(Math.sin(Math.PI / 2 - ang), Math.cos(Math.PI / 2 - ang)) * 0.04;   // cuelga
+          var nx = px + Math.cos(ang) * 0.9, ny = py + Math.sin(ang) * 0.9, jn = (ny | 0) * w + (nx | 0);
+          if (jn < 0 || jn >= n) break;
+          if (!esc && A[jn] < 0.5 && Dto[jn] > margin) {   // se sale: vuelve hacia la letra
+            var xi2 = Math.max(1, Math.min(w - 2, nx | 0)), yi2 = Math.max(1, Math.min(h - 2, ny | 0)), jj = yi2 * w + xi2;
+            ang = Math.atan2(-(Dts[jj + w] - Dts[jj - w]), -(Dts[jj + 1] - Dts[jj - 1])) + (R() - 0.5) * 1.2;
+            continue;
+          }
+          dep(nx, ny, ink * (esc ? Math.max(0.3, 1 - k / len) : 1) * wire);
+          px = nx; py = ny;
+          if (px < 1 || py < 1 || px >= w - 1 || py >= h - 1) break;
         }
       }
-      // peinado horizontal: algunas bandas arrastradas a un lado
-      var comb = TG.comb == null ? 0.4 : TG.comb, Ac = new Float32Array(At);
-      for (y = 0; y < h; y++) { var by2 = noise(y / (U * 0.03), 3.3); if (by2 < 1 - comb * 0.35) continue; var sh5 = Math.round((by2 - 0.7) * U * 0.25 * (R() < 0.5 ? -1 : 1)); for (x = 0; x < w; x++) { var xs5 = x - sh5; if (xs5 >= 0 && xs5 < w) Ac[y * w + x] = Math.max(At[y * w + x], At[y * w + xs5] * 0.9); } }
-      // sombra suave sobre el papel (los hilos están algo levantados)
-      var Sh = blur(Ac, w, h, U * 0.012, U * 0.012), sdx = Math.round(U * 0.012), sdy = Math.round(U * 0.02);
-      for (y = 0; y < h; y++) for (x = 0; x < w; x++) { i = y * w + x; var js = (y - sdy) * w + (x - sdx); var sv = (y - sdy >= 0 && x - sdx >= 0) ? Sh[js] * 0.3 : 0; A[i] = Math.max(Ac[i], sv); }
+      // sombra suave: los hilos están algo levantados del papel
+      var Sh = blur(At, w, h, U * 0.008 + 1, U * 0.008 + 1), sdx = Math.round(U * 0.008 + 1), sdy = Math.round(U * 0.014 + 1);
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        i = y * w + x; var ys = y - sdy, xs = x - sdx;
+        var sv = ys >= 0 && xs >= 0 ? Sh[ys * w + xs] * 0.28 : 0;
+        A[i] = clamp01(1 - (1 - At[i]) * (1 - sv));
+      }
       shape = A;
     }
 
@@ -2019,16 +2055,22 @@
             cpos += cw + gap;
           }
         }
-        // 4) textura de fotocopia dentro de la tinta: zonas grises de tóner, rayas blancas, borde roto
+        // 4) textura de fotocopia: el tóner es binario. Zonas con poca carga se vuelven grano duro
+        //    (punteado), rayas blancas finas y nítidas, bocados de borde dentado; y manchas de tóner
+        //    granulosas pegadas a algunas letras (como suciedad del cristal)
+        var sdT = p.seed * 53 + 1;
         for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
-          i = y * w + x; var v = Og[i]; if (v <= 0.02) continue;
-          var t1 = gTex1(x, y), t2 = gTex2(x, y);
-          var grayZ = smooth(0.6, 0.7, t1) * 0.4 * gA;                                      // tóner flojo: gris moteado
-          v *= 1 - grayZ * (0.4 + 0.6 * smooth(0.3, 0.7, t2));
-          var scr = smooth(0.82, 0.9, noise((x - ox) * invU * 0.8 + 3, (y - oy) * invU * 40)) * smooth(0.55, 0.75, t1);   // rayas blancas finas
-          v *= 1 - 0.85 * scr;
-          var bite = smooth(0.74, 0.8, t2) * smooth(0.5, 0.7, t1);                          // huecos blancos a bocados
-          v *= 1 - 0.9 * bite;
+          i = y * w + x; var t1 = gTex1(x, y), t2 = gTex2(x, y), v = Og[i];
+          // mancha de tóner junto a la tinta: grano oscuro
+          var sm = smooth(0.72, 0.78, gTex1(x + 400, y - 90)) * gA;
+          if (sm > 0 && v < 0.5) { var gsm = hash(i * 13 + sdT); if (gsm < sm * (0.35 + 0.5 * t2)) v = Math.max(v, 0.85); }
+          if (v <= 0.02) { Og[i] = v; continue; }
+          var low = smooth(0.58, 0.7, t1) * Math.min(1, 0.8 * gA);                       // tóner flojo
+          if (low > 0 && hash(i * 7 + sdT) < low * (0.35 + 0.55 * t2)) v *= 0.08;        // punteado duro, no nube
+          var row = (y / Math.max(1, U * 0.006)) | 0;
+          if (hash(row * 31 + sdT) < 0.04 * gA && smooth(0.45, 0.6, t1) > 0) v *= 0.1;   // raya blanca fina
+          var bite = smooth(0.76, 0.78, t2 + (hash(i * 5 + sdT) - 0.5) * 0.06) * smooth(0.45, 0.6, t1);
+          v *= 1 - 0.95 * bite;                                                             // bocado de borde dentado
           Og[i] = v;
         }
         // 5) motas de tóner agrupadas (como el polvo del cristal), más cerca de la tinta
@@ -2046,11 +2088,11 @@
         Og.set(A0g);
         var yMin = h, yMax = 0, xMin = w, xMax = 0;
         for (i = 0; i < n; i++) if (A0g[i] > 0.5) { var yq1 = (i / w) | 0, xq1 = i - yq1 * w; if (yq1 < yMin) yMin = yq1; if (yq1 > yMax) yMax = yq1; if (xq1 < xMin) xMin = xq1; if (xq1 > xMax) xMax = xq1; }
-        var lineH = Math.max(U * 0.3, (yMax - yMin) * 0.45), nCopy = 1 + Math.round(gA * 1.2);
+        var lineH = Math.max(U * 0.3, (yMax - yMin) * 0.45), nCopy = gA > 1.1 ? 2 : 1;
         for (var cq2 = 1; cq2 <= nCopy; cq2++) {
-          var Sm6 = smearH(A0g, U * (0.04 + 0.25 * R()) * gA, 1), dyc = Math.round(lineH * (0.55 + 0.35 * R()) * cq2), dxc = Math.round(U * (0.05 + 0.25 * R()) * cq2), opc = 0.95 - 0.2 * cq2;
+          var Sm6 = smearH(A0g, U * (0.03 + 0.12 * R()) * gA, 1), dyc = Math.round(lineH * (0.3 + 0.25 * R()) * cq2), dxc = Math.round(U * (0.03 + 0.12 * R()) * cq2), opc = 0.55 - 0.15 * cq2;
           // solo la parte derecha / una franja vertical (la hoja se arrastró a trozos)
-          var yc0 = yMin + dyc + Math.round((yMax - yMin) * 0.1 * R()), yc1 = yc0 + Math.round((yMax - yMin) * (0.6 + 0.4 * R())), xc0 = xMin + Math.round((xMax - xMin) * 0.35 * R());
+          var yc0 = yMin + dyc + Math.round((yMax - yMin) * 0.2 * R()), yc1 = yc0 + Math.round((yMax - yMin) * (0.15 + 0.25 * R())), xc0 = xMin + Math.round((xMax - xMin) * (0.3 + 0.4 * R()));
           stampShift(Og, Sm6, dxc, dyc, opc, xc0 + dxc, w, yc0, yc1);
           stampShift(Og, A0g, dxc, dyc, opc * 0.85, xc0 + dxc, w, yc0, yc1);
         }
@@ -2058,8 +2100,8 @@
         var Of = new Float32Array(Og), yb2 = 0;
         while (yb2 < h) {
           var bh6 = Math.max(1, Math.round(U * (0.008 + 0.06 * Math.pow(R(), 2))));
-          if (R() < 0.3 * gA) {
-            var sh6 = Math.round((R() - 0.3) * U * 0.25 * gA), kk = Math.exp(-1 / Math.max(1.5, U * 0.08 * R() * gA));
+          if (R() < 0.12 * gA) {
+            var sh6 = Math.round((R() - 0.3) * U * 0.12 * gA), kk = Math.exp(-1 / Math.max(1.5, U * 0.08 * R() * gA));
             for (y = yb2; y < Math.min(h, yb2 + bh6); y++) { var c8 = 0; for (x = 0; x < w; x++) { var sx8 = x - sh6, sv8 = sx8 >= 0 && sx8 < w ? Of[y * w + sx8] : 0; c8 = Math.max(sv8, c8 * kk); Og[y * w + x] = c8; } }
           }
           yb2 += bh6;
@@ -2075,18 +2117,24 @@
           for (var mq = 0; mq < 5; mq++) { var my6 = fy0 + 4 + mq * Math.round(U * 0.05); for (x = fx0 + 3; x < fx0 + 3 + Math.round(U * (0.05 + 0.1 * R())); x++) if (my6 < h) Og[my6 * w + x] = Math.max(Og[my6 * w + x], 0.6); }
         }
       } else {
-        // DOBLE PASADA: la hoja pasa dos veces con la plancha algo movida; la segunda con menos
-        // tinta, el punto corrido hacia un lado y la tinta irregular.
-        var ddx = U * (0.045 + 0.05 * gA), ddy = U * (0.012 + 0.015 * gA) * (R() < 0.5 ? -1 : 1);
-        var Sl = smearH(A0g, U * 0.02 * gA, 1);
+        // DOBLE PASADA: la hoja pasa dos veces por la prensa con la plancha movida. Cada pasada
+        // con su carga de rodillo: estrías horizontales del rodillo, grano duro donde falta tinta,
+        // borde algo aplastado; la segunda más desplazada y con menos carga; papel visible a puntos.
+        var ddx = U * (0.035 + 0.04 * gA), ddy = U * (0.015 + 0.015 * gA) * (R() < 0.5 ? -1 : 1), sdD = p.seed * 71 + 3;
+        var gRol = grid(function (u, v) { return noise(u * 0.35 + 2, v * 26) * 0.6 + noise(u * 1.2, v * 60 + 5) * 0.4; });   // estrías del rodillo
+        var gLoad = grid(function (u, v) { return noise.fbm(u * 1.4 + 8, v * 1.4 - 3, 3); });
+        function pass(xx, yy, load, salt) {
+          var a0 = sampleBil(A0g, w, h, xx, yy); if (a0 <= 0.02) return 0;
+          var rol = gRol(xx | 0, yy | 0), ld = gLoad((xx | 0) + salt, yy | 0);
+          var starve = clamp01((1 - load) + 0.6 * smooth(0.55, 0.8, ld) + 0.35 * smooth(0.55, 0.85, rol) - 0.25);
+          var hk = hash(((yy | 0) * w + (xx | 0)) * 9 + sdD + salt);
+          return a0 * (hk < starve * 0.85 ? 0.12 : 1) * (0.85 + 0.15 * rol);
+        }
         for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
           i = y * w + x;
-          var p1 = Math.max(A0g[i], Sl[i] * 0.6);
-          var p2 = sampleBil(A0g, w, h, x - ddx, y + Math.abs(ddy)) * (0.45 + 0.5 * smooth(0.3, 0.7, gTex1(x - 50, y))) * (1 - 0.6 * smooth(0.6, 0.75, gTex2(x, y)));
-          var m1 = 1 - 0.55 * smooth(0.5, 0.75, gTex1(x + 77, y)) * gA;                      // primera pasada con poca carga a ratos
-          Og[i] = clamp01(1 - (1 - p1 * m1) * (1 - p2));
+          var p1 = pass(x, y, 0.92 - 0.15 * gA, 0), p2 = pass(x - ddx, y - ddy, 0.7 - 0.2 * gA, 300) * 0.85;
+          Og[i] = clamp01(1 - (1 - p1) * (1 - p2));
         }
-        for (i = 0; i < n; i++) { var v10 = Og[i]; Og[i] = clamp01(v10 + (hash(i * 5 + 9) - 0.5) * 0.25 * Math.min(1, 4 * v10 * (1 - v10) + 0.02)); }
       }
       A = Og; shape = A;
     }
@@ -2424,48 +2472,141 @@
 
     // 7a2 · FOTOCOPIA: copia de copia, tóner, rayas del tambor y polvo ------
     if (CP.on && (CP.slur || 0) > 0) {
-      var decS = Math.exp(-1 / Math.max(1, U * 0.012 * CP.slur + 1)), tsl = physSampler('d', 200, 'toner');
+      var decS = Math.exp(-1 / Math.max(1, U * 0.035 * CP.slur + 1)), tsl = physSampler('d', 200, 'toner');
       for (x = 0; x < w; x++) { var pv2 = 0; for (y = 0; y < h; y++) { i = y * w + x; pv2 = Math.max(A[i], pv2 * decS); if (pv2 > A[i] && A[i] < 0.9) A[i] = Math.max(A[i], pv2 * 0.7 * smooth(0.4, 0.8, tsl(x, y))); } }
     }
     if (CP.on) {
       var ttn = physSampler('d', 260, 'toner'), ttb = physSampler('b', 600, 'toner'), ttf = physSampler('d', 110, 'toner');
       if (CP.gen > 0) {   // cada generación engorda, rompe y redondea los trazos
-        var Bg = blur(A, w, h, U * 0.008 * CP.gen + 0.6, U * 0.008 * CP.gen + 0.6);
+        var Bg = blur(A, w, h, U * 0.02 * CP.gen + 0.8, U * 0.02 * CP.gen + 0.8), sdG = p.seed * 977;
         for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
           i = y * w + x;
           if (Bg[i] < 0.005) { A[i] = 0; continue; }
-          var thrg = 0.5 - 0.1 * CP.gen + (ttn(x, y) - 0.5) * 0.3 * CP.gen;
-          A[i] = smooth(thrg - 0.05, thrg + 0.05, Bg[i]);
+          var thrg = 0.5 - 0.14 * CP.gen + (ttn(x, y) - 0.5) * 0.55 * CP.gen + (ttb(x, y) - 0.5) * 0.25 * CP.gen;
+          thrg += (hash(i * 11 + sdG) - 0.5) * 0.18 * CP.gen;
+          A[i] = smooth(thrg - 0.04, thrg + 0.04, Bg[i]);
         }
       }
       var nearC = blur(A, w, h, U * 0.12, U * 0.12), DKc = needDark(), sdC = p.seed * 313;
-      var stW = Math.max(1, U * 0.003), gstr = grid(function (u, v) { return noise.fbm(u * 0.15 + 9, v * 1.8, 2); });
+      var gblot = grid(function (u, v) { return noise.fbm(u * 2.4 + 61, v * 2.4 - 7, 4); });
+      var stW = Math.max(1, U * 0.004), gstr = grid(function (u, v) { return noise.fbm(u * 0.15 + 9, v * 1.8, 2); });
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
         i = y * w + x;
         var ac = A[i];
         if (ac > 0) {
           // tóner que no agarra en los negros (puntitos y zonas blancas)
           var tbv = ttb(x, y), clus = smooth(0.55, 0.85, tbv);
-          ac *= 1 - CP.dropout * (0.95 * smooth(0.86, 0.95, ttf(x, y)) * (0.25 + 0.75 * clus) + 0.35 * smooth(0.75, 0.95, tbv));
+          ac *= 1 - Math.min(0.95, CP.dropout * (0.95 * smooth(0.78, 0.92, ttf(x, y)) * (0.35 + 0.65 * clus) + 0.6 * smooth(0.68, 0.9, tbv)));
+          // manchas blancas grandes donde el tóner no agarró (a zonas) y borde comido
+          var blot = smooth(0.6, 0.66, gblot(x, y)) * smooth(0.35, 0.75, ttf(x, y));
+          ac *= 1 - Math.min(1, CP.dropout * 1.1) * blot;
         }
         // motas de tóner junto al negro
         var nr = nearC[i];
         if (nr > 0.01 && ac < 0.9) {
-          var spk = smooth(1 - CP.toner * 0.05, 1 - CP.toner * 0.05 + 0.008, 1 - ttf(x, y)) * smooth(0.04, 0.5, nr) * smooth(0.3, 0.7, 1 - ttb(x, y));
+          var spk = smooth(1 - CP.toner * 0.13, 1 - CP.toner * 0.13 + 0.012, 1 - ttf(x, y)) * smooth(0.02, 0.4, nr) * smooth(0.25, 0.65, 1 - ttb(x, y));
           ac = Math.max(ac, spk * 0.95);
-          ac = Math.max(ac, CP.haze * 0.1 * smooth(0.05, 0.6, nr) * (0.5 + ttb(x, y)));
+          ac = Math.max(ac, CP.haze * 0.28 * smooth(0.03, 0.5, nr) * (0.5 + ttb(x, y)));
         }
         // rayas del tambor: finas, verticales (sentido del papel), de intensidad variable
         if (CP.streaks > 0) {
           var col = Math.floor((x - ox) / stW), hs = hash(col * 7 + sdC);
-          if (hs > 1 - CP.streaks * 0.035) {
+          if (hs > 1 - CP.streaks * 0.09) {
             var sv = smooth(0.3, 0.75, gstr(x, y)) * (0.35 + 0.65 * hash(col * 3 + 1 + sdC));
-            if (hash(col + 99 + sdC) < 0.6) ac = ac + (1 - ac) * sv * 0.55 * smooth(0, 0.45, nr);   // raya oscura
-            else ac *= 1 - sv * 0.7;                                                                     // raya clara
+            var svb = smooth(0.25, 0.4, sv);                                                       // la fotocopia no tiene grises: raya entera o nada
+            if (hash(col + 99 + sdC) < 0.6) ac = Math.max(ac, svb * (0.55 + 0.45 * smooth(0, 0.3, nr)) * (0.6 + 0.4 * ttf(x, y)));   // raya oscura
+            else ac *= 1 - svb * 0.95;                                                                     // raya clara
             DKc[i] = Math.max(DKc[i], sv * 0.3);
           }
         }
         A[i] = ac;
+      }
+    }
+
+    // 7a2b · LÁSER ROTO: defectos reales de una impresora láser
+    //  'drum'  tambor rayado: rayas verticales continuas (finas y gruesas) que cruzan papel y letras,
+    //          un canal blanco sin tóner y una mota que se repite cada vuelta del tambor.
+    //  'fuser' fusor y fantasma: tóner sin fundir restregado en horizontal, imagen fantasma repetida
+    //          una vuelta de tambor más abajo y velo gris de fondo.
+    //  'empty' tóner agotado: franjas verticales donde la tinta pasa a trama de puntos de láser cada
+    //          vez más rala, y banding horizontal.
+    var LZ = p.laser || {};
+    if (LZ.on && (LZ.amount || 0) > 0) {
+      var lA = Math.min(1.6, LZ.amount), lm = LZ.mode || 'drum', sdL = p.seed * 131 + 7, A0L = new Float32Array(A);
+      var drumC = Math.max(U * 0.8, h * 0.45);                                     // vuelta del tambor (px)
+      var tdust = physSampler('d', 110, 'toner'), tbig = physSampler('b', 420, 'toner');
+      var cell = Math.max(2, physK * 3.2);                                          // trama de la láser (~ 100 lpi a 300 ppp)
+      function laserDot(x2, y2, t) {                                                // trama de puntos a 45°
+        var u2 = (x2 + y2) / cell, v2 = (x2 - y2) / cell, fu = u2 - Math.floor(u2) - 0.5, fv = v2 - Math.floor(v2) - 0.5;
+        var r = Math.sqrt(fu * fu + fv * fv) * 1.41;
+        return smooth(Math.sqrt(t) + 0.06, Math.sqrt(t) - 0.06, r);
+      }
+      if (lm === 'drum') {
+        var cols = [], xx;
+        for (xx = 0; xx < w;) {
+          var gap = U * (0.03 + 0.4 * Math.pow(hash(xx * 13 + sdL), 2)) / lA;
+          xx += Math.max(2, gap);
+          if (xx >= w) break;
+          var wid = hash(xx * 7 + sdL) < 0.8 ? 0.6 + 1.2 * hash(xx + sdL) : 2 + U * 0.02 * hash(xx * 3 + sdL);
+          cols.push({ x: xx, w: wid, k: 0.35 + 0.65 * hash(xx * 5 + sdL), white: hash(xx * 11 + sdL) < 0.18 });
+        }
+        for (var c = 0; c < cols.length; c++) {
+          var co = cols[c];
+          for (y = 0; y < h; y++) {
+            var fl = smooth(0.25, 0.6, noise(co.x * 0.01, y / (U * 0.6) + c)) * co.k;   // la raya va y viene
+            for (x = Math.max(0, Math.floor(co.x - co.w - 1)); x <= Math.min(w - 1, Math.ceil(co.x + co.w + 1)); x++) {
+              i = y * w + x;
+              var cv = clamp01(co.w + 0.5 - Math.abs(x - co.x)) * fl;
+              if (co.white) A[i] *= 1 - cv * 0.95;
+              else A[i] = Math.max(A[i], cv * (0.55 + 0.45 * tdust(x, y)));
+            }
+          }
+        }
+        // mota repetida cada vuelta del tambor
+        var mx = w * (0.2 + 0.6 * hash(sdL + 3)), my0 = h * hash(sdL + 5) % drumC, mr = Math.max(1.5, U * 0.012);
+        for (var my = my0; my < h; my += drumC) for (y = Math.floor(my - mr * 2); y <= my + mr * 2; y++) for (x = Math.floor(mx - mr * 3); x <= mx + mr * 3; x++) {
+          if (x < 0 || y < 0 || x >= w || y >= h) continue;
+          var dm = Math.sqrt((x - mx) * (x - mx) / 4 + (y - my) * (y - my)) / mr;
+          i = y * w + x; A[i] = Math.max(A[i], smooth(1, 0.6, dm) * (0.6 + 0.4 * tdust(x, y)));
+        }
+      } else if (lm === 'fuser') {
+        // tóner sin fundir: se restriega hacia la derecha a tramos
+        var rub = new Float32Array(n);
+        for (y = 0; y < h; y++) {
+          var on = smooth(0.45, 0.65, noise(y / (U * 0.15), 3.3 + sdL * 0.001)), len = U * (0.05 + 0.25 * lA), kk = Math.exp(-1 / Math.max(1.5, len)), acc = 0;
+          for (x = 0; x < w; x++) { i = y * w + x; acc = Math.max(A0L[i], acc * kk); rub[i] = acc * on; }
+        }
+        // fantasma una vuelta de tambor más abajo
+        var gdy = Math.round(drumC * 0.55), gdx = Math.round(U * 0.02);
+        for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+          i = y * w + x;
+          var src = (y - gdy) >= 0 && (x - gdx) >= 0 ? A0L[(y - gdy) * w + x - gdx] : 0;
+          var ghost = src * 0.3 * lA * (0.5 + 0.5 * tbig(x, y));
+          var rb = rub[i] * 0.55 * (0.4 + 0.6 * tdust(x, y));
+          var fog = 0.05 * lA * smooth(0.45, 0.8, tbig(x, y)) * (0.4 + 0.6 * tdust(x, y));
+          // la letra pierde tóner donde se restregó (se queda gris)
+          var a0 = A[i] * (1 - 0.45 * rub[i] * smooth(0.45, 0.75, tdust(x, y)) * (A0L[i] > 0.5 ? 1 : 0));
+          A[i] = Math.max(a0, rb, ghost, fog);
+        }
+      } else {
+        // tóner agotado: franjas verticales anchas donde la densidad cae; ahí se ve la trama láser
+        for (y = 0; y < h; y++) {
+          var bandH = 1 - 0.25 * lA * smooth(0.55, 0.75, noise(y / (U * 0.08), 9.1));       // banding horizontal
+          for (x = 0; x < w; x++) {
+            i = y * w + x; if (A[i] <= 0.01) continue;
+            var lowT = smooth(0.35, 0.75, noise(x / (U * 0.5) + sdL * 0.001, 0.7)) * Math.min(1, lA);
+            var dens = A[i] * (1 - 0.82 * lowT) * bandH;
+            var dot = laserDot(x, y, clamp01(dens));
+            var tex = dens > 0.9 ? 1 : dot * (0.75 + 0.25 * tdust(x, y));
+            A[i] = A[i] * (lowT > 0.05 ? tex : dens);
+          }
+        }
+      }
+      // polvo de tóner por la hoja (motitas finas), más cerca de la tinta
+      var nearL = blur(A0L, w, h, U * 0.15, U * 0.15);
+      for (i = 0; i < n; i++) {
+        if (A[i] > 0.5) continue;
+        if (hash(i * 3 + sdL) < (0.002 + 0.02 * nearL[i]) * lA) A[i] = Math.max(A[i], 0.55 + 0.4 * hash(i + sdL));
       }
     }
 
@@ -2955,6 +3096,7 @@
     copy: { on: false, gen: 0.4, dropout: 0.4, toner: 0.4, streaks: 0.4, haze: 0.2 },
     soak: { on: false, mode: 'paper', amount: 0.8 },
     tangle: { on: false, amount: 0.8, comb: 0.4 },
+    laser: { on: false, mode: 'drum', amount: 0.8 },
     glitch: { on: false, mode: 'collage', amount: 0.8 },
     drip: { on: false, amount: 0.5, length: 0.45, thick: 0.4, sag: 0.5, beads: 0.3, trail: 0.3, dark: 0.6, absorb: 0, runs: 0 },
     out: { hard: 0.2, opacity: 1, color: 'original', blend: 'auto' }
