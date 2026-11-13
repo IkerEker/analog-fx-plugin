@@ -18,7 +18,7 @@
     erode: OFF, cracks: OFF, bleed: OFF, drips: OFF, splat: OFF, print: OFF, tintas: OFF,
     warp: { on: true, amount: 0.04, rough: 0.2 },
     press: OFF, wood: OFF, mesh: OFF, stone: OFF, wash: OFF,
-    seep: OFF, wick: OFF, engrave: OFF, stamp: OFF, letters: OFF, damp: OFF, aqua: OFF, gouge: OFF, rim: OFF, stencil: OFF, copy: OFF, drip: OFF,
+    seep: OFF, wick: OFF, soak: OFF, tangle: OFF, glitch: OFF, engrave: OFF, stamp: OFF, letters: OFF, damp: OFF, aqua: OFF, gouge: OFF, rim: OFF, stencil: OFF, copy: OFF, drip: OFF,
     paper: { on: true, feather: 0.2, relief: 0.3, tooth: 0.1, paperScale: 0.5 },
     color: { on: true, hue: 0, sat: 0, light: 0, hueVar: 0.05, satVar: 0.1, lightVar: 0.25, edge: 0.25 },
     ink: { on: true, pressure: 0.2, grain: 0.2, fade: 0, roller: 0 },
@@ -86,6 +86,7 @@
       palettes: [{ name: 'Color del texto', ink: 'original' }, { name: 'Lavanda', ink: '#7f78b8' }, { name: 'Naranja', ink: '#f29b38' }], variants: [
         { id: 'trazo', name: 'Siguiendo el trazo', p: { texture: 'desgaste_1', engrave: { on: true, mode: 'across', two: true, lightAng: -0.6, spacing: 0.3, width: 0.5, length: 0.9, skip: 0.08, wobble: 0.45, shadow: 0.7, misreg: 0.5, key: '#161414' }, warp: { on: true, amount: 0.02, rough: 0.2 }, ink: { on: true, pressure: 0.12, grain: 0.15 }, paper: { on: true, feather: 0.04, relief: 0.2, tooth: 0.12 }, color: { on: true, lightVar: 0.12, edge: 0 }, out: { hard: 0.1 } } },
         { id: 'contorno', name: 'Contorno tallado', p: { texture: 'desgaste_1', engrave: { on: true, mode: 'contour', two: true, spacing: 0.3, width: 0.6, length: 0.5, skip: 0.4, wobble: 0.5, shadow: 0.35, misreg: 0.45, key: '#161414' }, warp: { on: true, amount: 0.03, rough: 0.05 }, ink: { on: true, pressure: 0.12, grain: 0.15 }, paper: { on: true, feather: 0, relief: 0.2, tooth: 0.06 }, color: { on: true, lightVar: 0.12, edge: 0 }, out: { hard: 0.1 } } },
+        { id: 'garabato', name: 'Talla suelta (garabato)', p: { texture: 'desgaste_1', engrave: { on: true, mode: 'scribble', two: false, spacing: 0.4, width: 0.6, length: 0.75, wobble: 0.5, grain: 0.55, blocks: 0.55, shadow: 0, misreg: 0 }, warp: { on: true, amount: 0.03, rough: 0.15 }, ink: { on: true, pressure: 0.2, grain: 0.2 }, paper: { on: true, feather: 0, relief: 0.2, tooth: 0.1 }, color: { on: true, lightVar: 0.15, edge: 0 }, out: { hard: 0.1 } } },
         { id: 'horizontal', name: 'Rayado horizontal', p: { texture: 'desgaste_1', engrave: { on: true, mode: 'horizontal', two: true, spacing: 0.38, width: 0.85, length: 0.75, skip: 0.1, wobble: 0.6, light: 1, shadow: 0.7, misreg: 0.5, key: '#161414' }, warp: { on: true, amount: 0.02, rough: 0.2 }, ink: { on: true, pressure: 0.12, grain: 0.15 }, paper: { on: true, feather: 0.04, relief: 0.2, tooth: 0.12 }, color: { on: true, lightVar: 0.12, edge: 0 }, out: { hard: 0.1 } } }
       ] },
     { id: 'lino', group: 'impresion', name: 'Linograbado', desc: 'Linóleo: tinta plana y densa, borde limpio de cuchilla, huella suave del rodillo y algo de pigmento acumulado en algunos bordes.',
@@ -117,11 +118,27 @@
       ] },
 
     // ------------------------------------------------------------------ AGUA
+    { id: 'marana', group: 'desgaste', name: 'Maraña', desc: 'La letra hecha de una maraña de hilos finos y rizados, como alambre o raíces: densa y legible por dentro, hilos sueltos que se escapan y cuelgan, y una sombra suave sobre el papel.',
+      palettes: PAL_LAYER, variants: [
+        { id: 'densa', name: 'Maraña densa', p: { texture: 'desgaste_1', tangle: { on: true, amount: 0.8, comb: 0.2 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.15, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
+        { id: 'peinada', name: 'Peinada', p: { texture: 'desgaste_1', tangle: { on: true, amount: 0.7, comb: 0.9 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.15, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
+        { id: 'raices', name: 'Raíces sueltas', p: { texture: 'desgaste_1', tangle: { on: true, amount: 1.4, comb: 0.1 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.15, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
+      ] },
+    { id: 'loca', group: 'copia', name: 'Impresión loca', desc: 'La plancha o la hoja se mueven mientras imprime: copias desplazadas que se solapan, tramos recortados y movidos, franjas arrastradas en el escáner, manchas y motas de tóner.',
+      palettes: PAL_LAYER, variants: [
+        { id: 'collage', name: 'Collage desplazado', p: { texture: 'desgaste_1', glitch: { on: true, mode: 'collage', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.15, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
+        { id: 'arrastre', name: 'Arrastre de escáner', p: { texture: 'desgaste_1', glitch: { on: true, mode: 'drag', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.15, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
+        { id: 'doble', name: 'Doble pasada', p: { texture: 'desgaste_1', glitch: { on: true, mode: 'collage', amount: 0.4 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.15, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
+      ] },
     { id: 'humedad', group: 'agua', name: 'Humedad', desc: 'Gotas de agua sobre la impresión: solo donde cae el agua la tinta se corre desde la letra hacia fuera, se disuelve en el papel y deja la marca del agua. Donde está seco, la letra no se mueve.',
       palettes: PAL_LAYER, variants: [
         { id: 'leve', name: 'Unas gotas', p: { texture: 'desgaste_1', damp: { on: true, amount: 0.2, size: 0.3, spread: 0.7, cloud: 0.9, lift: 0.35, tide: 0.35 }, warp: { on: true, amount: 0.015, rough: 0.12 }, ink: { on: true, pressure: 0.1, grain: 0.15 }, paper: { on: true, feather: 0.02, relief: 0.3, tooth: 0.04 }, out: { hard: 0.05 } } },
         { id: 'mojado', name: 'Gotas secas (marcas)', p: { texture: 'desgaste_1', damp: { on: true, amount: 0.3, size: 0.45, spread: 0.25, cloud: 0.5, lift: 0.75, tide: 0.85, cockle: 0.5 }, warp: { on: true, amount: 0.015, rough: 0.12 }, ink: { on: true, pressure: 0.12, grain: 0.18 }, paper: { on: true, feather: 0.02, relief: 0.3, tooth: 0.04 }, out: { hard: 0.05 } } },
         { id: 'humedo', name: 'Papel húmedo', p: { texture: 'desgaste_1', damp: { on: true, global: true, amount: 1, size: 0.2, spread: 0.18, cloud: 0.9, lift: 0.45, tide: 0, cockle: 0.3 }, cracks: { on: true, amount: 0.3, fam: 'floracion' }, erode: { on: true, amount: 0.1, distrib: 0.6, contrast: 0.85, fam: 'granul' }, warp: { on: true, amount: 0.05, rough: 0.5 }, ink: { on: true, pressure: 0.2, grain: 0.3 }, paper: { on: true, feather: 0.35, relief: 0.3, tooth: 0.05 }, out: { hard: 0.05 } } },
+        { id: 'empapado', name: 'Papel empapado', p: { texture: 'desgaste_1', soak: { on: true, mode: 'paper', amount: 0.8 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, wick: { on: true, mode: 'fiber', amount: 0.7, reach: 0.4, cover: 0.2 }, warp: { on: true, amount: 0.04, rough: 0.3 }, ink: { on: true, pressure: 0.15, grain: 0.15 }, paper: { on: true, feather: 0, relief: 0.2, tooth: 0.05 }, color: { on: true, lightVar: 0.1, edge: 0 }, out: { hard: 0 } } },
+        { id: 'agua', name: 'Sobre agua', p: { texture: 'desgaste_1', soak: { on: true, mode: 'water', amount: 0.85 }, warp: { on: true, amount: 0.02, rough: 0.1 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.15, tooth: 0 }, color: { on: true, lightVar: 0.1, edge: 0 }, out: { hard: 0 } } },
+        { id: 'negativo', name: 'Negativo (reserva)', p: { texture: 'desgaste_1', soak: { on: true, mode: 'resist', amount: 0.8 }, warp: { on: true, amount: 0.02, rough: 0.15 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.2, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
+        { id: 'lavado', name: 'Lavado vertical', p: { texture: 'desgaste_1', soak: { on: true, mode: 'runs', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.02, grain: 0 }, paper: { on: true, feather: 0, relief: 0.1, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
         { id: 'mancha', name: 'Mancha de agua', p: { texture: 'desgaste_1', damp: { on: true, amount: 0.4, size: 0.7, spread: 1, cloud: 0.95, lift: 0.5, tide: 0.55 }, warp: { on: true, amount: 0.015, rough: 0.12 }, ink: { on: true, pressure: 0.12, grain: 0.18 }, paper: { on: true, feather: 0.02, relief: 0.3, tooth: 0.04 }, out: { hard: 0.05 } } }
       ] },
     { id: 'goteo', group: 'agua', name: 'Goteo', desc: 'La tinta fresca gotea desde la base de cada letra: gotas de largo muy distinto, que se afilan y acaban en una lágrima más oscura.',
@@ -147,10 +164,10 @@
     press: ['squeeze', 'halo', 'starve', 'deboss'], wood: ['grain', 'chips'], mesh: ['sawtooth', 'mesh', 'voids', 'ridge'],
     stone: ['amount', 'veil'], wash: ['wash', 'granul', 'blooms'],
     damp: ['amount', 'spread', 'cloud', 'lift', 'tide', 'cockle'], seep: ['amount', 'reach', 'front'], wick: ['amount', 'reach', 'drag'],
-    engrave: ['length', 'width', 'shadow'], stamp: ['tilt', 'uneven', 'edge', 'letterVar', 'periph'],
+    engrave: ['length', 'width', 'shadow', 'blocks'], stamp: ['tilt', 'uneven', 'edge', 'letterVar', 'periph'],
     aqua: ['variation', 'rim', 'granul', 'blooms', 'drift', 'dry'], gouge: ['edge', 'inner'], rim: ['amount'],
     stencil: ['fiber', 'density', 'setoff', 'oil', 'starve', 'spread'], letters: ['density', 'tone'],
-    copy: ['gen', 'dropout', 'toner', 'streaks', 'haze', 'slur'], drip: ['amount', 'length', 'absorb', 'runs']
+    copy: ['gen', 'dropout', 'toner', 'streaks', 'haze', 'slur'], drip: ['amount', 'length', 'absorb', 'runs'], soak: ['amount'], tangle: ['amount'], glitch: ['amount']
   };
 
 

@@ -2,7 +2,17 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.8.8**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.0**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.0 (Letras)
+- **Xilografía › Talla suelta (garabato):** letra negra con vetas de madera, línea de gubia siguiendo el contorno, franja de madera sin tallar llena de garabatos blancos, y fuera restos de tinta de tacos y arrastres.
+- **Humedad, 4 variantes nuevas:**
+  - **Papel empapado:** núcleo negro, borde aterciopelado de fibra, zonas grises granulosas y huecos, con una pincelada gris diluida encima.
+  - **Sobre agua:** la tinta flota y se deforma, vetas jaspeadas, zonas lavadas, halo y mancha de agua con línea de marea, y burbujas.
+  - **Negativo (reserva):** la letra queda clara y la tinta se acumula alrededor en una franja negra con pelillos de fibra y ramificaciones.
+  - **Lavado vertical:** regueros de agua que arrastran el pigmento arriba y abajo, con grano.
+- **Maraña** (nueva técnica en Desgaste): letra de hilos rizados, legible, con hilos sueltos que cuelgan y sombra suave. Variantes: Maraña densa, Peinada y Raíces sueltas.
+- **Impresión loca** (nueva técnica en Copistería): Collage desplazado, Arrastre de escáner y Doble pasada.
 
 ## Novedades 0.8.8
 - **Gotas reales:** todas las funciones que dibujan gotas usan ahora gotas de pintura de verdad, extraídas de las fotos de `GOTAS/`: Goteo (Papel absorbente, Infiltrado largo y Chorreado), Destrozado › Corrido y goteado, y el módulo Goteo de Ajustes detallados.
@@ -199,7 +209,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.8.8.ccx`.
+1. Descarga `dist/AnalogFX_0.9.0.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
