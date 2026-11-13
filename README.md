@@ -2,7 +2,17 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.0**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.1**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.1 (Letras)
+- **Negativo** pasa a ser técnica propia (Agua), rehecha: halo negro de pelillos perpendiculares al borde que se deshace en humo, letra clara y mojada con bisel y brillos, y raíces ramificadas. Variantes: Halo y raíces · Halo de pelo · Reserva en humo.
+- **Sobre agua** pasa a ser técnica propia (Agua), rehecha: láminas de tinta y velos grises en degradado con su contorno, bordes que se abren a zonas, costra de sedimento, burbujas con anillos y brillo, y salpicaduras. Variantes: Lámina de tinta · Burbujas · Sedimento seco.
+- **Goteo:** se quita Chorreado. **Lavado vertical** pasa a Goteo, rehecho: regueros de anchos distintos que arrastran el pigmento abajo y arriba, borran en parte la letra y dejan grano.
+- **Impresión loca** rehecha:
+  - **Collage desplazado:** letras movidas y reimpresas, tiras cortadas, letra pequeña, tóner gris, rayas, huecos y motas.
+  - **Arrastre de escáner:** texto repetido con estela, franjas descolocadas, barrido y marco con marcas de registro.
+  - **Doble pasada:** segunda impresión desplazada con tinta irregular.
+- **Xilografía › Talla suelta:** las letras comparten un taco de madera rectangular con borde astillado, con garabatos de gubia que lo llenan.
 
 ## Novedades 0.9.0 (Letras)
 - **Xilografía › Talla suelta (garabato):** letra negra con vetas de madera, línea de gubia siguiendo el contorno, franja de madera sin tallar llena de garabatos blancos, y fuera restos de tinta de tacos y arrastres.
@@ -209,7 +219,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.0.ccx`.
+1. Descarga `dist/AnalogFX_0.9.1.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
