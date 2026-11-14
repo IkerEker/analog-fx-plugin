@@ -613,6 +613,28 @@
   // 7 · Tramado digital 1 bit: Atkinson / Bayer / mezzotinta
   TECH.dither = function (im, p) {
     var w = im.w, h = im.h, S = im.S, T = darkness(im), ps = Math.max(1, S * (0.0012 + 0.01 * (p.px == null ? 0.3 : p.px)));
+    if (p.method === 'pixel') {
+      // IMAGEN PIXELADA MAL IMPRESA: foto de baja resolución ampliada (bloques grandes con pocos
+      // niveles de gris), luego impresa mal: la tinta se abre y redondea las esquinas de los bloques,
+      // los grises salen como grano de tóner, filas de bloques algo desplazadas, rayas y motas.
+      var bs = Math.max(3, S * (0.007 + 0.008 * (p.px == null ? 0.5 : p.px))), sd = p.seed, n = im.n, i, x, y;
+      var g = toGrid(T, w, h, bs), lv = 5;
+      for (i = 0; i < g.G.length; i++) g.G[i] = Math.round(clamp01((g.G[i] - 0.5) * 1.25 + 0.5) * (lv - 1)) / (lv - 1);
+      var P = new Float32Array(n);
+      for (y = 0; y < h; y++) {
+        var gy = Math.min(g.gh - 1, Math.floor(y / bs)), off = hash2(gy, 3, sd) < 0.12 ? (hash2(gy, 5, sd) - 0.5) * bs * 0.8 : 0;   // filas desplazadas
+        for (x = 0; x < w; x++) { var gx = Math.min(g.gw - 1, Math.max(0, Math.floor((x - off) / bs))); P[y * w + x] = g.G[gy * g.gw + gx]; }
+      }
+      var Pb = blur(P, w, h, Math.max(0.6, bs * 0.05)), N1 = noiseField(w, h, Math.max(1, S * 0.0012), sd + 3, false), N2 = noiseField(w, h, S * 0.03, sd + 9, true);
+      var C = new Float32Array(n);
+      for (i = 0; i < n; i++) {
+        var thr = 0.5 + (hash(i * 2654435761 + sd) * 0.5 + N1[i] * 0.5 - 0.5) * 0.5 + (N2[i] - 0.5) * 0.12;   // grano de tóner
+        C[i] = smooth(thr - 0.06, thr + 0.06, Pb[i]);
+      }
+      streaksV(C, im, p.streaks || 0.3, sd, false);
+      addSpecks(C, blur(C, w, h, S * 0.01), im, p.specks || 0.3, sd, true);
+      return [{ cov: defects(C, im, p, 0, p.seed), ink: p.inks[0] }];
+    }
     var C = p.method === 'bayer' ? bayer(T, w, h, ps) : p.method === 'mezzo' ? mezzo(T, w, h, ps, p.seed) : diffuse(T, w, h, ps, 'atkinson');
     return [{ cov: defects(C, im, p, 0, p.seed), ink: p.inks[0] }];
   };
@@ -802,7 +824,8 @@
       variants: [
         { id: 'atkinson', name: 'Difusión (Atkinson)', p: { kind: 'dither', method: 'atkinson', px: 0.25, detail: 0.4, clarity: 0.4, mottle: 0, grain: 0 } },
         { id: 'bayer', name: 'Ordenado (Bayer)', p: { kind: 'dither', method: 'bayer', px: 0.3, detail: 0.3, mottle: 0, grain: 0 } },
-        { id: 'mezzo', name: 'Mezzotinta', p: { kind: 'dither', method: 'mezzo', px: 0.2, detail: 0.3, mottle: 0.1, grain: 0 } }
+        { id: 'mezzo', name: 'Mezzotinta', p: { kind: 'dither', method: 'mezzo', px: 0.2, detail: 0.3, mottle: 0.1, grain: 0 } },
+        { id: 'pixel', name: 'Pixelado mal impreso', p: { kind: 'dither', method: 'pixel', px: 0.5, detail: 0.2, contrast: 0.1, mottle: 0.3, grain: 0.25, streaks: 0.35, specks: 0.3, lineK: 0 } }
       ] },
     { id: 'printer', name: 'Impresora rota', desc: 'La foto en una impresora estropeada: gotitas de las cuatro tintas, boquillas obstruidas y pasadas del cabezal desalineadas, un cartucho que se acaba, o láser rayado con fantasma.',
       palettes: [{ name: 'Color de la imagen', inks: [] }], keys: ['bands', 'fade', 'streaks', 'ghost', 'specks', 'contrast', 'detail', 'grain'],

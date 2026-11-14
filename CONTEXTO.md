@@ -136,6 +136,7 @@ Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pi
 
 - Imágenes › Fotocopia punk: el umbral se compara con ruido de tóner (`tgrain`): blancos y negros nítidos, medios tonos en grano fino; nitidez fina antes del umbral.
 - Imágenes, regla del usuario: **el deslizador de intensidad NO debe cambiar el tamaño de la trama o del grano**, sino añadir textura. Por eso `lineK` vale 0,35 por defecto, el factor de `px` se ha reducido y `pressTexture()` se aplica por tinta en Cuatricromía y Duotono/Tritono.
+- Tramado 1 bit: 4.ª variante `pixel`, «Pixelado mal impreso». Bloques de baja resolución con 5 niveles, filas desplazadas, tinta abierta, grano de tóner, rayas y motas. Las otras tres variantes siguen como impresión digital limpia.
 - Serigrafía póster: `keep = 0` (nunca mezcla con la foto); la intensidad es el nivel de detalle (`simp` de S·0,0005 a S·0,009).
 - Periódico (las tres variantes): `lineK 0.35`, así la intensidad cambia poco el tamaño del punto o de la línea. A cambio añade textura de rotativa que crece con `e`: tinta irregular, bandas, zonas sin tinta, traspaso del dorso, velo, motas con anillo y arañazos.
 - Copia de copia: `smear` (franjas movidas con estela horizontal) y `blots` (borrones grises).
