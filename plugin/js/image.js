@@ -503,6 +503,7 @@
     var w = im.w, h = im.h, S = im.S, T = darkness(im), i;
     var lo = 0.04 + 0.04 * p.e, hi = 0.95 - 0.08 * p.e;                    // las luces se quedan sin punto
     for (i = 0; i < im.n; i++) T[i] = Math.pow(clamp01((T[i] - lo) / (hi - lo)), 1.2);   // la preimpresión aclara los medios
+    im.edgeCell = S / (p.lines || 90);
     var C = amScreen(T, w, h, { cell: S / (p.lines || 90), ang: p.angle == null ? 45 : p.angle, shape: p.shape || 'round', gain: p.gain == null ? 0.35 : p.gain, comp: 0.95 - 0.75 * p.e, rag: 0.18 + 0.25 * p.e, seed: p.seed });
     C = blur(C, w, h, 0.45 + 0.6 * p.e);                                   // la tinta se abre en el papel
     for (i = 0; i < C.length; i++) C[i] = smooth(0.2, 0.72, C[i]);
@@ -546,6 +547,7 @@
   // luces) y su ángulo de trama; o en tono continuo sin trama.
   TECH.tone = function (im, p) {
     var w = im.w, h = im.h, S = im.S, T = darkness(im), K = p.inks.length, layers = [], ang = [45, 75, 15], i;
+    if ((p.lines || 0) > 0) im.edgeCell = S / p.lines;
     for (var k = 0; k < K; k++) {
       var C = new Float32Array(im.n);
       for (i = 0; i < im.n; i++) {
@@ -574,6 +576,7 @@
       Cc[i] = (c - k) / den; Mc[i] = (m - k) / den; Yc[i] = (y - k) / den; Kc[i] = k;
     }
     var fade = p.fade || 0, cell = S / (p.lines || 100);
+    im.edgeCell = cell;
     var inks = [[0.0, 0.6, 0.88], [0.9, 0.06, 0.52], [1, 0.92, 0.06], [0.12, 0.11, 0.12]];
     var chans = [Cc, Mc, Yc, Kc], angs = [15, 75, 0, 45], dirs = [[1, 0.3], [-0.6, 1], [0.2, -1], [0, 0]], layers = [];
     var fadeK = [1 - fade * 0.22, 1 - fade * 0.5, 1 - fade * 0.4, 1 - fade * 0.15];   // el magenta y el amarillo se van antes
@@ -683,25 +686,40 @@
   TECH.dither = function (im, p) {
     var w = im.w, h = im.h, S = im.S, T = darkness(im), ps = Math.max(1, S * (0.0012 + 0.01 * (p.px == null ? 0.3 : p.px)));
     if (p.method === 'pixel') {
-      // IMAGEN PIXELADA MAL IMPRESA: foto de baja resolución ampliada (bloques grandes con pocos
-      // niveles de gris), luego impresa mal: la tinta se abre y redondea las esquinas de los bloques,
-      // los grises salen como grano de tóner, filas de bloques algo desplazadas, rayas y motas.
-      var bs = Math.max(3, S * (0.007 + 0.008 * (p.px == null ? 0.5 : p.px))), sd = p.seed, n = im.n, i, x, y;
-      var g = toGrid(T, w, h, bs), lv = 5;
-      for (i = 0; i < g.G.length; i++) g.G[i] = Math.round(clamp01((g.G[i] - 0.5) * 1.25 + 0.5) * (lv - 1)) / (lv - 1);
-      var P = new Float32Array(n);
+      // IMAGEN PIXELADA MAL IMPRESA: foto de baja resolución ampliada (bloques con 8 niveles),
+      // impresa en láser: cada bloque se rellena con grano de tóner según su tono (no se corta a
+      // blanco/negro), la tinta redondea un poco las esquinas, juntas más claras entre bloques,
+      // alguna fila desplazada, rayas y motas. El tamaño del bloque depende de la intensidad.
+      var e2 = p.e == null ? 0.5 : p.e, sd = p.seed, n = im.n, i, x, y;
+      var hist = new Float64Array(256), cnt = 0;
+      for (i = 0; i < n; i++) { if (im.A[i] < 0.5) continue; hist[Math.min(255, T[i] * 255 | 0)]++; cnt++; }
+      var cdf = new Float32Array(256), acc = 0; for (i = 0; i < 256; i++) { acc += hist[i]; cdf[i] = cnt ? acc / cnt : i / 255; }
+      for (i = 0; i < n; i++) T[i] = T[i] * 0.4 + cdf[Math.min(255, T[i] * 255 | 0)] * 0.6;
+      var bs = Math.max(2, S * (0.004 + 0.022 * Math.pow(e2, 1.3))), lv = 8;
+      im.edgeCell = bs;
+      var g = toGrid(T, w, h, bs);
+      for (i = 0; i < g.G.length; i++) g.G[i] = Math.round(clamp01(g.G[i]) * (lv - 1)) / (lv - 1);
+      var P = new Float32Array(n), J = new Float32Array(n);
       for (y = 0; y < h; y++) {
-        var gy = Math.min(g.gh - 1, Math.floor(y / bs)), off = hash2(gy, 3, sd) < 0.12 ? (hash2(gy, 5, sd) - 0.5) * bs * 0.8 : 0;   // filas desplazadas
-        for (x = 0; x < w; x++) { var gx = Math.min(g.gw - 1, Math.max(0, Math.floor((x - off) / bs))); P[y * w + x] = g.G[gy * g.gw + gx]; }
+        var gy = Math.min(g.gh - 1, Math.floor(y / bs)), off = hash2(gy, 3, sd) < 0.08 ? Math.round((hash2(gy, 5, sd) - 0.5) * bs) : 0;
+        for (x = 0; x < w; x++) {
+          var xs = x - off, gx = Math.min(g.gw - 1, Math.max(0, Math.floor(xs / bs)));
+          P[y * w + x] = g.G[gy * g.gw + gx];
+          var fx = (xs / bs) - Math.floor(xs / bs), fy = (y / bs) - Math.floor(y / bs);
+          J[y * w + x] = Math.max(smooth(0.06, 0, Math.min(fx, 1 - fx)), smooth(0.06, 0, Math.min(fy, 1 - fy)));   // junta entre bloques
+        }
       }
-      var Pb = blur(P, w, h, Math.max(0.6, bs * 0.05)), N1 = noiseField(w, h, Math.max(1, S * 0.0012), sd + 3, false), N2 = noiseField(w, h, S * 0.03, sd + 9, true);
+      var Pb = blur(P, w, h, Math.max(0.5, bs * 0.04)), N1 = noiseField(w, h, Math.max(1, S * 0.001), sd + 3, false);
       var C = new Float32Array(n);
       for (i = 0; i < n; i++) {
-        var thr = 0.5 + (hash(i * 2654435761 + sd) * 0.5 + N1[i] * 0.5 - 0.5) * 0.5 + (N2[i] - 0.5) * 0.12;   // grano de tóner
-        C[i] = smooth(thr - 0.06, thr + 0.06, Pb[i]);
+        var yb = (i / w) | 0, xb = i - yb * w, bay = (BAYER8[(yb & 7) * 8 + (xb & 7)] + 0.5) / 64;
+        var thr = bay * 0.7 + hash(i * 2654435761 + sd) * 0.15 + N1[i] * 0.15;   // trama ordenada de impresora + algo de tóner
+        C[i] = Pb[i] > thr ? 1 : 0;
+        if (Pb[i] > 0.93) C[i] = 1; else if (Pb[i] < 0.06) C[i] = 0;
+        C[i] *= 1 - 0.45 * J[i] * (0.5 + 0.5 * N1[i]);
       }
-      streaksV(C, im, p.streaks || 0.3, sd, false);
-      addSpecks(C, blur(C, w, h, S * 0.01), im, p.specks || 0.3, sd, true);
+      streaksV(C, im, (p.streaks || 0.2) * 0.6, sd, false);
+      addSpecks(C, blur(C, w, h, S * 0.01), im, (p.specks || 0.2) * 0.6, sd, true);
       return [{ cov: defects(C, im, p, 0, p.seed), ink: p.inks[0] }];
     }
     var C = p.method === 'bayer' ? bayer(T, w, h, ps) : p.method === 'mezzo' ? mezzo(T, w, h, ps, p.seed) : diffuse(T, w, h, ps, 'atkinson');
@@ -717,8 +735,8 @@
       T = diffuse(T, w, h, Math.max(1, S * 0.0009), 'fs', seed);
       T = blur(T, w, h, 0.5);
       if ((p.ghost || 0) > 0) { var Gh = shift(T, w, h, 0, S * 0.09); for (i = 0; i < n; i++) T[i] = Math.max(T[i], Gh[i] * Math.min(1, p.ghost) * 0.25); }
-      streaksV(T, im, p.streaks || 0, seed, false);
-      tonerScatter(T, im, (p.specks || 0) * 0.5, seed);
+      streaksV(T, im, (p.streaks || 0) * 0.6, seed, true);
+      tonerScatter(T, im, (p.specks || 0) * 0.3, seed);
       addSpecks(T, blur(T, w, h, S * 0.01), im, p.specks || 0, seed, true);
       if ((p.fade || 0) > 0) { var Fd = noiseField(w, h, S * 0.25, seed + 7, false); for (y = 0; y < h; y++) for (x = 0; x < w; x++) { i = y * w + x; T[i] *= 1 - Math.min(1, p.fade) * 0.7 * smooth(0.45, 0.8, vnoise(x * 0.02, y, S * 0.25, seed + 7) * 0.6 + Fd[i] * 0.4); } }
       return [{ cov: defects(T, im, p, 0, seed), ink: hexToRgb01('#141414') }];
@@ -795,6 +813,7 @@
       var wk = p.weaveK == null ? 0.3 : p.weaveK; paper[i] = clamp01((0.55 * F1[i] + wk * wv + 0.15 * F2[i]) / (0.7 + wk));
     }
     var cell = S / (p.lines || 160), chans = [Cc, Mc, Yc, Kc], angs = [15, 75, 0, 45];
+    im.edgeCell = cell;
     var inks = [[0.0, 0.62, 0.9], [0.92, 0.08, 0.5], [1, 0.88, 0.05], [0.1, 0.09, 0.1]], layers = [], md = S * 0.0025 * (p.misreg || 0);
     var dirs = [[1, 0.4], [-0.5, 1], [0.3, -1], [0, 0]];
     for (var q = 0; q < 4; q++) {
@@ -886,30 +905,59 @@
   // desplaza unos píxeles con la textura de cada técnica (tóner roto, fibra del papel, malla,
   // pasadas de impresora, píxeles...). Devuelve el alfa nuevo.
   function organicEdge(im, p) {
-    var w = im.w, h = im.h, S = im.S, n = im.n, sd = p.seed, k = p.kind, x, y, i;
-    var st = { grain: [0.006, 'fibra'], xerox: [0.014, 'toner'], news: [0.009, 'fibra'], screen: [0.01, 'malla'], riso: [0.01, 'grano'],
-               tone: [0.007, 'fibra'], cmyk: [0.006, 'fibra'], printer: [0.007, 'pasada'], dither: [0.009, 'pixel'] }[k] || [0.007, 'fibra'];
-    var amp = Math.max(1.5, S * st[0] * (0.7 + 0.6 * (p.e == null ? 0.5 : p.e))), mode = st[1];
-    var Nl = noiseField(w, h, S * 0.04, sd + 401, true), Nm = noiseField(w, h, Math.max(2, S * 0.008), sd + 403, false);
-    var Nf = noiseField(w, h, Math.max(1, S * 0.0015), sd + 405, false), A = im.A, O = new Float32Array(n);
-    var cell = Math.max(2, S * 0.0035), pass = Math.max(8, S * 0.04), pix = Math.max(2, S * 0.006);
+    // El borde de la imagen se rompe CON la textura de la técnica y a su escala:
+    //  trama (periódico, tritono, CMYK, riso trama, grano): el borde sigue la retícula de puntos;
+    //  pixelado: escalones de bloque; tramado 1 bit: escalones de su píxel;
+    //  fotocopia: tóner roto e irregular; serigrafía: dentado de malla; impresora: pasadas;
+    //  risografía grano: grano del esténcil.
+    var w = im.w, h = im.h, S = im.S, n = im.n, sd = p.seed, k = p.kind, x, y, i, e = p.e == null ? 0.5 : p.e;
+    var A = im.A, O = new Float32Array(n), full = A[0] > 0.5 || A[n - 1] > 0.5;
+    var cell = im.edgeCell || 0, mode;
+    if (k === 'dither') mode = p.method === 'pixel' ? 'block' : 'block';
+    else if (cell > 0 && (k === 'news' || k === 'tone' || k === 'cmyk' || k === 'grain' || (k === 'riso' && p.method === 'trama'))) mode = 'dots';
+    else if (k === 'xerox') mode = 'toner'; else if (k === 'screen') mode = 'malla'; else if (k === 'printer') mode = 'pasada'; else mode = 'grano';
+    if (mode === 'block' && !cell) cell = Math.max(1, S * (0.0012 + 0.01 * (p.px == null ? 0.3 : p.px)));
+    var Nl = noiseField(w, h, S * 0.04, sd + 401, true), Nm = noiseField(w, h, Math.max(2, S * 0.008), sd + 403, false), Nf = noiseField(w, h, Math.max(1, S * 0.0015), sd + 405, false);
+    var amp = Math.max(1.5, S * 0.008 * (0.6 + 0.8 * e)), pass = Math.max(8, S * 0.04), mcell = Math.max(2, S * 0.0035);
+    var a45 = Math.PI / 4, cs = Math.cos(a45), sn = Math.sin(a45);
     for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
       i = y * w + x;
-      // cuánto entra el borde aquí (0 .. 2·amp), con la textura de la técnica
-      var r;
-      if (mode === 'toner') r = Nl[i] * 0.8 + Nm[i] * 0.6 + (hash(i * 7 + sd) < 0.12 ? 0.6 : 0);
-      else if (mode === 'malla') r = Nl[i] * 0.7 + 0.35 * (Math.sin((x + y) / cell * 3.14) * Math.sin((x - y) / cell * 3.14) * 0.5 + 0.5);
-      else if (mode === 'pasada') r = 0.4 + 0.8 * hash2(Math.floor(y / pass), 7, sd) * 0.6 + Nf[i] * 0.3;
-      else if (mode === 'pixel') r = hash2(Math.floor(x / pix), Math.floor(y / pix), sd) * 1.2;
-      else if (mode === 'grano') r = Nl[i] * 0.7 + Nf[i] * 0.6;
-      else r = Nl[i] * 0.8 + Nm[i] * 0.35 + Nf[i] * 0.3;            // fibra
-      r *= amp;
-      var dB = Math.min(x, y, w - 1 - x, h - 1 - y), bm = A[0] > 0.5 || A[n - 1] > 0.5 ? smooth(r - 0.6, r + 0.6, dB) : 1;
-      // recortes con alfa: se desplaza la muestra del alfa con el mismo ruido
-      var dx = (Nm[i] - 0.5) * 2 * amp * 0.6 + (Nf[i] - 0.5) * amp * 0.5, dy = (Nl[(i + 7919) % n] - 0.5) * 2 * amp * 0.6;
-      var xs = Math.max(0, Math.min(w - 1, Math.round(x + dx))), ys = Math.max(0, Math.min(h - 1, Math.round(y + dy)));
-      var av = A[i] > 0.02 && A[i] < 0.98 || A[ys * w + xs] !== A[i] ? A[ys * w + xs] : A[i];
-      O[i] = av * bm;
+      var dB = Math.min(x, y, w - 1 - x, h - 1 - y), m = 1;
+      if (full) {
+        if (mode === 'block') {        // bloques enteros que faltan o sobran en el borde
+          var bx = Math.floor(x / cell), by = Math.floor(y / cell), db = Math.min(bx, by, Math.floor((w - 1 - x) / cell), Math.floor((h - 1 - y) / cell));
+          var depth = Math.floor(hash2(bx, by, sd) * (1.5 + 2 * e) * (0.4 + Nl[i]));
+          m = db >= depth ? 1 : 0;
+        } else if (mode === 'dots') {  // el borde corta la retícula: entran o salen puntos enteros
+          var u = (x * cs + y * sn) / cell, v = (-x * sn + y * cs) / cell;
+          var spot = 0.5 - 0.25 * (Math.cos(6.2832 * u) + Math.cos(6.2832 * v));
+          var r = cell * (0.5 + 2.2 * Nl[i] * (0.5 + e)) ;
+          m = smooth(r - cell * 0.9, r + cell * 0.2, dB + (spot - 0.5) * cell * 1.6);
+        } else if (mode === 'toner') {
+          var rt = amp * (0.6 * Nl[i] + 0.7 * Nm[i]) * 1.8;
+          m = dB > rt ? 1 : (hash(i * 7 + sd) < smooth(rt * 0.3, rt, dB) * 0.6 ? 1 : 0);
+        } else if (mode === 'malla') {
+          var mp = Math.sin((x + y) / mcell * 3.14) * Math.sin((x - y) / mcell * 3.14) * 0.5 + 0.5;
+          var rm = amp * (0.5 + 1.2 * Nl[i]) + mp * mcell * 0.8;
+          m = smooth(rm - 0.7, rm + 0.7, dB);
+        } else if (mode === 'pasada') { // escalones por pasada en los lados, gotitas en arriba/abajo
+          var po = hash2(Math.floor(y / pass), 7, sd) * amp * 2.2, dx = Math.min(x, w - 1 - x), dy = Math.min(y, h - 1 - y);
+          var mx2 = dx > po ? 1 : 0, my2 = dy > amp * (0.4 + 1.2 * Nf[i]) ? 1 : 0;
+          m = Math.min(mx2, my2);
+        } else {
+          var rg = amp * (0.5 + 0.9 * Nl[i] + 0.6 * Nf[i]);
+          m = dB > rg ? 1 : (hash(i * 13 + sd) < smooth(0, rg, dB) ? 1 : 0);
+        }
+      }
+      // recortes con alfa: misma lógica sobre el borde del recorte (desplazamiento con la textura)
+      var av = A[i];
+      if (av > 0.02 && av < 0.98 || (x > 0 && A[i - 1] !== av) || (y > 0 && A[i - w] !== av)) {
+        var dxs = (Nm[i] - 0.5) * 2 * amp * 0.6, dys = (Nl[(i + 7919) % n] - 0.5) * 2 * amp * 0.6;
+        if (mode === 'block') { dxs = Math.round(dxs / cell) * cell; dys = Math.round(dys / cell) * cell; }
+        var xs = Math.max(0, Math.min(w - 1, Math.round(x + dxs))), ys = Math.max(0, Math.min(h - 1, Math.round(y + dys)));
+        av = A[ys * w + xs];
+      }
+      O[i] = av * m;
     }
     return O;
   }
@@ -999,7 +1047,7 @@
       variants: [
         { id: 'boquillas', name: 'Boquillas obstruidas', p: { kind: 'printer', method: 'nozzle', bands: 0.7, detail: 0.2, mottle: 0.1, grain: 0.1, paper: 'white' } },
         { id: 'sintinta', name: 'Cartucho agotado', p: { kind: 'printer', method: 'empty', channel: 1, bands: 0.4, fade: 0.85, detail: 0.2, mottle: 0.15, grain: 0.1, paper: 'white' } },
-        { id: 'laser', name: 'Láser rayado', p: { kind: 'printer', method: 'laser', streaks: 0.6, ghost: 0.5, specks: 0.4, fade: 0.3, detail: 0.35, mottle: 0.1, grain: 0.1, paper: 'white' } }
+        { id: 'laser', name: 'Láser rayado', p: { kind: 'printer', method: 'laser', streaks: 0.22, ghost: 0.3, specks: 0.15, fade: 0.2, detail: 0.35, mottle: 0.1, grain: 0.1, paper: 'white' } }
       ] }
   ];
   var INTENSITY = DEFECTS;   // compatibilidad
