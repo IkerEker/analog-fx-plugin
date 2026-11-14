@@ -1,6 +1,6 @@
 # Analog FX: contexto completo para seguir en un chat nuevo
 
-> **Para el asistente del chat nuevo:** lee este archivo entero antes de tocar nada. Resume todo lo hecho hasta la **v0.9.7** (13-nov-2026), las reglas que ha fijado el usuario y cómo probar. El usuario escribe en español, es exigente con el realismo y quiere que cada cambio se pruebe y se entregue empaquetado.
+> **Para el asistente del chat nuevo:** lee este archivo entero antes de tocar nada. Resume todo lo hecho hasta la **v0.9.8** (13-nov-2026), las reglas que ha fijado el usuario y cómo probar. El usuario escribe en español, es exigente con el realismo y quiere que cada cambio se pruebe y se entregue empaquetado.
 
 ---
 
@@ -11,7 +11,7 @@
 - Trabaja en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits. Los documentos que no son RGB 8 bits se procesan en un documento temporal RGB 8.
 - **Repositorio:** `https://github.com/IkerEker/analog-fx-plugin` (público, rama `main`).
 - **Autor de los commits:** `IkerEker`, con el email del usuario.
-- **Instalable actual:** `dist/AnalogFX_0.9.7.ccx`. Se instala con doble clic (Creative Cloud) y se abre en Photoshop desde **Plugins › Analog FX**.
+- **Instalable actual:** `dist/AnalogFX_0.9.8.ccx`. Se instala con doble clic (Creative Cloud) y se abre en Photoshop desde **Plugins › Analog FX**.
 - **Uso:**
   1. Arriba se elige el modo: **Letras** o **Imágenes**.
   2. Se elige técnica, variante, color e intensidad.
@@ -23,7 +23,7 @@
 
 | Qué | Dónde |
 |---|---|
-| Plugin instalable v0.8.7 | `dist/AnalogFX_0.9.7.ccx` en el repo, o descarga directa: https://github.com/IkerEker/analog-fx-plugin/raw/main/dist/AnalogFX_0.9.7.ccx |
+| Plugin instalable v0.8.7 | `dist/AnalogFX_0.9.8.ccx` en el repo, o descarga directa: https://github.com/IkerEker/analog-fx-plugin/raw/main/dist/AnalogFX_0.9.8.ccx |
 | Código completo (zip) | https://github.com/IkerEker/analog-fx-plugin/archive/refs/heads/main.zip |
 | Este documento | `CONTEXTO.md` en la raíz del repo |
 | Historial de cambios | `README.md` (sección "Novedades" de cada versión) |
@@ -132,7 +132,7 @@ Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pi
 - Si el banco no carga, el motor vuelve a las gotas dibujadas.
 - Para probar sin el banco: `NODRIPS=1 node tools/test-engine.js goteo`.
 
-### En curso (sin empaquetar; el usuario pidió no enviar el .ccx todavía)
+### Cambios de la 0.9.8 (Imágenes)
 
 - Imágenes › Fotocopia punk: el umbral se compara con ruido de tóner (`tgrain`): blancos y negros nítidos, medios tonos en grano fino; nitidez fina antes del umbral.
 - Imágenes, regla del usuario: **el deslizador de intensidad NO debe cambiar el tamaño de la trama o del grano**, sino añadir textura. Por eso `lineK` vale 0,35 por defecto, el factor de `px` se ha reducido y `pressTexture()` se aplica por tinta en Cuatricromía y Duotono/Tritono.

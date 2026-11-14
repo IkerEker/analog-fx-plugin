@@ -2,7 +2,22 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.7**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.8**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.8 (Imágenes)
+- **El deslizador de intensidad ya no cambia el tamaño de la trama ni del grano:** añade textura de imprenta (tinta irregular, bandas, zonas sin tinta, desregistro). En Serigrafía controla el nivel de detalle y nunca mezcla con la foto.
+- **Fotocopia punk:**
+  - Grano de tóner fino en los medios tonos, con negros y blancos nítidos.
+  - **Umbral duro:** gráfico.
+  - **Copia de copia:** con movido y borrones.
+  - **Revista fotocopiada:** trama fina e imperfecta.
+  - Nueva variante **Grabado rayado:** trazos finos que siguen la forma, negros densos, trama a zonas y arañazos.
+- **Periódico:** textura de rotativa (manchas, bandas, traspaso del dorso, motas y arañazos).
+- **Tramado 1 bit:** nueva variante **Pixelado mal impreso**.
+- **Impresora rota:**
+  - Inyección realista: gotitas finas, boquillas de 1 px y pasadas del cabezal.
+  - El cartucho se acaba hacia el final de la hoja.
+  - Láser más fino.
 
 ## Novedades 0.9.7
 - **Sello › Tinta seca:** ya no borra el texto.
@@ -295,7 +310,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.7.ccx`.
+1. Descarga `dist/AnalogFX_0.9.8.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
