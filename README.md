@@ -2,7 +2,14 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.8**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.9**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.9
+- **Fotocopia punk › Grabado rayado** rehecho, como una punta seca fotocopiada.
+  - La foto se reparte en todo el rango de tonos y se dibuja en grano fino (una foto oscura ya no se vuelve una mancha negra).
+  - Trazos largos y finos siguen la forma: oscuros en los medios tonos y claros en las sombras (la punta levanta la tinta).
+  - Arañazos largos, algunos en haz.
+  - La intensidad controla la cantidad de trazos y arañazos; nunca mezcla con la foto original.
 
 ## Novedades 0.9.8 (Imágenes)
 - **El deslizador de intensidad ya no cambia el tamaño de la trama ni del grano:** añade textura de imprenta (tinta irregular, bandas, zonas sin tinta, desregistro). En Serigrafía controla el nivel de detalle y nunca mezcla con la foto.
@@ -310,7 +317,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.8.ccx`.
+1. Descarga `dist/AnalogFX_0.9.9.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

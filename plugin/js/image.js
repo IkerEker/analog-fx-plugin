@@ -372,53 +372,67 @@
   // negros macizos; medios tonos con una trama fina de revista; grano de tóner; y algunas rayas
   // largas (claras y oscuras) que cruzan la imagen, como en un grabado arañado.
   function xeroxScratch(im, p) {
-    var w = im.w, h = im.h, S = im.S, n = im.n, e = p.e, sd = p.seed, i, x, y, R = 0;
+    // PUNTA SECA / GRABADO RAYADO fotocopiado. La foto se reparte en todo el rango (ecualizada) y
+    // se dibuja con trazos: rayado que sigue la forma en los medios, rayado cruzado en las sombras,
+    // negro macizo solo en lo más oscuro; luces limpias con algún trazo suelto; tono de plancha
+    // (velo gris granuloso donde la tinta no se limpió del todo) y arañazos largos.
+    // La intensidad cambia la cantidad de trazos y arañazos, nunca mezcla con la foto.
+    var w = im.w, h = im.h, S = im.S, n = im.n, e = p.e, sd = p.seed, i, x, y, R = sd * 7919 + 3;
     function rnd() { R = (R + 0x6D2B79F5) | 0; var t = Math.imul(R ^ (R >>> 15), 1 | R); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
-    R = sd * 7919 + 3;
-    var T = darkness(im), Tb = blur(T, w, h, Math.max(0.8, S * 0.002));
-    for (i = 0; i < n; i++) T[i] = clamp01(T[i] + (T[i] - Tb[i]) * 1.2);
-    // dirección del trazo: tangente a las curvas de nivel (tensor de estructura suavizado)
+    var T = darkness(im);
+    // ecualización parcial: una foto oscura no se vuelve una mancha negra
+    var hist = new Float64Array(256), cnt = 0;
+    for (i = 0; i < n; i++) { if (im.A[i] < 0.5) continue; hist[Math.min(255, T[i] * 255 | 0)]++; cnt++; }
+    var cdf = new Float32Array(256), acc = 0; for (i = 0; i < 256; i++) { acc += hist[i]; cdf[i] = cnt ? acc / cnt : i / 255; }
+    for (i = 0; i < n; i++) T[i] = T[i] * 0.35 + cdf[Math.min(255, T[i] * 255 | 0)] * 0.65;
+    var Tb = blur(T, w, h, Math.max(0.8, S * 0.002));
+    for (i = 0; i < n; i++) T[i] = clamp01(T[i] + (T[i] - Tb[i]) * 1.4);
     var Ts = blur(T, w, h, S * 0.004), Jxx = new Float32Array(n), Jxy = new Float32Array(n), Jyy = new Float32Array(n);
     for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) { i = y * w + x; var gx = Ts[i + 1] - Ts[i - 1], gy = Ts[i + w] - Ts[i - w]; Jxx[i] = gx * gx; Jxy[i] = gx * gy; Jyy[i] = gy * gy; }
-    Jxx = blur(Jxx, w, h, S * 0.012); Jxy = blur(Jxy, w, h, S * 0.012); Jyy = blur(Jyy, w, h, S * 0.012);
-    var C = new Float32Array(n), Tf = blur(T, w, h, S * 0.003);
-    function dep(px, py, c) { var xi = px | 0, yi = py | 0; if (xi < 0 || yi < 0 || xi >= w || yi >= h) return; var j = yi * w + xi; C[j] = 1 - (1 - C[j]) * (1 - c); }
-    var nS = Math.round(n / (S * S) * 9000 * (0.6 + 0.8 * e)), budget = n * 6;
+    Jxx = blur(Jxx, w, h, S * 0.015); Jxy = blur(Jxy, w, h, S * 0.015); Jyy = blur(Jyy, w, h, S * 0.015);
+    // 1) tono fotográfico en GRANO fino (como la tinta de la punta seca entrapada en la plancha)
+    var C = new Float32Array(n), N1 = noiseField(w, h, Math.max(1, S * 0.0011), sd + 7, false), Nw = noiseField(w, h, S * 0.09, sd + 9, true);
+    for (i = 0; i < n; i++) {
+      var thr = 0.5 + (hash(i * 2654435761 + sd) * 0.55 + N1[i] * 0.45 - 0.5) * 0.9 + (Nw[i] - 0.5) * 0.12;
+      C[i] = smooth(thr - 0.05, thr + 0.05, T[i]);
+    }
+    // 2) trazos que siguen la forma: oscuros en los medios (rayado), claros en las sombras (la punta
+    //    levanta la tinta: pelo, brillos). Pocos, largos y finos: dan el dibujo, no lo tapan.
+    var Tf = blur(T, w, h, S * 0.003);
+    function dep(px, py, c, white) { var xi = px | 0, yi = py | 0; if (xi < 0 || yi < 0 || xi >= w || yi >= h) return; var j = yi * w + xi; C[j] = white ? C[j] * (1 - c) : 1 - (1 - C[j]) * (1 - c); }
+    var nS = Math.round(n / (S * S) * 3500 * (0.5 + e)), budget = n * 4;
     for (var k = 0; k < nS && budget > 0; k++) {
       var sx = rnd() * w, sy = rnd() * h, j0 = (sy | 0) * w + (sx | 0), t0 = Tf[j0];
-      if (rnd() > Math.pow(t0, 1.9) * 1.4) continue;                   // más trazos donde es oscuro
-      var th = 0.5 * Math.atan2(2 * Jxy[j0], Jxx[j0] - Jyy[j0]) + Math.PI / 2 + (rnd() - 0.5) * 0.5;
-      if (Jxx[j0] + Jyy[j0] < 1e-5) th = -0.9 + (rnd() - 0.5) * 0.6;   // zonas planas: rayado en diagonal
-      var len = S * (0.008 + 0.05 * Math.pow(rnd(), 1.5)) * (0.5 + t0), ink = 0.35 + 0.5 * rnd(), cv = (rnd() - 0.5) * 0.02;
+      var white = t0 > 0.55 && rnd() < smooth(0.55, 0.85, t0) * 0.85;
+      if (!white && rnd() > smooth(0.15, 0.55, t0) * (1 - smooth(0.7, 0.9, t0))) continue;
+      var th = 0.5 * Math.atan2(2 * Jxy[j0], Jxx[j0] - Jyy[j0]) + Math.PI / 2;
+      if (Jxx[j0] + Jyy[j0] < 2e-6) th = -0.95;
+      th += (rnd() - 0.5) * 0.25;
+      var len = S * (0.03 + 0.12 * Math.pow(rnd(), 1.2)), ink = (white ? 0.7 : 0.6) + 0.3 * rnd(), cv = (rnd() - 0.5) * 0.008;
       var px = sx - Math.cos(th) * len / 2, py = sy - Math.sin(th) * len / 2;
       for (var q = 0; q < len && budget > 0; q++, budget--) {
+        var g1 = (py | 0) * w + (px | 0);
+        if (g1 >= 0 && g1 < n && Jxx[g1] + Jyy[g1] > 2e-6) { var ta = 0.5 * Math.atan2(2 * Jxy[g1], Jxx[g1] - Jyy[g1]) + Math.PI / 2, dd = Math.atan2(Math.sin(ta - th), Math.cos(ta - th)); if (Math.abs(dd) > Math.PI / 2) dd -= Math.sign(dd) * Math.PI; th += dd * 0.08; }
         th += cv; px += Math.cos(th); py += Math.sin(th);
-        var tt = q / len, taper = Math.min(1, Math.min(tt, 1 - tt) * 6);   // entra y sale en punta
-        dep(px, py, ink * taper);
+        var tt = q / len; dep(px, py, ink * Math.min(1, Math.min(tt, 1 - tt) * 4), white);
       }
     }
-    // negros macizos y trama fina en los medios tonos
-    var H = amScreen(T, w, h, { cell: S / 150, ang: 45, shape: 'round', gain: 0.3, comp: 0.3, rag: 0.4, seed: sd });
-    var N1 = noiseField(w, h, Math.max(1, S * 0.0012), sd + 7, false), Nb = noiseField(w, h, S * 0.08, sd + 9, true);
-    for (i = 0; i < n; i++) {
-      var t = T[i], solid = smooth(0.64, 0.74, t);
-      var mid = smooth(0.2, 0.45, t) * (1 - smooth(0.6, 0.8, t)) * smooth(0.45, 0.7, Nb[i]);   // trama solo a zonas
-      var v = Math.max(C[i] * (0.8 + 0.2 * N1[i]), solid, H[i] * mid * 0.85);
-      var thr = 0.5 + (hash(i * 2654435761 + sd) - 0.5) * 0.45;                                  // grano de tóner
-      C[i] = smooth(thr - 0.12, thr + 0.12, v);
-    }
-    // rayas largas que cruzan (arañazos de la plancha): claras sobre el negro, oscuras sobre el claro
-    var nL = Math.round(4 + 10 * e);
+    // arañazos largos: claros sobre el negro y oscuros en lo claro, algunos en haz
+    var nL = Math.round(5 + 18 * e);
     for (var l = 0; l < nL; l++) {
-      var a = (rnd() < 0.6 ? Math.PI / 2 : rnd() * Math.PI) + (rnd() - 0.5) * 0.15, x0 = rnd() * w, y0 = rnd() * h, L = S * (0.3 + 1.2 * rnd()), white = rnd() < 0.55;
-      for (var s2 = -L / 2; s2 < L / 2; s2++) {
-        var xx = Math.round(x0 + Math.cos(a) * s2), yy = Math.round(y0 + Math.sin(a) * s2); if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
-        var jj = yy * w + xx; if (noise1(s2 / (S * 0.04), sd + l) < 0.3) continue;
-        C[jj] = white ? C[jj] * 0.1 : Math.max(C[jj], 0.85);
+      var a = (rnd() < 0.55 ? Math.PI / 2 : rnd() * Math.PI) + (rnd() - 0.5) * 0.12, x0 = rnd() * w, y0 = rnd() * h, L = S * (0.25 + 1.1 * rnd()), white = rnd() < 0.6, nb = rnd() < 0.3 ? 2 + (rnd() * 3 | 0) : 1;
+      for (var bq = 0; bq < nb; bq++) {
+        var ox2 = (bq - nb / 2) * 3;
+        for (var s2 = -L / 2; s2 < L / 2; s2++) {
+          var xx = Math.round(x0 + Math.cos(a) * s2 - Math.sin(a) * ox2), yy = Math.round(y0 + Math.sin(a) * s2 + Math.cos(a) * ox2);
+          if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+          if (noise1(s2 / (S * 0.03), sd + l * 7 + bq) < 0.35) continue;
+          var jj = yy * w + xx; C[jj] = white ? C[jj] * 0.08 : Math.max(C[jj], 0.9);
+        }
       }
     }
-    addSpecks(C, blur(C, w, h, S * 0.01), im, p.specks || 0.3, sd, true);
-    return [{ cov: defects(C, im, p, 0, sd), ink: p.inks[0] }];
+    addSpecks(C, blur(C, w, h, S * 0.01), im, 0.25 + 0.4 * e, sd, true);
+    return [{ cov: C, ink: p.inks[0] }];
   }
 
   // 1 · Fotocopia punk: umbral (más o menos duro según la intensidad), umbral adaptativo para que
@@ -824,7 +838,8 @@
     p.detail = (p.detail || 0) * (0.35 + 1.3 * e);
     p.contrast = (p.contrast || 0) + Math.max(0, e - 0.55) * (p.punch == null ? 0.5 : p.punch);
     p.keep = 0.92 * Math.pow(1 - smooth(0, 0.48, e), 1.3);
-    if (p.kind === 'screen') p.keep = 0;   // serigrafía: la intensidad es el nivel de detalle, nunca mezcla con la foto
+    if (p.kind === 'screen') p.keep = 0;
+    if (p.kind === 'xerox' && p.method === 'scratch') p.keep = 0;   // serigrafía: la intensidad es el nivel de detalle, nunca mezcla con la foto
     return p;
   }
 
