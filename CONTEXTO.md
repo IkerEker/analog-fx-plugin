@@ -132,6 +132,11 @@ Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pi
 - Si el banco no carga, el motor vuelve a las gotas dibujadas.
 - Para probar sin el banco: `NODRIPS=1 node tools/test-engine.js goteo`.
 
+### En curso (sin empaquetar; el usuario pidió no enviar el .ccx todavía)
+
+- Imágenes › Fotocopia punk: el umbral se compara con ruido de tóner (`tgrain`): blancos y negros nítidos, medios tonos en grano fino; nitidez fina antes del umbral.
+- Copia de copia: `smear` (franjas movidas con estela horizontal) y `blots` (borrones grises).
+
 ### Cambios de la 0.9.7
 
 - Varias variantes viven en la misma línea de `presets.js`: edítalas por el objeto `{ id: ..., name: ... }` con conteo de llaves, nunca sustituyendo la línea entera.

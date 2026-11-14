@@ -51,6 +51,7 @@
     }
     return F;
   }
+  function noise1(x, s) { var i = Math.floor(x), f = x - i; f = f * f * (3 - 2 * f); var a = hash2(i, 0, s), b = hash2(i + 1, 0, s); return a + (b - a) * f; }
   function hexToRgb01(hex) {
     var h = String(hex).replace('#', ''); if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
     var v = parseInt(h, 16); return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255];
@@ -358,14 +359,38 @@
     var ad = p.adapt == null ? 0.35 : p.adapt;
     if (ad > 0) { var M = blur(T, w, h, S * 0.05); for (i = 0; i < n; i++) T[i] = clamp01(T[i] + ad * (0.5 - M[i]) * 0.9); }
     if (p.method === 'trama') T = amScreen(T, w, h, { cell: S / (p.lines || 55), ang: 45, shape: 'round', gain: 0.25, comp: 0.4, rag: 0.15, seed: seed });
+    // TÓNER: los negros y blancos quedan nítidos; los medios tonos se rompen en GRANO fino y aleatorio
+    // (el tóner se pega a puntos sueltos, en grumos de 1-3 px), no en manchas lisas. El umbral se
+    // compara con un campo de ruido de tóner (blanco + grumos finos + nubes) cuya amplitud es el
+    // "rango de grano": a más rango, más medios tonos punteados en vez de cortados a blanco/negro.
     var ew = 0.006 + 0.32 * Math.pow(1 - e, 3.2);                        // e bajo: casi tono continuo
     var passes = 1 + Math.min(4, Math.round((p.gen || 0) * 1.6)), thr = 1 - (p.threshold == null ? 0.5 : p.threshold);
-    var J = noiseField(w, h, S * 0.05, seed, true);
+    var grainR = (p.tgrain == null ? 0.55 : p.tgrain) * (0.45 + 0.75 * e);  // amplitud del grano de tóner
+    var px1 = Math.max(0.8, S * 0.0012);                                   // tamaño del grumo de tóner
+    var Nw = new Float32Array(n), Ng = noiseField(w, h, px1, seed + 7, false), Nc = noiseField(w, h, S * 0.012, seed + 9, false), J = noiseField(w, h, S * 0.05, seed, true);
+    for (i = 0; i < n; i++) Nw[i] = hash(i * 2654435761 + seed) * 0.45 + Ng[i] * 0.4 + Nc[i] * 0.15;
+    // movimiento: en algunas franjas el original se movió durante la copia (estela horizontal)
+    // y borrones: zonas emborronadas con poco contraste que al copiarse se vuelven grano gris
+    var smr = (p.smear || 0) * (0.4 + 1.2 * e), blt = (p.blots || 0) * (0.4 + 1.2 * e);
+    if (smr > 0) {
+      var Tm = new Float32Array(n), L = S * 0.09 * smr, kk = Math.exp(-1 / Math.max(1.5, L));
+      for (var yy = 0; yy < h; yy++) { var c1 = T[yy * w], c2 = T[yy * w + w - 1]; for (var xx = 0; xx < w; xx++) { c1 = c1 * kk + T[yy * w + xx] * (1 - kk); Tm[yy * w + xx] = c1; } for (xx = w - 1; xx >= 0; xx--) { c2 = c2 * kk + T[yy * w + xx] * (1 - kk); Tm[yy * w + xx] = (Tm[yy * w + xx] + c2) * 0.5; } }
+      var Bn = noiseField(w, h, S * 0.06, seed + 21, true);
+      for (i = 0; i < n; i++) { var yb = (i / w) | 0, band = smooth(0.55, 0.7, noise1(yb / (S * 0.05), seed) * 0.6 + Bn[i] * 0.4) * Math.min(1, smr); T[i] = T[i] + (Math.max(T[i] * 0.6, Tm[i]) - T[i]) * band; }
+    }
+    if (blt > 0) {
+      var Tbl = blur(T, w, h, S * 0.025), Bm = noiseField(w, h, S * 0.12, seed + 33, true);
+      for (i = 0; i < n; i++) { var bz = smooth(0.55, 0.68, Bm[i]) * Math.min(1, blt); T[i] = T[i] + ((0.5 + (Tbl[i] - 0.5) * 0.55) - T[i]) * bz; }
+    }
+    // nitidez fina antes de umbralizar: el detalle (pelo, poros, arrugas) sobrevive como grano
+    var Tb = blur(T, w, h, Math.max(0.8, S * 0.002));
+    for (i = 0; i < n; i++) T[i] = clamp01(T[i] + (T[i] - Tb[i]) * (0.9 + 0.8 * (p.detail || 0)));
     for (var g = 0; g < passes; g++) {
-      if (g > 0 || p.method !== 'trama') T = blur(T, w, h, Math.max(0.5, S * 0.0008 * (1 + Math.min(1.5, p.gen || 0) * 0.6)));
-      var th = g === 0 ? thr : 0.5;                                        // las copias siguientes no mueven el borde
+      if (g > 0) T = blur(T, w, h, Math.max(0.5, S * 0.0007 * (1 + Math.min(1.5, p.gen || 0) * 0.5)));
+      var th = g === 0 ? thr : 0.5;
+      var gr = g === 0 ? grainR : grainR * 0.35;                            // cada copia: algo más de grano nuevo
       for (i = 0; i < n; i++) {
-        var tj = th + (J[i] - 0.5) * 0.05 * (0.5 + e);
+        var tj = th + (J[i] - 0.5) * 0.05 * (0.5 + e) + (Nw[i] - 0.5) * gr;
         T[i] = smooth(tj - ew, tj + ew, T[i]);
       }
     }
@@ -638,7 +663,7 @@
   // Lo que cambia con el deslizador. Los defectos crecen de 0 a mucho más que el preset; las tramas
   // y los granos se hacen más finos (casi invisibles) o enormes; con intensidad baja además se
   // conserva parte de la foto original. Así el 0 % casi no se nota y el 200 % es una locura.
-  var DEFECTS = ['misreg', 'mottle', 'grain', 'specks', 'streaks', 'bands', 'haze', 'dropout', 'fade', 'ghost', 'gen', 'slur', 'double', 'starve'];
+  var DEFECTS = ['smear', 'blots', 'misreg', 'mottle', 'grain', 'specks', 'streaks', 'bands', 'haze', 'dropout', 'fade', 'ghost', 'gen', 'slur', 'double', 'starve'];
   function applyIntensity(p, I) {
     var e = clamp01((I == null ? 1 : I) / 2);
     p.e = e;
@@ -675,8 +700,8 @@
     { id: 'xerox', name: 'Fotocopia punk', desc: 'Blanco y negro a umbral, como un flyer fotocopiado: el negro se come el detalle, el tóner salpica junto a los bordes, huecos y rayas del cristal. Sin bordes: solo la imagen.',
       palettes: [BK, RD, BL], keys: ['threshold', 'gen', 'adapt', 'contrast', 'detail', 'specks', 'dropout', 'streaks', 'haze', 'grain'],
       variants: [
-        { id: 'umbral', name: 'Umbral duro', p: { kind: 'xerox', threshold: 0.5, gen: 0.2, adapt: 0.4, detail: 0.5, clarity: 0.5, specks: 0.35, dropout: 0.2, streaks: 0.15, haze: 0.08, grain: 0.15, mottle: 0.1 } },
-        { id: 'copia', name: 'Copia de copia', p: { kind: 'xerox', threshold: 0.53, gen: 1, adapt: 0.45, detail: 0.3, clarity: 0.3, specks: 0.7, dropout: 0.45, streaks: 0.35, haze: 0.25, grain: 0.25, mottle: 0.2 } },
+        { id: 'umbral', name: 'Umbral duro', p: { kind: 'xerox', threshold: 0.56, gen: 0.1, adapt: 0.3, tgrain: 0.55, detail: 0.6, clarity: 0.5, specks: 0.35, dropout: 0.2, streaks: 0.15, haze: 0.08, grain: 0.15, mottle: 0.1 } },
+        { id: 'copia', name: 'Copia de copia', p: { kind: 'xerox', threshold: 0.55, gen: 1, adapt: 0.45, tgrain: 0.85, smear: 0.8, blots: 0.7, detail: 0.3, clarity: 0.3, specks: 0.7, dropout: 0.45, streaks: 0.35, haze: 0.25, grain: 0.25, mottle: 0.2 } },
         { id: 'trama', name: 'Revista fotocopiada', p: { kind: 'xerox', method: 'trama', lines: 55, threshold: 0.5, gen: 0.25, adapt: 0.15, detail: 0.3, clarity: 0.3, specks: 0.3, dropout: 0.15, streaks: 0.1, haze: 0.1, grain: 0.15, mottle: 0.1 } }
       ] },
     { id: 'news', name: 'Periódico', desc: 'Trama de puntos de una tinta en papel de periódico: las luces pierden el punto, los medios engordan, las sombras se empastan; el punto se corre y a veces se dobla.',
