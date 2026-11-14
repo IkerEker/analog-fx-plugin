@@ -2,7 +2,13 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.12**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.13**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.13
+- **Imágenes › Grano impreso** (técnica nueva): la imagen impresa en color con trama finísima e irregular sobre papel con textura. Colores vivos y cálidos, negros profundos, grano en los medios y puntitos blancos del papel. Variantes:
+  - **Grano fino.**
+  - **Póster de tela:** trama de tela muy visible.
+  - **Vintage gastado:** desvaído y desregistrado.
 
 ## Novedades 0.9.12
 - **Tinta corrida › Spray** (variante nueva): letra hecha de puntitos de pintura, niebla de puntos alrededor, estela larga en la dirección de la pasada (distinta en cada zona) y salpicaduras de gotitas. En Ajustes detallados puedes regular la dirección de la pasada.
@@ -340,7 +346,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.12.ccx`.
+1. Descarga `dist/AnalogFX_0.9.13.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

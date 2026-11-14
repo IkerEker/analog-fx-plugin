@@ -773,6 +773,46 @@
     return layers;
   };
 
+  // 9 · GRANO IMPRESO: ilustración o foto impresa en CMYK con trama muy fina e irregular sobre papel
+  // con textura (fibra y trama de tela). Color vivo y cálido, negros profundos, puntitos blancos del
+  // papel que no coge tinta en las crestas, y un poco de desregistro.
+  TECH.grain = function (im, p) {
+    var w = im.w, h = im.h, S = im.S, n = im.n, i, x, y, sd = p.seed;
+    var sat = 1 + (p.sat == null ? 0.35 : p.sat), warm = p.warm == null ? 0.06 : p.warm;
+    var Cc = new Float32Array(n), Mc = new Float32Array(n), Yc = new Float32Array(n), Kc = new Float32Array(n);
+    for (i = 0; i < n; i++) {
+      var r = im.R[i], g = im.G[i], b = im.B[i], l = 0.299 * r + 0.587 * g + 0.114 * b;
+      var wl = warm * (1 - l); r = clamp01(l + (r - l) * sat + wl); g = clamp01(l + (g - l) * sat + wl * 0.3); b = clamp01(l + (b - l) * sat - wl * 0.5);
+      var c = 1 - r, m = 1 - g, yv = 1 - b, k0 = Math.min(c, m, yv), k = 0.75 * k0 * smooth(0.2, 0.75, k0), den = Math.max(0.05, 1 - k);
+      Cc[i] = (c - k) / den; Mc[i] = (m - k) / den; Yc[i] = (yv - k) / den; Kc[i] = k;
+    }
+    // textura del papel: fibra + trama de tela (crestas que no cogen tinta)
+    var F1 = noiseField(w, h, Math.max(1, S * 0.0013), sd + 1, false), F2 = noiseField(w, h, S * 0.006, sd + 3, false);
+    var cl = Math.max(2.5, S * (p.weave == null ? 0.006 : p.weave)), paper = new Float32Array(n);
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x;
+      var wv = (Math.sin(x / cl * 3.14159 + F2[i] * 2) * Math.sin(y / cl * 3.14159 + F2[i] * 2)) * 0.5 + 0.5;
+      var wk = p.weaveK == null ? 0.3 : p.weaveK; paper[i] = clamp01((0.55 * F1[i] + wk * wv + 0.15 * F2[i]) / (0.7 + wk));
+    }
+    var cell = S / (p.lines || 160), chans = [Cc, Mc, Yc, Kc], angs = [15, 75, 0, 45];
+    var inks = [[0.0, 0.62, 0.9], [0.92, 0.08, 0.5], [1, 0.88, 0.05], [0.1, 0.09, 0.1]], layers = [], md = S * 0.0025 * (p.misreg || 0);
+    var dirs = [[1, 0.4], [-0.5, 1], [0.3, -1], [0, 0]];
+    for (var q = 0; q < 4; q++) {
+      var L = amScreen(chans[q], w, h, { cell: cell, ang: angs[q], shape: 'round', gain: 0.15, comp: 0.6, rag: 0.6, seed: sd + q });
+      // grano: el punto se rompe con ruido fino (la tinta no cubre las crestas del papel)
+      var Nq = noiseField(w, h, Math.max(1, S * 0.001), sd + 11 + q, false);
+      for (i = 0; i < n; i++) {
+        var v = L[i] * 0.6 + chans[q][i] * 0.4;
+        var thr = 0.5 + (Nq[i] - 0.5) * 0.3 + (paper[i] - 0.5) * (0.3 + 0.5 * (p.weaveK || 0));
+        L[i] = smooth(thr - 0.2, thr + 0.2, v) * (1 - 0.25 * smooth(0.7, 0.92, paper[i]));
+        if (chans[q][i] > 0.85) L[i] = Math.max(L[i], 0.9 * (1 - 0.6 * smooth(0.72, 0.9, paper[i])));   // macizos con poros
+      }
+      L = shift(L, w, h, md * dirs[q][0], md * dirs[q][1]);
+      layers.push({ cov: defects(L, im, p, q, sd), ink: inks[q] });
+    }
+    return layers;
+  };
+
   // ================================================================== composición
   var PAPERS = { white: [0.975, 0.97, 0.955], cream: [0.95, 0.915, 0.84], news: [0.87, 0.855, 0.81] };
   function paperTone(im, p) {   // textura del papel: grano fino, nubes de fibra y (periódico) motas recicladas
@@ -847,7 +887,7 @@
   // pasadas de impresora, píxeles...). Devuelve el alfa nuevo.
   function organicEdge(im, p) {
     var w = im.w, h = im.h, S = im.S, n = im.n, sd = p.seed, k = p.kind, x, y, i;
-    var st = { xerox: [0.014, 'toner'], news: [0.009, 'fibra'], screen: [0.01, 'malla'], riso: [0.01, 'grano'],
+    var st = { grain: [0.006, 'fibra'], xerox: [0.014, 'toner'], news: [0.009, 'fibra'], screen: [0.01, 'malla'], riso: [0.01, 'grano'],
                tone: [0.007, 'fibra'], cmyk: [0.006, 'fibra'], printer: [0.007, 'pasada'], dither: [0.009, 'pixel'] }[k] || [0.007, 'fibra'];
     var amp = Math.max(1.5, S * st[0] * (0.7 + 0.6 * (p.e == null ? 0.5 : p.e))), mode = st[1];
     var Nl = noiseField(w, h, S * 0.04, sd + 401, true), Nm = noiseField(w, h, Math.max(2, S * 0.008), sd + 403, false);
@@ -946,6 +986,13 @@
         { id: 'bayer', name: 'Ordenado (Bayer)', p: { kind: 'dither', method: 'bayer', px: 0.3, detail: 0.3, mottle: 0, grain: 0 } },
         { id: 'mezzo', name: 'Mezzotinta', p: { kind: 'dither', method: 'mezzo', px: 0.2, detail: 0.3, mottle: 0.1, grain: 0 } },
         { id: 'pixel', name: 'Pixelado mal impreso', p: { kind: 'dither', method: 'pixel', px: 0.5, detail: 0.2, contrast: 0.1, mottle: 0.3, grain: 0.25, streaks: 0.35, specks: 0.3, lineK: 0 } }
+      ] },
+    { id: 'grain', name: 'Grano impreso', desc: 'Ilustración o foto impresa en color con trama finísima e irregular sobre papel con textura: colores vivos y cálidos, negros profundos, grano en los medios tonos y puntitos blancos del papel.',
+      palettes: [{ name: 'Proceso CMYK', inks: [] }], keys: ['lines', 'misreg', 'contrast', 'detail'],
+      variants: [
+        { id: 'fino', name: 'Grano fino', p: { kind: 'grain', lines: 170, sat: 0.35, warm: 0.05, weave: 0.005, misreg: 0.3, detail: 0.3, contrast: 0.1, paper: 'cream' } },
+        { id: 'poster', name: 'Póster de tela', p: { kind: 'grain', lines: 110, sat: 0.5, warm: 0.04, weave: 0.011, weaveK: 0.9, misreg: 0.5, detail: 0.3, contrast: 0.15, paper: 'cream' } },
+        { id: 'vintage', name: 'Vintage gastado', p: { kind: 'grain', lines: 140, sat: -0.25, warm: 0.16, weave: 0.007, misreg: 1.4, detail: 0.2, contrast: -0.15, mottle: 0.45, paper: 'news' } }
       ] },
     { id: 'printer', name: 'Impresora rota', desc: 'La foto en una impresora estropeada: gotitas de las cuatro tintas, boquillas obstruidas y pasadas del cabezal desalineadas, un cartucho que se acaba, o láser rayado con fantasma.',
       palettes: [{ name: 'Color de la imagen', inks: [] }], keys: ['bands', 'fade', 'streaks', 'ghost', 'specks', 'contrast', 'detail', 'grain'],
