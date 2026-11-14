@@ -18,7 +18,7 @@
     erode: OFF, cracks: OFF, bleed: OFF, drips: OFF, splat: OFF, print: OFF, tintas: OFF,
     warp: { on: true, amount: 0.04, rough: 0.2 },
     press: OFF, wood: OFF, mesh: OFF, stone: OFF, wash: OFF,
-    seep: OFF, wick: OFF, soak: OFF, tangle: OFF, glitch: OFF, laser: OFF, scratch: OFF, engrave: OFF, stamp: OFF, letters: OFF, damp: OFF, aqua: OFF, gouge: OFF, rim: OFF, stencil: OFF, copy: OFF, drip: OFF,
+    seep: OFF, wick: OFF, soak: OFF, tangle: OFF, glitch: OFF, laser: OFF, scratch: OFF, smudge: OFF, engrave: OFF, stamp: OFF, letters: OFF, damp: OFF, aqua: OFF, gouge: OFF, rim: OFF, stencil: OFF, copy: OFF, drip: OFF,
     paper: { on: true, feather: 0.2, relief: 0.3, tooth: 0.1, paperScale: 0.5 },
     color: { on: true, hue: 0, sat: 0, light: 0, hueVar: 0.05, satVar: 0.1, lightVar: 0.25, edge: 0.25 },
     ink: { on: true, pressure: 0.2, grain: 0.2, fade: 0, roller: 0 },
@@ -110,6 +110,17 @@
         { id: 'arrastre', name: 'Arrastre de escáner', p: { texture: 'desgaste_1', glitch: { on: true, mode: 'drag', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.15, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
         { id: 'doble', name: 'Doble pasada', p: { texture: 'desgaste_1', glitch: { on: true, mode: 'double', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.05, grain: 0.05 }, paper: { on: true, feather: 0, relief: 0.15, tooth: 0 }, color: { on: true, lightVar: 0.05, edge: 0 }, out: { hard: 0 } } },
       ] },
+    { id: 'borron', group: 'copia', name: 'Borrón', desc: 'La letra emborronada a mano o por la máquina: borrón que se imprime en trama fina con recortes y copias movidas, o tinta fresca arrastrada en vertical con brocha seca y rasgaduras.',
+      palettes: PAL_LAYER, variants: [
+        { id: 'mezcla', name: 'Borrón tramado', p: { texture: 'desgaste_1', smudge: { on: true, mode: 'mix', amount: 0.8, cell: 0.022 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.02, grain: 0.02 }, paper: { on: true, feather: 0, relief: 0.05, tooth: 0 }, color: { on: true, lightVar: 0.02, edge: 0 }, out: { hard: 0.2 } } },
+        { id: 'vertical', name: 'Arrastre vertical', p: { texture: 'desgaste_1', smudge: { on: true, mode: 'drag', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.02, grain: 0.02 }, paper: { on: true, feather: 0, relief: 0.05, tooth: 0 }, color: { on: true, lightVar: 0.02, edge: 0 }, out: { hard: 0.2 } } },
+      ] },
+    { id: 'distorsion', group: 'copia', name: 'Distorsión', desc: 'Distorsión digital impresa en grano: glitch con franjas horizontales arrastradas y polvo, letra que se disuelve en peine vertical, o copias desplazadas y desenfocadas con tiras corridas.',
+      palettes: PAL_LAYER, variants: [
+        { id: 'glitch', name: 'Glitch y polvo', p: { texture: 'desgaste_1', smudge: { on: true, mode: 'glitch', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.02, grain: 0.02 }, paper: { on: true, feather: 0, relief: 0.05, tooth: 0 }, color: { on: true, lightVar: 0.02, edge: 0 }, out: { hard: 0.2 } } },
+        { id: 'disuelto', name: 'Disolución en grano', p: { texture: 'desgaste_1', smudge: { on: true, mode: 'dissolve', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.02, grain: 0.02 }, paper: { on: true, feather: 0, relief: 0.05, tooth: 0 }, color: { on: true, lightVar: 0.02, edge: 0 }, out: { hard: 0.2 } } },
+        { id: 'desplazado', name: 'Desplazado', p: { texture: 'desgaste_1', smudge: { on: true, mode: 'displace', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.02, grain: 0.02 }, paper: { on: true, feather: 0, relief: 0.05, tooth: 0 }, color: { on: true, lightVar: 0.02, edge: 0 }, out: { hard: 0.2 } } },
+      ] },
     { id: 'humedad', group: 'agua', name: 'Humedad', desc: 'Gotas de agua sobre la impresión: solo donde cae el agua la tinta se corre desde la letra hacia fuera, se disuelve en el papel y deja la marca del agua. Donde está seco, la letra no se mueve.',
       palettes: PAL_LAYER, variants: [
         { id: 'leve', name: 'Unas gotas', p: { texture: 'desgaste_1', damp: { on: true, amount: 0.2, size: 0.3, spread: 0.7, cloud: 0.9, lift: 0.35, tide: 0.35 }, warp: { on: true, amount: 0.015, rough: 0.12 }, ink: { on: true, pressure: 0.1, grain: 0.15 }, paper: { on: true, feather: 0.02, relief: 0.3, tooth: 0.04 }, out: { hard: 0.05 } } },
@@ -156,7 +167,7 @@
     engrave: ['length', 'width', 'shadow', 'blocks'], stamp: ['tilt', 'uneven', 'edge', 'letterVar', 'periph', 'double', 'dry'],
     aqua: ['variation', 'rim', 'granul', 'blooms', 'drift', 'dry'], gouge: ['edge', 'inner'], rim: ['amount'],
     stencil: ['fiber', 'density', 'setoff', 'oil', 'starve', 'spread'], letters: ['density', 'tone'],
-    copy: ['gen', 'dropout', 'toner', 'streaks', 'haze', 'slur'], drip: ['amount', 'length', 'absorb', 'runs'], soak: ['amount', 'hair', 'roots', 'film', 'crust', 'bubbles'], tangle: ['amount'], glitch: ['amount'], laser: ['amount'], scratch: ['amount']
+    copy: ['gen', 'dropout', 'toner', 'streaks', 'haze', 'slur'], drip: ['amount', 'length', 'absorb', 'runs'], soak: ['amount', 'hair', 'roots', 'film', 'crust', 'bubbles'], tangle: ['amount'], glitch: ['amount'], laser: ['amount'], scratch: ['amount'], smudge: ['amount']
   };
 
 

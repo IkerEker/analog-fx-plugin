@@ -2,7 +2,16 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.10**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.11**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.11 (Letras)
+- **Borrón** (técnica nueva en Copistería):
+  - **Borrón tramado:** la letra se emborrona por zonas y el desenfoque se imprime en trama fina a 45°, con copias movidas, recortes rectangulares y mugre de fotocopia.
+  - **Arrastre vertical:** tinta fresca arrastrada arriba y abajo con brocha seca, rasgaduras blancas y motas.
+- **Distorsión** (técnica nueva en Copistería):
+  - **Glitch y polvo:** franjas horizontales finas arrastradas, tramos desplazados y zonas que se deshacen en polvo.
+  - **Disolución en grano:** peine vertical arriba y abajo, grano estocástico y manchas blandas dentro.
+  - **Desplazado:** copias desenfocadas y movidas en horizontal, tiras corridas en vertical, todo en grano.
 
 ## Novedades 0.9.10
 - **Imágenes: borde orgánico.** El borde de la foto (y el de los recortes con transparencia) ya no es una línea recta; se desplaza unos píxeles con la textura de cada técnica:
@@ -327,7 +336,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.10.ccx`.
+1. Descarga `dist/AnalogFX_0.9.11.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 

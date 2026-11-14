@@ -1,6 +1,6 @@
 # Analog FX: contexto completo para seguir en un chat nuevo
 
-> **Para el asistente del chat nuevo:** lee este archivo entero antes de tocar nada. Resume todo lo hecho hasta la **v0.9.10** (13-nov-2026), las reglas que ha fijado el usuario y cómo probar. El usuario escribe en español, es exigente con el realismo y quiere que cada cambio se pruebe y se entregue empaquetado.
+> **Para el asistente del chat nuevo:** lee este archivo entero antes de tocar nada. Resume todo lo hecho hasta la **v0.9.11** (13-nov-2026), las reglas que ha fijado el usuario y cómo probar. El usuario escribe en español, es exigente con el realismo y quiere que cada cambio se pruebe y se entregue empaquetado.
 
 ---
 
@@ -11,7 +11,7 @@
 - Trabaja en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits. Los documentos que no son RGB 8 bits se procesan en un documento temporal RGB 8.
 - **Repositorio:** `https://github.com/IkerEker/analog-fx-plugin` (público, rama `main`).
 - **Autor de los commits:** `IkerEker`, con el email del usuario.
-- **Instalable actual:** `dist/AnalogFX_0.9.10.ccx`. Se instala con doble clic (Creative Cloud) y se abre en Photoshop desde **Plugins › Analog FX**.
+- **Instalable actual:** `dist/AnalogFX_0.9.11.ccx`. Se instala con doble clic (Creative Cloud) y se abre en Photoshop desde **Plugins › Analog FX**.
 - **Uso:**
   1. Arriba se elige el modo: **Letras** o **Imágenes**.
   2. Se elige técnica, variante, color e intensidad.
@@ -23,7 +23,7 @@
 
 | Qué | Dónde |
 |---|---|
-| Plugin instalable v0.8.7 | `dist/AnalogFX_0.9.10.ccx` en el repo, o descarga directa: https://github.com/IkerEker/analog-fx-plugin/raw/main/dist/AnalogFX_0.9.10.ccx |
+| Plugin instalable v0.8.7 | `dist/AnalogFX_0.9.11.ccx` en el repo, o descarga directa: https://github.com/IkerEker/analog-fx-plugin/raw/main/dist/AnalogFX_0.9.11.ccx |
 | Código completo (zip) | https://github.com/IkerEker/analog-fx-plugin/archive/refs/heads/main.zip |
 | Este documento | `CONTEXTO.md` en la raíz del repo |
 | Historial de cambios | `README.md` (sección "Novedades" de cada versión) |
@@ -136,6 +136,7 @@ Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pi
 
 - Imágenes › Fotocopia punk: el umbral se compara con ruido de tóner (`tgrain`): blancos y negros nítidos, medios tonos en grano fino; nitidez fina antes del umbral.
 - Imágenes, REGLA DEFINITIVA del usuario: **el deslizador NUNCA mezcla con la original (`keep = 0` siempre); cambia la ESCALA y el DETALLE** (`lineK 1`, `px` ×2^((e-0,5)·3), `lines` ≥ 18). La textura añadida (`pressTexture` y la de periódico) es mínima. (Lo anterior de esta línea quedó obsoleto.) Por eso `lineK` vale 0,35 por defecto, el factor de `px` se ha reducido y `pressTexture()` se aplica por tinta en Cuatricromía y Duotono/Tritono.
+- (0.9.11) Módulo `smudge {mode, amount, cell}` en engine.js, con modos `mix` (borrón tramado), `drag` (arrastre vertical), `glitch`, `dissolve` y `displace`. Técnicas `borron` (mezcla, vertical) y `distorsion` (glitch, disuelto, desplazado), hechas a partir de referencias del usuario (SMUDGES, DSTR, DISTORT, VIBES, TEXT DISPLACER).
 - (0.9.10) `organicEdge()` en `render()`: el alfa del borde se desplaza con la textura de cada técnica (`p.edge = 0` lo desactiva).
 - (0.9.9) `xeroxScratch` rehecho:
   - Ecualización parcial y tono en grano.
