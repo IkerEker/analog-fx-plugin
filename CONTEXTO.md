@@ -135,6 +135,7 @@ Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pi
 ### En curso (sin empaquetar; el usuario pidió no enviar el .ccx todavía)
 
 - Imágenes › Fotocopia punk: el umbral se compara con ruido de tóner (`tgrain`): blancos y negros nítidos, medios tonos en grano fino; nitidez fina antes del umbral.
+- Periódico (las tres variantes): `lineK 0.35`, así la intensidad cambia poco el tamaño del punto o de la línea. A cambio añade textura de rotativa que crece con `e`: tinta irregular, bandas, zonas sin tinta, traspaso del dorso, velo, motas con anillo y arañazos.
 - Copia de copia: `smear` (franjas movidas con estela horizontal) y `blots` (borrones grises).
 - Las tres fotocopias se diferencian así:
   - **Umbral duro:** negros macizos, más contraste y poco grano.

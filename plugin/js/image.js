@@ -421,6 +421,38 @@
     C = blur(C, w, h, 0.45 + 0.6 * p.e);                                   // la tinta se abre en el papel
     for (i = 0; i < C.length; i++) C[i] = smooth(0.2, 0.72, C[i]);
     C = slur(C, w, h, (p.slur || 0) * S * 0.004, (p.double || 0) * S * 0.006, 0.15, 1);
+    // defectos de rotativa que crecen con la intensidad (casi nada al 0 %, mucho al 200 %):
+    var e = p.e, k = smooth(0.25, 1, e), sd = p.seed, n = im.n;
+    if (k > 0) {
+      // 1) tinta irregular a manchas grandes y bandas del rodillo
+      var M1 = noiseField(w, h, S * 0.1, sd + 3, true), M2 = noiseField(w, h, S * 0.025, sd + 5, false);
+      // 2) zonas con poca tinta (el punto se queda gris y roto) y velo de tinta en el papel
+      var Lw = noiseField(w, h, S * 0.05, sd + 7, true);
+      // 3) traspaso: la imagen del dorso se ve débil y en espejo
+      var y, x, i;
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        i = y * w + x; var c = C[i];
+        var band = 0.5 + 0.5 * Math.sin(y / (S * 0.035) * 6.283 + M1[i] * 3);
+        c *= 1 - k * (0.35 * smooth(0.45, 0.85, M1[i] * 0.7 + M2[i] * 0.3) + 0.12 * band);
+        var low = smooth(0.62, 0.78, Lw[i]) * k;
+        if (low > 0 && c > 0) c *= 1 - low * 0.7 * (hash(i * 7 + sd) < 0.5 ? 1 : 0.4);
+        var back = T[y * w + (w - 1 - x)] * 0.09 * k * (0.6 + 0.4 * M2[i]);
+        var veil = 0.04 * k * smooth(0.4, 0.8, M1[i]);
+        C[i] = Math.max(c, back, veil);
+      }
+      // 4) motas de tinta / suciedad (hickeys: punto con anillo claro) y arañazos verticales finos
+      var nH = Math.round(n / (S * S) * 260 * k * k);
+      for (var q = 0; q < nH; q++) {
+        var cx = hash(q * 31 + sd) * w, cy = hash(q * 17 + sd + 1) * h, r = Math.max(0.8, S * (0.0012 + 0.004 * Math.pow(hash(q * 13 + sd), 3)));
+        for (var yy = Math.floor(cy - r * 3); yy <= cy + r * 3; yy++) for (var xx = Math.floor(cx - r * 3); xx <= cx + r * 3; xx++) {
+          if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue; var d = Math.sqrt((xx - cx) * (xx - cx) + (yy - cy) * (yy - cy)) / r, j = yy * w + xx;
+          if (d < 1) C[j] = Math.max(C[j], 0.9); else if (d < 2.6 && hash(q) < 0.5) C[j] *= 1 - 0.85 * smooth(2.6, 1.6, d);
+        }
+      }
+      var nS = Math.round(w / S * 6 * k);
+      for (var q2 = 0; q2 < nS; q2++) { var sx = Math.floor(hash(q2 * 91 + sd) * w), y0 = Math.floor(hash(q2 * 7 + sd) * h * 0.5), y1 = y0 + Math.floor(h * (0.2 + 0.6 * hash(q2 * 3 + sd))), wt = hash(q2 + sd) < 0.5;
+        for (y = y0; y < Math.min(h, y1); y++) { i = y * w + sx; C[i] = wt ? C[i] * 0.15 : Math.max(C[i], 0.5 * hash(i)); } }
+    }
     return [{ cov: defects(C, im, p, 0, p.seed), ink: p.inks[0] }];
   };
 
@@ -674,7 +706,7 @@
     p.e = e;
     var f = Math.pow(2 * e, 1.5);                                          // 0 → 0 · 0,5 → 1 · 1 → 2,8
     DEFECTS.forEach(function (k) { if (typeof p[k] === 'number') p[k] = Math.min(2.5, p[k] * f); });
-    if (p.lines > 0) p.lines = p.lines * Math.pow(2, (0.5 - e) * 2.6);    // ×2,5 más fina … ×2,5 más gruesa
+    if (p.lines > 0) p.lines = p.lines * Math.pow(2, (0.5 - e) * 2.6 * (p.lineK == null ? 1 : p.lineK));    // ×2,5 más fina … ×2,5 más gruesa
     if (typeof p.px === 'number') p.px = p.px * Math.pow(2, (e - 0.5) * 3);
     if (typeof p.gain === 'number') p.gain = p.gain * (0.3 + 1.1 * e);
     p.clarity = (p.clarity == null ? 0.3 : p.clarity) * (0.3 + 1.4 * e);
@@ -712,9 +744,9 @@
     { id: 'news', name: 'Periódico', desc: 'Trama de puntos de una tinta en papel de periódico: las luces pierden el punto, los medios engordan, las sombras se empastan; el punto se corre y a veces se dobla.',
       palettes: [{ name: 'Tinta de periódico', inks: ['#262423'] }, RD, BL], keys: ['lines', 'gain', 'slur', 'contrast', 'detail', 'mottle', 'grain'],
       variants: [
-        { id: 'periodico', name: 'Periódico', p: { kind: 'news', lines: 95, shape: 'round', gain: 0.35, detail: 0.35, clarity: 0.35, mottle: 0.3, grain: 0.25, slur: 0.3, double: 0.15, paper: 'news' } },
-        { id: 'gruesa', name: 'Puntos gordos', p: { kind: 'news', lines: 38, shape: 'round', gain: 0.2, detail: 0.4, clarity: 0.4, contrast: 0.15, mottle: 0.15, grain: 0.15 } },
-        { id: 'lineas', name: 'Trama de líneas', p: { kind: 'news', lines: 70, shape: 'line', angle: 30, gain: 0.15, detail: 0.35, clarity: 0.35, mottle: 0.2, grain: 0.15 } }
+        { id: 'periodico', name: 'Periódico', p: { kind: 'news', lineK: 0.35, lines: 95, shape: 'round', gain: 0.35, detail: 0.35, clarity: 0.35, mottle: 0.3, grain: 0.25, slur: 0.3, double: 0.15, paper: 'news' } },
+        { id: 'gruesa', name: 'Puntos gordos', p: { kind: 'news', lineK: 0.35, lines: 38, shape: 'round', gain: 0.2, detail: 0.4, clarity: 0.4, contrast: 0.15, mottle: 0.15, grain: 0.15 } },
+        { id: 'lineas', name: 'Trama de líneas', p: { kind: 'news', lineK: 0.35, lines: 70, shape: 'line', angle: 30, gain: 0.15, detail: 0.35, clarity: 0.35, mottle: 0.2, grain: 0.15 } }
       ] },
     { id: 'tone', name: 'Duotono · Tritono', desc: 'La foto en 2 o 3 tintas planas: la oscura lleva las sombras y la clara los medios y las luces, cada una con su ángulo de trama (roseta); o en tono continuo sin trama.',
       palettes: [{ name: 'Negro + sepia', inks: ['#1a1716', '#8a6a4a', '#c9ad86'] }, { name: 'Azul noche', inks: ['#141a2b', '#3d5a80', '#98c1d9'] }, { name: 'Negro + rojo', inks: ['#151515', '#c0392b', '#f0b27a'] }],
