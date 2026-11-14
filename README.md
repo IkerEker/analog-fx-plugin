@@ -2,7 +2,30 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.6**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.7**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.7
+- **Sello › Tinta seca:** ya no borra el texto.
+- **Destrozado › Corrido y goteado:** rehecho.
+  - Borde húmedo por capilaridad, abierto solo a zonas.
+  - Gotas reales finas y absorbidas.
+  - Salpicaduras pequeñas y desgaste suave.
+- **Maraña:** zonas más y menos enmarañadas. Más raíces donde hay más maraña y borde cargado de forma desigual.
+- **Serigrafía (malla):** el borde se abre distinto en cada tramo.
+- **Risografía › Trama riso:** a dos tintas desregistradas, con trama de puntos.
+- **Xilografía (siguiendo el trazo):** las líneas giran con la letra sin costuras, en cuña afilada.
+- **Linóleo:** textura interior fina, con el grano del papel.
+- **Fotocopia:** ya no redondea las letras.
+- **Láser › Tambor rayado:** rayas finas con pulso y grano; polvo solo junto a la tinta.
+- **Sobre agua:**
+  - **Tinta en agua:** rehecha; borde corto y fractal pegado a cada letra (ya no es una mancha que lo une todo).
+  - **Anillos (suminagashi):** rehechos, con líneas finas continuas y papel limpio entre ellas.
+  - **Sedimento:** pigmento corrido por la corriente en algunos bordes.
+- **Negativo:** las raíces se infiltran y difuminan al alejarse, con nudos oscuros de acumulación en el borde (en las tres variantes).
+- **Goteo absorbente:** pelitos finísimos que bajan desde las letras.
+- **Acuarelado:**
+  - **Mojado sobre mojado:** rehecho; difusión blanda hacia fuera, degradados suaves dentro, pigmento algo acumulado abajo y floraciones en coliflor solo en algunos bordes.
+  - **Lavado con aro:** algunos bordes corridos que se infiltran en el papel.
 
 ## Novedades 0.9.6
 - **En vivo:** cada cambio en el panel (técnica, variante, color, deslizadores, ajustes; también en Imágenes) se aplica solo en Photoshop, sin pulsar Aplicar.
@@ -272,7 +295,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.6.ccx`.
+1. Descarga `dist/AnalogFX_0.9.7.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
