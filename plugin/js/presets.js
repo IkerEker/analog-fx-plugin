@@ -113,7 +113,7 @@
       ] },
     { id: 'borron', group: 'copia', name: 'Borrón', desc: 'La letra emborronada a mano o por la máquina: borrón que se imprime en trama fina con recortes y copias movidas, o tinta fresca arrastrada en vertical con brocha seca y rasgaduras.',
       palettes: PAL_LAYER, variants: [
-        { id: 'mezcla', name: 'Borrón tramado', p: { texture: 'desgaste_1', smudge: { on: true, mode: 'mix', amount: 0.8, cell: 0.022 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.02, grain: 0.02 }, paper: { on: true, feather: 0, relief: 0.05, tooth: 0 }, color: { on: true, lightVar: 0.02, edge: 0 }, out: { hard: 0.2 } } },
+        { id: 'mezcla', name: 'Borrón tramado', p: { texture: 'desgaste_1', smudge: { on: true, mode: 'mix', amount: 0.8, cell: 0.015 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.02, grain: 0.02 }, paper: { on: true, feather: 0, relief: 0.05, tooth: 0 }, color: { on: true, lightVar: 0.02, edge: 0 }, out: { hard: 0.2 } } },
         { id: 'vertical', name: 'Arrastre vertical', p: { texture: 'desgaste_1', smudge: { on: true, mode: 'drag', amount: 0.8 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0.02, grain: 0.02 }, paper: { on: true, feather: 0, relief: 0.05, tooth: 0 }, color: { on: true, lightVar: 0.02, edge: 0 }, out: { hard: 0.2 } } },
       ] },
     { id: 'distorsion', group: 'copia', name: 'Distorsión', desc: 'Distorsión digital impresa en grano: glitch con franjas horizontales arrastradas y polvo, letra que se disuelve en peine vertical, o copias desplazadas y desenfocadas con tiras corridas.',

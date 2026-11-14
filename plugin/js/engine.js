@@ -2282,8 +2282,8 @@
         // tramos de letra desplazados en horizontal, y zonas donde la letra se deshace en polvo fino
         var yb = 0;
         while (yb < h) {
-          var bh = Math.max(1, Math.round(1 + R() * R() * U * 0.03));
-          var act = R() < 0.45 * gA2, len = U * (0.04 + 0.5 * Math.pow(R(), 2)) * gA2, dir = R() < 0.5 ? 1 : -1, shf = R() < 0.25 ? Math.round((R() - 0.5) * U * 0.06 * gA2) : 0;
+          var bh = Math.max(1, Math.round(1 + R() * R() * R() * U * 0.025));
+          var act = R() < 0.22 * gA2 * (0.4 + 1.2 * noise(yb / (U * 0.15), sdX)), len = U * (0.02 + 0.7 * Math.pow(R(), 3)) * gA2, dir = R() < 0.5 ? 1 : -1, shf = R() < 0.25 ? Math.round((R() - 0.5) * U * 0.06 * gA2) : 0;
           if (act || shf) for (y = yb; y < Math.min(h, yb + bh); y++) {
             var k = Math.exp(-1 / Math.max(1.5, len)), c = 0;
             for (var xi = 0; xi < w; xi++) {
@@ -2291,7 +2291,7 @@
               var sx = Math.max(0, Math.min(w - 1, x - shf)), src = A0x[y * w + sx];
               c = Math.max(src, c * k);
               var v = shf ? src : A0x[i];
-              if (act) v = Math.max(v, c * (0.55 + 0.45 * noise(x * 0.08, y * 0.9 + sdX)));
+              if (act) v = Math.max(v, c * (0.35 + 0.65 * noise(x * 0.15, y * 0.9 + sdX)) * (hash(i * 3 + sdX) < 0.85 ? 1 : 0));
               Ox[i] = v;
             }
           }
@@ -2300,31 +2300,31 @@
         // polvo: a zonas la letra se deshace en puntitos finos hacia fuera y hacia dentro
         var Bd = blur(Ox, w, h, U * 0.06, U * 0.06), gDu = grid(function (u, v) { return noise.fbm(u * 0.8 + 5, v * 0.8 - 9, 3); });
         for (i = 0; i < n; i++) {
-          var yy = (i / w) | 0, xx = i - yy * w, zd = smooth(0.52, 0.66, gDu(xx, yy)) * Math.min(1, gA2);
+          var yy = (i / w) | 0, xx = i - yy * w, zd = smooth(0.6, 0.72, gDu(xx, yy)) * Math.min(1, gA2);
           if (zd <= 0) continue;
           var d = Bd[i], rnd = hash(i * 2654435761 + sdX);
-          var keep = Ox[i] > 0.5 ? (rnd < 0.35 + 0.65 * smooth(0.45, 0.9, d) ? 1 : 0) : (rnd < 0.55 * smooth(0.05, 0.5, d) ? 1 : 0);
+          var keep = Ox[i] > 0.5 ? (rnd < 0.5 + 0.5 * smooth(0.45, 0.9, d) ? 1 : 0) : (rnd < 0.4 * Math.pow(smooth(0.05, 0.55, d), 1.5) ? 1 : 0);
           Ox[i] = Ox[i] * (1 - zd) + keep * zd;
         }
       } else if (SMx.mode === 'displace') {
         // TEXT DISPLACER: varias copias de la letra desplazadas en horizontal y desenfocadas en
         // movimiento, tiras verticales corridas arriba/abajo con estrías, todo impreso en grano
         var T4 = blur(A0x, w, h, U * 0.006, U * 0.006);
-        var nCp = 2 + Math.round(gA2);
+        var nCp = 1 + Math.round(gA2 * 0.8);
         for (var cq = 0; cq < nCp; cq++) {
-          var dxp = Math.round((R() < 0.5 ? -1 : 1) * U * (0.05 + 0.18 * R()) * gA2), op = 0.45 + 0.35 * R(), bl = U * (0.02 + 0.05 * R());
+          var dxp = Math.round((R() < 0.5 ? -1 : 1) * U * (0.03 + 0.1 * R()) * gA2), op = 0.3 + 0.3 * R(), bl = U * (0.015 + 0.035 * R());
           var Bc = blur(A0x, w, h, bl, bl * 0.2);
           for (y = 0; y < h; y++) for (x = 0; x < w; x++) { var sx2 = x - dxp; if (sx2 < 0 || sx2 >= w) continue; i = y * w + x; var vc = Bc[y * w + sx2] * op; if (vc > T4[i]) T4[i] = vc; }
         }
         // tiras verticales corridas
         var xs4 = 0, T5 = new Float32Array(T4);
         while (xs4 < w) {
-          var sw4 = Math.round(U * (0.02 + 0.12 * R())), mv4 = R() < 0.45 * gA2 ? Math.round((R() - 0.5) * U * 0.2 * gA2) : 0;
+          var sw4 = Math.round(U * (0.02 + 0.12 * R())), mv4 = R() < 0.25 * gA2 ? Math.round((R() - 0.5) * U * 0.12 * gA2) : 0;
           if (mv4) { var Lv = Math.abs(mv4) * 1.5, kv = Math.exp(-1 / Math.max(1.5, Lv));
             for (x = xs4; x < Math.min(w, xs4 + sw4); x++) { var cc = 0; for (var yi2 = 0; yi2 < h; yi2++) { y = mv4 > 0 ? yi2 : h - 1 - yi2; var sy2 = y - mv4; var src2 = sy2 >= 0 && sy2 < h ? T4[sy2 * w + x] : 0; cc = Math.max(src2, cc * kv); T5[y * w + x] = Math.max(T5[y * w + x] * 0.7, cc * (0.7 + 0.3 * noise(x * 0.6, y * 0.02 + sdX))); } } }
           xs4 += sw4;
         }
-        for (i = 0; i < n; i++) { var yy4 = (i / w) | 0, xx4 = i - yy4 * w; var r4 = hash(i * 2654435761 + sdX) * 0.65 + tGr(xx4, yy4) * 0.35; Ox[i] = r4 < Math.pow(clamp01(T5[i]), 1.25) * 1.02 ? 1 : 0; }
+        for (i = 0; i < n; i++) { var yy4 = (i / w) | 0, xx4 = i - yy4 * w; var r4 = hash(i * 2654435761 + sdX) * 0.55 + tGr(xx4, yy4) * 0.3 + tGr2(xx4, yy4) * 0.15; Ox[i] = r4 < Math.pow(clamp01(T5[i]), 1.2) * (0.9 + 0.1 * noise(xx4 * 0.02, yy4 * 0.02)) ? 1 : 0; }
       } else if (SMx.mode === 'dissolve') {
         // VIBES: la letra se disuelve en vertical. Arriba y abajo se estira en peine (columnas de
         // largo muy distinto, en zigzag fino) y todo se imprime en grano estocástico: macizo dentro
@@ -2333,8 +2333,8 @@
         for (x = 0; x < w; x++) {
           var u1 = (x - ox) * invU, comb = Math.abs(((x * 0.5) % 2) - 1);   // zigzag fino
           var base = 0.35 + 0.65 * noise(u1 * 2.5 + 3, 1.1), fine = 0.5 + 0.5 * noise(u1 * 40, 7.3);
-          Lup[x] = U * (0.04 + 0.22 * base * fine + 0.03 * comb) * gA2;
-          Ldn[x] = U * (0.05 + 0.28 * base * (0.4 + 0.6 * noise(u1 * 30 + 9, 2.2)) + 0.03 * comb) * gA2;
+          Lup[x] = U * (0.03 + 0.15 * base * fine + 0.02 * comb) * gA2;
+          Ldn[x] = U * (0.04 + 0.2 * base * (0.4 + 0.6 * noise(u1 * 30 + 9, 2.2)) + 0.02 * comb) * gA2;
         }
         var T2 = new Float32Array(A0x);
         for (x = 0; x < w; x++) {
@@ -2348,9 +2348,9 @@
         for (i = 0; i < n; i++) {
           var yy3 = (i / w) | 0, xx3 = i - yy3 * w;
           var t3 = Math.max(T2[i], Bl[i] * 0.85);
-          t3 *= 1 - 0.75 * smooth(0.55, 0.78, gBlob(xx3, yy3)) * A0x[i];                // mancha oscura blanda dentro
+          t3 *= 1 - 0.35 * smooth(0.6, 0.8, gBlob(xx3, yy3)) * A0x[i];                // mancha oscura blanda dentro
           var r3 = hash(i * 2654435761 + sdX) * 0.7 + tGr(xx3, yy3) * 0.3;
-          Ox[i] = r3 < Math.pow(t3, 1.4) * 0.97 ? 1 : 0;                                   // grano estocástico
+          Ox[i] = r3 < Math.pow(t3, 1.4) * (0.82 + 0.15 * tGr2(xx3, yy3)) ? 1 : 0;                                   // grano estocástico
         }
       } else {
         // DSTR: la tinta fresca arrastrada en vertical (brocha seca): columnas estriadas que bajan y
@@ -2358,9 +2358,9 @@
         var colL = new Float32Array(w), colA = new Float32Array(w), colW = new Float32Array(w);
         for (x = 0; x < w; x++) {
           var u0 = (x - ox) * invU;
-          colA[x] = smooth(0.38, 0.6, noise(u0 * 3 + 7, 1.3) * 0.55 + noise(u0 * 22 - 2, 4.4) * 0.45) * Math.min(1, gA2);
-          colL[x] = U * (0.1 + 0.45 * Math.pow(noise(u0 * 9 + 1, 8.1), 1.2)) * gA2;
-          colW[x] = smooth(0.78, 0.84, noise(u0 * 40 + 9, 2.2) * 0.7 + noise(u0 * 4, 6.6) * 0.3) * Math.min(1, gA2);
+          colA[x] = smooth(0.46, 0.66, noise(u0 * 2.2 + 7, 1.3) * 0.6 + noise(u0 * 22 - 2, 4.4) * 0.4) * Math.min(1, gA2);
+          colL[x] = U * (0.07 + 0.32 * Math.pow(noise(u0 * 9 + 1, 8.1), 1.4)) * gA2;
+          colW[x] = smooth(0.62, 0.78, noise(u0 * 3 + 9, 2.2) * 0.7 + noise(u0 * 14, 6.6) * 0.3) * Math.min(1, gA2) * 0.7;
         }
         for (x = 0; x < w; x++) {
           if (colA[x] <= 0 && colW[x] <= 0) continue;
@@ -2368,8 +2368,12 @@
           var str = 0.4 + 0.6 * noise((x - ox) * invU * 60, 3.3 + sdX);
           for (y = 0; y < h; y++) { i = y * w + x; cD = Math.max(A0x[i], cD * kd); if (A0x[i] < 0.5) var sv = cD * colA[x] * (0.5 + 0.5 * str); Ox[i] = Math.max(Ox[i], smooth(0.25, 0.4, sv * (0.55 + 0.45 * tGr(x, y)) + (noise(x * 0.9, y * 0.012 + sdX) - 0.5) * 0.35)); }
           for (y = h - 1; y >= 0; y--) { i = y * w + x; cU = Math.max(A0x[i], cU * ku); if (A0x[i] < 0.5) var su = cU * colA[x] * 0.8 * (0.5 + 0.5 * str); Ox[i] = Math.max(Ox[i], smooth(0.3, 0.45, su * (0.55 + 0.45 * tGr(x, y)) + (noise(x * 0.9, y * 0.012 - sdX) - 0.5) * 0.35)); }
-          if (colW[x] > 0) for (y = 0; y < h; y++) { i = y * w + x; if (A0x[i] > 0.5) Ox[i] *= 1 - colW[x] * smooth(0.35, 0.7, noise(x * 0.6, y * 0.015 + sdX)) * smooth(0.3, 0.7, tGr(x, y) * 0.5 + 0.5); }
+          if (colW[x] > 0) for (y = 0; y < h; y++) { i = y * w + x; if (A0x[i] > 0.5) { var st2 = noise(x * 0.9 + sdX, y * 0.01) * 0.6 + tGr(x, y) * 0.4; Ox[i] *= 1 - colW[x] * smooth(0.55, 0.75, st2) * smooth(0.3, 0.6, noise(x * 0.05, y * 0.008 - sdX)); } }
         }
+        // textura general de brocha seca: estrías verticales finas y poros en toda la tinta
+        for (y = 0; y < h; y++) for (x = 0; x < w; x++) { i = y * w + x; if (Ox[i] < 0.3) continue;
+          var vs = noise(x * 0.7 + sdX, y * 0.015) * 0.55 + tGr2(x, y) * 0.45;
+          Ox[i] *= 1 - 0.55 * smooth(0.66, 0.84, vs) * Math.min(1, gA2); }
         var Bn2 = blur(A0x, w, h, U * 0.04, U * 0.04);
         for (i = 0; i < n; i++) { if (Ox[i] > 0.5) continue; var yy2 = (i / w) | 0, xx2 = i - yy2 * w, e2 = Bn2[i] * (1 - Bn2[i]) * 4; if (e2 > 0.1 && hash(i * 3 + sdX) < e2 * 0.04 * gA2 * (0.5 + tGr2(xx2, yy2))) Ox[i] = 1; }
       }
@@ -2392,25 +2396,25 @@
       }
       // la letra se desvanece hacia dentro por zonas (degradado que luego será trama) y el borde
       // se arrastra un poco hacia fuera en la dirección de la zona (borrón corto, no un halo)
-      var Lh = U * (0.03 + 0.07 * sA), Bh = blur(dirBlur(A0s, Lh, false), w, h, U * 0.012, U * 0.004), Bv = blur(dirBlur(A0s, Lh, true), w, h, U * 0.004, U * 0.012);
+      var Lh = U * (0.08 + 0.22 * sA), Bh = blur(dirBlur(A0s, Lh, false), w, h, U * 0.006, U * 0.002), Bv = blur(dirBlur(A0s, Lh, true), w, h, U * 0.002, U * 0.006);
       var Bin = blur(A0s, w, h, U * 0.02, U * 0.02);
       var gZs = grid(function (u, v) { return noise.fbm(u * 1.1 + 11, v * 1.1 - 5, 3); }), gZd = grid(function (u, v) { return noise.fbm(u * 0.7 - 31, v * 0.7 + 17, 2); });
       var gRamp = grid(function (u, v) { return noise.fbm(u * 1.6 + 3, v * 1.6 + 41, 3); });
       var T = new Float32Array(n);
       for (i = 0; i < n; i++) {
         var yy = (i / w) | 0, xx = i - yy * w;
-        var zs = smooth(0.55 - 0.12 * sA * blurK, 0.66 - 0.1 * sA * blurK, gZs(xx, yy)) * blurK;
+        var zs = smooth(0.58 - 0.1 * sA * blurK, 0.64 - 0.08 * sA * blurK, gZs(xx, yy)) * blurK;
         var vert = gZd(xx, yy) > 0.55, sm = vert ? Bv[i] : Bh[i];
         var fadeIn = smooth(0.3, 0.75, gRamp(xx, yy));                       // cuánto se desvanece dentro
-        var inner = A0s[i] * (1 - 0.75 * fadeIn) + Bin[i] * 0.2 * fadeIn;
-        var outer = (1 - A0s[i]) * Math.pow(sm, 1.6) * 0.65;                                  // arrastre corto hacia fuera
+        var inner = A0s[i] * (1 - 0.55 * fadeIn);
+        var outer = (1 - A0s[i]) * Math.pow(sm, 1.15) * 0.8;                                  // arrastre corto hacia fuera
         T[i] = A0s[i] * (1 - zs) + Math.min(1, inner + outer) * zs;
       }
       // 2) mugre de fotocopia en algunos bordes: textura rota que también acaba en trama
       var tg1 = physSampler('d', 200, 'toner'), tg2 = sampler('b', 0.6, 0, 'desgaste'), gGr = grid(function (u, v) { return noise.fbm(u * 1.3 + 77, v * 1.3 - 9, 3); });
       var Bg = blur(A0s, w, h, U * 0.06, U * 0.06);
       for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
-        i = y * w + x; var zg = smooth(0.6, 0.7, gGr(x, y)) * grungeK * Math.min(1, sA);
+        i = y * w + x; var zg = smooth(0.66, 0.74, gGr(x, y)) * grungeK * Math.min(1, sA);
         if (zg <= 0) continue;
         var edgeZ = Bg[i] * (1 - Bg[i]) * 4;
         var gr = smooth(0.45, 0.6, tg2(x, y) * 0.6 + tg1(x, y) * 0.4) * edgeZ * zg;
