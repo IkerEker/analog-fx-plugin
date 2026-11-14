@@ -368,7 +368,9 @@
       bc.appendChild(chip);
     });
     // acciones
-    $('btnApply').addEventListener('click', applyEffect);
+    $('btnApply').addEventListener('click', function () { applyEffect(false); });
+    state.live = load('live', true); syncLive();
+    $('btnLive').addEventListener('click', function () { state.live = !state.live; store('live', state.live); syncLive(); if (state.live && state.src && !state.busy) applyEffect(true); });
     $('btnSeed').addEventListener('click', function () {
       state.p.seed = 1 + Math.floor(Math.random() * 99999); syncAll(); onParamChange(false);
     });
@@ -855,6 +857,33 @@
   function schedulePreview(fast) {
     clearTimeout(previewTimer);
     previewTimer = setTimeout(function () { renderPreview(fast); }, fast ? 16 : 40);
+    scheduleLive();
+  }
+
+  // ---------------------------------------------------------------- EN VIVO
+  // Cada cambio que hace el usuario en el panel se aplica solo en Photoshop (sin pulsar Aplicar).
+  // Se espera a que deje de tocar (arrastrar un deslizador no lanza 50 aplicaciones) y, si ya se
+  // está aplicando, se vuelve a aplicar una vez al terminar con los últimos ajustes.
+  // Solo reacciona a cambios hechos por el usuario (no al abrir el panel ni al cambiar de capa).
+  var liveTimer = null, lastTouch = 0;
+  document.addEventListener('pointerdown', function () { lastTouch = Date.now(); }, true);
+  document.addEventListener('mousedown', function () { lastTouch = Date.now(); }, true);
+  document.addEventListener('keydown', function () { lastTouch = Date.now(); }, true);
+  document.addEventListener('input', function () { lastTouch = Date.now(); }, true);
+  function scheduleLive() {
+    if (!state.live || !IN_PS) return;
+    if (Date.now() - lastTouch > 2500) return;
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(function () {
+      if (state.busy) { state.livePending = true; return; }
+      if (!state.src) return;
+      applyEffect(true);
+    }, 450);
+  }
+  function syncLive() {
+    var b = $('btnLive'); if (!b) return;
+    b.className = 'btn live' + (state.live ? ' on' : '');
+    b.title = state.live ? 'En vivo: cada cambio se aplica solo (clic para desactivar)' : 'En vivo desactivado: pulsa Aplicar (clic para activar)';
   }
 
   var NO_PREVIEW = true;   // la vista previa se ha quitado del panel (no servía): no se calcula
@@ -978,8 +1007,9 @@
   }
 
   // ---------------------------------------------------------------- aplicar en Photoshop
-  function applyEffect() {
-    if (state.busy) return;
+  function applyEffect(live) {
+    if (state.busy) { if (live === true) state.livePending = true; return; }
+    live = live === true;
     if (!IN_PS) { setStatus('Modo demo: abre el panel dentro de Photoshop para aplicar', 'err'); return; }
     var doc;
     try { doc = app.activeDocument; } catch (e) { doc = null; }
@@ -991,8 +1021,8 @@
 
     state.busy = true;
     var btn = $('btnApply');
-    btn.className = 'btn primary busy'; btn.textContent = 'Aplicando…';
-    setStatus('Procesando…', null);
+    btn.className = 'btn primary busy'; btn.textContent = live ? 'En vivo…' : 'Aplicando…';
+    setStatus(live ? 'Aplicando en vivo…' : 'Procesando…', null);
     var isImg = state.mode === 'img', p = isImg ? imgParams() : effParams(), t0 = Date.now();
     if (isImg) p.__img = true;
 
@@ -1008,6 +1038,7 @@
       state.busy = false;
       btn.className = 'btn primary'; btn.textContent = 'Aplicar';
       refreshSource();
+      if (state.livePending) { state.livePending = false; setTimeout(function () { if (!state.busy && state.src) applyEffect(true); }, 60); }
     });
   }
 

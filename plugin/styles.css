@@ -388,3 +388,11 @@ body.tiny .card-title, body.tiny .tech-desc { display: none; }
 .bottom .status { display: block; width: auto; flex: 0 0 auto; }
 .actions { display: flex; flex-direction: row; align-items: center; width: 100%; flex: 0 0 auto; }
 .btn.primary { flex: 1 1 0; width: 10px; min-width: 60px; }
+
+/* ---------- 0.9.6: aplicar en vivo ---------- */
+.btn.live { flex: 0 0 auto; padding: 0 10px; margin-right: 6px; background: var(--card-2); border: 1px solid var(--line-2); color: var(--muted); font-size: 11px; text-transform: none; }
+.btn.live .live-dot { width: 7px; height: 7px; border-radius: 4px; background: var(--dim); margin-right: 6px; }
+.btn.live.on { color: var(--green); border-color: var(--green-2); }
+.btn.live.on .live-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+body.compact .btn.live { padding: 0 7px; font-size: 10px; }
+body.tiny .btn.live { padding: 0 6px; }

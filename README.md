@@ -2,7 +2,14 @@
 
 Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, técnicas de impresión, copistería, humedad, goteo y acuarela. Desde la 0.8 también **fotografías** (con o sin transparencia) con modelos de impresión de imagen.
 
-**Versión 0.9.5**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+**Versión 0.9.6**: requiere Photoshop 2024 (v25) o posterior. Funciona en RGB, CMYK, Lab, Escala de grises y Duotono, en 8, 16 o 32 bits.
+
+## Novedades 0.9.6
+- **En vivo:** cada cambio en el panel (técnica, variante, color, deslizadores, ajustes; también en Imágenes) se aplica solo en Photoshop, sin pulsar Aplicar.
+  - Espera a que dejes de tocar (unos 0,5 s) y, si ya está aplicando, repite una vez al terminar con los últimos ajustes.
+  - Siempre regenera desde el original, así que no se acumulan capas.
+  - Se activa y desactiva con el botón **En vivo**, junto a Aplicar; el panel recuerda la elección.
+  - Al abrir el panel o cambiar de capa no aplica nada.
 
 ## Novedades 0.9.5
 - **Ningún efecto marca ya la caja de la capa:** todo lo que no es la letra se desvanece de forma irregular antes del borde. Comprobado en todas las técnicas.
@@ -265,7 +272,7 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
 - **Texturas:** se han eliminado las repetidas. Se usan 26 en escala de grises, en cuatro familias: desgaste, aguada, grano y rodillo.
 
 ## Instalar
-1. Descarga `dist/AnalogFX_0.9.5.ccx`.
+1. Descarga `dist/AnalogFX_0.9.6.ccx`.
 2. Haz doble clic: Creative Cloud lo instala.
 3. En Photoshop abre **Plugins › Analog FX**.
 
@@ -275,7 +282,7 @@ Arriba elige **Letras** (texto y formas) o **Imágenes** (fotos).
 2. Elige técnica y variante.
 3. Elige el color.
 4. Ajusta la intensidad.
-5. Pulsa **APLICAR**.
+5. Con **En vivo** activado, cada cambio se ve directamente en Photoshop. Si lo desactivas, pulsa **APLICAR**.
 
 Arriba eliges el modo; abajo, **APLICAR** siempre está visible. Se crea la capa `Nombre · Analog` y el original queda oculto debajo. Si seleccionas el resultado y vuelves a aplicar, se regenera desde el original.
 

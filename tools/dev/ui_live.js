@@ -1,0 +1,20 @@
+const { chromium } = require('playwright'); const fs = require('fs');
+(async () => { const b = await chromium.launch(); const errs = [];
+  const p = await b.newPage({ viewport: { width: 300, height: 700 } }); p.on('pageerror', e => errs.push(e.message));
+  await p.addInitScript({ content: fs.readFileSync('./mockps_sync.js', 'utf8') });
+  await p.goto('http://localhost:8765/index.html'); await p.waitForTimeout(2500);
+  const puts = () => p.evaluate(() => __log.filter(l => l.startsWith('putPixels')).length);
+  console.log('al abrir (no debe aplicar):', await puts());
+  await p.click('.tcard[data-tech="goteo"]'); await p.waitForTimeout(3000);
+  console.log('tras elegir técnica:', await puts(), await p.$eval('#status', e => e.textContent));
+  await (await p.$$('#variantChips > *'))[1].click(); await p.waitForTimeout(250);
+  await (await p.$$('#variantChips > *'))[2].click(); await p.waitForTimeout(3500);
+  console.log('tras 2 variantes rápidas:', await puts(), JSON.stringify(await p.evaluate(() => __doc.layers.map(l => [l.name, l.visible]))));
+  await p.click('#btnLive'); await p.waitForTimeout(200);
+  await p.click('.tcard[data-tech="sello"]'); await p.waitForTimeout(2500);
+  console.log('con En vivo apagado (no suma):', await puts());
+  for (const W of [230, 300]) { await p.setViewportSize({ width: W, height: 400 }); await p.waitForTimeout(800);
+    const r = await p.evaluate(() => { const a = document.getElementById('btnApply').getBoundingClientRect(), l = document.getElementById('btnLive').getBoundingClientRect(); return [Math.round(a.left), Math.round(a.right), Math.round(l.left), innerWidth]; });
+    console.log(W, 'apply/live', r); }
+  await p.screenshot({ path: 'ui_live.png', clip: { x: 0, y: 330, width: 300, height: 70 } });
+  console.log('errs', errs); await b.close(); })();
