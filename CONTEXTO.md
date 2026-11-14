@@ -136,6 +136,10 @@ Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pi
 
 - Imágenes › Fotocopia punk: el umbral se compara con ruido de tóner (`tgrain`): blancos y negros nítidos, medios tonos en grano fino; nitidez fina antes del umbral.
 - Copia de copia: `smear` (franjas movidas con estela horizontal) y `blots` (borrones grises).
+- Las tres fotocopias se diferencian así:
+  - **Umbral duro:** negros macizos, más contraste y poco grano.
+  - **Copia de copia:** grano, movido y borrones.
+  - **Revista fotocopiada:** trama fina de 125 líneas con puntos rotos y engordados (`rag 0.55`).
 
 ### Cambios de la 0.9.7
 

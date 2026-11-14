@@ -358,7 +358,12 @@
     // umbral adaptativo: el fondo local se lleva hacia el medio, así el detalle de luces y sombras se lee
     var ad = p.adapt == null ? 0.35 : p.adapt;
     if (ad > 0) { var M = blur(T, w, h, S * 0.05); for (i = 0; i < n; i++) T[i] = clamp01(T[i] + ad * (0.5 - M[i]) * 0.9); }
-    if (p.method === 'trama') T = amScreen(T, w, h, { cell: S / (p.lines || 55), ang: 45, shape: 'round', gain: 0.25, comp: 0.4, rag: 0.15, seed: seed });
+    if (p.method === 'trama') {
+      // la foto de revista ya traía su trama fina; la fotocopia la engorda y la rompe:
+      // puntos irregulares (fibra, tóner), algunos que se funden y otros que desaparecen
+      T = amScreen(T, w, h, { cell: S / (p.lines || 120), ang: 45, shape: 'round', gain: 0.35, comp: 0.2, rag: 0.55, seed: seed });
+      T = blur(T, w, h, Math.max(0.6, S / (p.lines || 120) * 0.22));
+    }
     // TÓNER: los negros y blancos quedan nítidos; los medios tonos se rompen en GRANO fino y aleatorio
     // (el tóner se pega a puntos sueltos, en grumos de 1-3 px), no en manchas lisas. El umbral se
     // compara con un campo de ruido de tóner (blanco + grumos finos + nubes) cuya amplitud es el
@@ -700,9 +705,9 @@
     { id: 'xerox', name: 'Fotocopia punk', desc: 'Blanco y negro a umbral, como un flyer fotocopiado: el negro se come el detalle, el tóner salpica junto a los bordes, huecos y rayas del cristal. Sin bordes: solo la imagen.',
       palettes: [BK, RD, BL], keys: ['threshold', 'gen', 'adapt', 'contrast', 'detail', 'specks', 'dropout', 'streaks', 'haze', 'grain'],
       variants: [
-        { id: 'umbral', name: 'Umbral duro', p: { kind: 'xerox', threshold: 0.56, gen: 0.1, adapt: 0.3, tgrain: 0.55, detail: 0.6, clarity: 0.5, specks: 0.35, dropout: 0.2, streaks: 0.15, haze: 0.08, grain: 0.15, mottle: 0.1 } },
+        { id: 'umbral', name: 'Umbral duro', p: { kind: 'xerox', threshold: 0.6, gen: 0.1, adapt: 0.15, tgrain: 0.3, contrast: 0.25, detail: 0.55, clarity: 0.5, specks: 0.35, dropout: 0.2, streaks: 0.15, haze: 0.08, grain: 0.15, mottle: 0.1 } },
         { id: 'copia', name: 'Copia de copia', p: { kind: 'xerox', threshold: 0.55, gen: 1, adapt: 0.45, tgrain: 0.85, smear: 0.8, blots: 0.7, detail: 0.3, clarity: 0.3, specks: 0.7, dropout: 0.45, streaks: 0.35, haze: 0.25, grain: 0.25, mottle: 0.2 } },
-        { id: 'trama', name: 'Revista fotocopiada', p: { kind: 'xerox', method: 'trama', lines: 55, threshold: 0.5, gen: 0.25, adapt: 0.15, detail: 0.3, clarity: 0.3, specks: 0.3, dropout: 0.15, streaks: 0.1, haze: 0.1, grain: 0.15, mottle: 0.1 } }
+        { id: 'trama', name: 'Revista fotocopiada', p: { kind: 'xerox', method: 'trama', lines: 125, tgrain: 0.45, threshold: 0.5, gen: 0.25, adapt: 0.15, detail: 0.3, clarity: 0.3, specks: 0.3, dropout: 0.15, streaks: 0.1, haze: 0.1, grain: 0.15, mottle: 0.1 } }
       ] },
     { id: 'news', name: 'Periódico', desc: 'Trama de puntos de una tinta en papel de periódico: las luces pierden el punto, los medios engordan, las sombras se empastan; el punto se corre y a veces se dobla.',
       palettes: [{ name: 'Tinta de periódico', inks: ['#262423'] }, RD, BL], keys: ['lines', 'gain', 'slur', 'contrast', 'detail', 'mottle', 'grain'],
