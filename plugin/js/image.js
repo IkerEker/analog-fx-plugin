@@ -576,7 +576,7 @@
   // deja ver el papel entre colores.
   TECH.screen = function (im, p) {
     var w = im.w, h = im.h, S = im.S, n = im.n, i, k, inks = p.inks.slice();
-    var simp = S * (0.0012 + 0.006 * p.e);
+    var simp = S * (0.0005 + 0.0085 * Math.pow(p.e, 1.5));                // 0 %: mucho detalle · 200 %: manchas grandes
     var Yb = blur(im.Y, w, h, simp);
     // tintas ordenadas de clara a oscura; el papel es el nivel más claro
     var order = inks.map(function (c, j) { return j; }).sort(function (a, b) { return lum(inks[b]) - lum(inks[a]); });
@@ -730,6 +730,7 @@
     p.detail = (p.detail || 0) * (0.35 + 1.3 * e);
     p.contrast = (p.contrast || 0) + Math.max(0, e - 0.55) * (p.punch == null ? 0.5 : p.punch);
     p.keep = 0.92 * Math.pow(1 - smooth(0, 0.48, e), 1.3);
+    if (p.kind === 'screen') p.keep = 0;   // serigrafía: la intensidad es el nivel de detalle, nunca mezcla con la foto
     return p;
   }
 
