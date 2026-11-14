@@ -842,6 +842,38 @@
     return p;
   }
 
+  // BORDE ORGÁNICO: el borde de la imagen (lienzo y recortes con alfa) no es una línea recta; se
+  // desplaza unos píxeles con la textura de cada técnica (tóner roto, fibra del papel, malla,
+  // pasadas de impresora, píxeles...). Devuelve el alfa nuevo.
+  function organicEdge(im, p) {
+    var w = im.w, h = im.h, S = im.S, n = im.n, sd = p.seed, k = p.kind, x, y, i;
+    var st = { xerox: [0.014, 'toner'], news: [0.009, 'fibra'], screen: [0.01, 'malla'], riso: [0.01, 'grano'],
+               tone: [0.007, 'fibra'], cmyk: [0.006, 'fibra'], printer: [0.007, 'pasada'], dither: [0.009, 'pixel'] }[k] || [0.007, 'fibra'];
+    var amp = Math.max(1.5, S * st[0] * (0.7 + 0.6 * (p.e == null ? 0.5 : p.e))), mode = st[1];
+    var Nl = noiseField(w, h, S * 0.04, sd + 401, true), Nm = noiseField(w, h, Math.max(2, S * 0.008), sd + 403, false);
+    var Nf = noiseField(w, h, Math.max(1, S * 0.0015), sd + 405, false), A = im.A, O = new Float32Array(n);
+    var cell = Math.max(2, S * 0.0035), pass = Math.max(8, S * 0.04), pix = Math.max(2, S * 0.006);
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x;
+      // cuánto entra el borde aquí (0 .. 2·amp), con la textura de la técnica
+      var r;
+      if (mode === 'toner') r = Nl[i] * 0.8 + Nm[i] * 0.6 + (hash(i * 7 + sd) < 0.12 ? 0.6 : 0);
+      else if (mode === 'malla') r = Nl[i] * 0.7 + 0.35 * (Math.sin((x + y) / cell * 3.14) * Math.sin((x - y) / cell * 3.14) * 0.5 + 0.5);
+      else if (mode === 'pasada') r = 0.4 + 0.8 * hash2(Math.floor(y / pass), 7, sd) * 0.6 + Nf[i] * 0.3;
+      else if (mode === 'pixel') r = hash2(Math.floor(x / pix), Math.floor(y / pix), sd) * 1.2;
+      else if (mode === 'grano') r = Nl[i] * 0.7 + Nf[i] * 0.6;
+      else r = Nl[i] * 0.8 + Nm[i] * 0.35 + Nf[i] * 0.3;            // fibra
+      r *= amp;
+      var dB = Math.min(x, y, w - 1 - x, h - 1 - y), bm = A[0] > 0.5 || A[n - 1] > 0.5 ? smooth(r - 0.6, r + 0.6, dB) : 1;
+      // recortes con alfa: se desplaza la muestra del alfa con el mismo ruido
+      var dx = (Nm[i] - 0.5) * 2 * amp * 0.6 + (Nf[i] - 0.5) * amp * 0.5, dy = (Nl[(i + 7919) % n] - 0.5) * 2 * amp * 0.6;
+      var xs = Math.max(0, Math.min(w - 1, Math.round(x + dx))), ys = Math.max(0, Math.min(h - 1, Math.round(y + dy)));
+      var av = A[i] > 0.02 && A[i] < 0.98 || A[ys * w + xs] !== A[i] ? A[ys * w + xs] : A[i];
+      O[i] = av * bm;
+    }
+    return O;
+  }
+
   /** render(px, w, h, comps, p) -> { rgba, blend: 'multiply' | 'normal' } */
   function render(px, w, h, comps, p) {
     if (p.e == null) applyIntensity(p, 1);
@@ -849,6 +881,7 @@
     var q = Object.assign({}, p, { inks: (p.inks || ['#151515']).map(hexToRgb01) });
     var fn = TECH[p.kind]; if (!fn) throw new Error('Técnica de imagen desconocida: ' + p.kind);
     var layers = fn(im, q);
+    if (p.edge !== 0) im.A = organicEdge(im, q);
     return { rgba: compose(im, layers, q), blend: PAPERS[p.paper] ? 'normal' : 'multiply' };
   }
 
