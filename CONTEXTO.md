@@ -135,7 +135,7 @@ Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pi
 ### Cambios de la 0.9.8 (Imágenes)
 
 - Imágenes › Fotocopia punk: el umbral se compara con ruido de tóner (`tgrain`): blancos y negros nítidos, medios tonos en grano fino; nitidez fina antes del umbral.
-- Imágenes, regla del usuario: **el deslizador de intensidad NO debe cambiar el tamaño de la trama o del grano**, sino añadir textura. Por eso `lineK` vale 0,35 por defecto, el factor de `px` se ha reducido y `pressTexture()` se aplica por tinta en Cuatricromía y Duotono/Tritono.
+- Imágenes, REGLA DEFINITIVA del usuario: **el deslizador NUNCA mezcla con la original (`keep = 0` siempre); cambia la ESCALA y el DETALLE** (`lineK 1`, `px` ×2^((e-0,5)·3), `lines` ≥ 18). La textura añadida (`pressTexture` y la de periódico) es mínima. (Lo anterior de esta línea quedó obsoleto.) Por eso `lineK` vale 0,35 por defecto, el factor de `px` se ha reducido y `pressTexture()` se aplica por tinta en Cuatricromía y Duotono/Tritono.
 - (0.9.9) `xeroxScratch` rehecho:
   - Ecualización parcial y tono en grano.
   - Trazos oscuros en los medios y claros (levantan tinta) en las sombras, guiados por el tensor de estructura.

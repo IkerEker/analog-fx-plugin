@@ -348,7 +348,7 @@
   // textura de imprenta que crece con la intensidad (no cambia la trama): tinta irregular, bandas
   // del rodillo, zonas con poca tinta y algo de velo. 'salt' distingue cada tinta.
   function pressTexture(C, im, p, salt) {
-    var k = smooth(0.25, 1, p.e); if (k <= 0) return C;
+    var k = 0.25 * smooth(0.5, 1, p.e); if (k <= 0) return C;
     var w = im.w, h = im.h, S = im.S, sd = p.seed + salt * 101;
     var M1 = noiseField(w, h, S * 0.1, sd + 3, true), M2 = noiseField(w, h, S * 0.025, sd + 5, false), Lw = noiseField(w, h, S * 0.05, sd + 7, true);
     for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
@@ -508,7 +508,7 @@
     for (i = 0; i < C.length; i++) C[i] = smooth(0.2, 0.72, C[i]);
     C = slur(C, w, h, (p.slur || 0) * S * 0.004, (p.double || 0) * S * 0.006, 0.15, 1);
     // defectos de rotativa que crecen con la intensidad (casi nada al 0 %, mucho al 200 %):
-    var e = p.e, k = smooth(0.25, 1, e), sd = p.seed, n = im.n;
+    var e = p.e, k = 0.3 * smooth(0.5, 1, e), sd = p.seed, n = im.n;
     if (k > 0) {
       // 1) tinta irregular a manchas grandes y bandas del rodillo
       var M1 = noiseField(w, h, S * 0.1, sd + 3, true), M2 = noiseField(w, h, S * 0.025, sd + 5, false);
@@ -831,15 +831,14 @@
     p.e = e;
     var f = Math.pow(2 * e, 1.5);                                          // 0 → 0 · 0,5 → 1 · 1 → 2,8
     DEFECTS.forEach(function (k) { if (typeof p[k] === 'number') p[k] = Math.min(2.5, p[k] * f); });
-    if (p.lines > 0) p.lines = p.lines * Math.pow(2, (0.5 - e) * 2.6 * (p.lineK == null ? 0.35 : p.lineK));    // ×2,5 más fina … ×2,5 más gruesa
-    if (typeof p.px === 'number') p.px = p.px * Math.pow(2, (e - 0.5) * 1.1);
+    if (p.lines > 0) p.lines = p.lines * Math.pow(2, (0.5 - e) * 2.8 * (p.lineK == null ? 1 : p.lineK));
+    if (p.lines > 0) p.lines = Math.max(18, p.lines);    // ×2,5 más fina … ×2,5 más gruesa
+    if (typeof p.px === 'number') p.px = p.px * Math.pow(2, (e - 0.5) * 3);
     if (typeof p.gain === 'number') p.gain = p.gain * (0.3 + 1.1 * e);
     p.clarity = (p.clarity == null ? 0.3 : p.clarity) * (0.3 + 1.4 * e);
     p.detail = (p.detail || 0) * (0.35 + 1.3 * e);
     p.contrast = (p.contrast || 0) + Math.max(0, e - 0.55) * (p.punch == null ? 0.5 : p.punch);
-    p.keep = 0.92 * Math.pow(1 - smooth(0, 0.48, e), 1.3);
-    if (p.kind === 'screen') p.keep = 0;
-    if (p.kind === 'xerox' && p.method === 'scratch') p.keep = 0;   // serigrafía: la intensidad es el nivel de detalle, nunca mezcla con la foto
+    p.keep = 0;   // NUNCA mezcla con la foto original: la intensidad cambia escala y detalle
     return p;
   }
 
@@ -872,9 +871,9 @@
     { id: 'news', name: 'Periódico', desc: 'Trama de puntos de una tinta en papel de periódico: las luces pierden el punto, los medios engordan, las sombras se empastan; el punto se corre y a veces se dobla.',
       palettes: [{ name: 'Tinta de periódico', inks: ['#262423'] }, RD, BL], keys: ['lines', 'gain', 'slur', 'contrast', 'detail', 'mottle', 'grain'],
       variants: [
-        { id: 'periodico', name: 'Periódico', p: { kind: 'news', lineK: 0.35, lines: 95, shape: 'round', gain: 0.35, detail: 0.35, clarity: 0.35, mottle: 0.3, grain: 0.25, slur: 0.3, double: 0.15, paper: 'news' } },
-        { id: 'gruesa', name: 'Puntos gordos', p: { kind: 'news', lineK: 0.35, lines: 38, shape: 'round', gain: 0.2, detail: 0.4, clarity: 0.4, contrast: 0.15, mottle: 0.15, grain: 0.15 } },
-        { id: 'lineas', name: 'Trama de líneas', p: { kind: 'news', lineK: 0.35, lines: 70, shape: 'line', angle: 30, gain: 0.15, detail: 0.35, clarity: 0.35, mottle: 0.2, grain: 0.15 } }
+        { id: 'periodico', name: 'Periódico', p: { kind: 'news', lines: 95, shape: 'round', gain: 0.35, detail: 0.35, clarity: 0.35, mottle: 0.3, grain: 0.25, slur: 0.3, double: 0.15, paper: 'news' } },
+        { id: 'gruesa', name: 'Puntos gordos', p: { kind: 'news', lines: 38, shape: 'round', gain: 0.2, detail: 0.4, clarity: 0.4, contrast: 0.15, mottle: 0.15, grain: 0.15 } },
+        { id: 'lineas', name: 'Trama de líneas', p: { kind: 'news', lines: 70, shape: 'line', angle: 30, gain: 0.15, detail: 0.35, clarity: 0.35, mottle: 0.2, grain: 0.15 } }
       ] },
     { id: 'tone', name: 'Duotono · Tritono', desc: 'La foto en 2 o 3 tintas planas: la oscura lleva las sombras y la clara los medios y las luces, cada una con su ángulo de trama (roseta); o en tono continuo sin trama.',
       palettes: [{ name: 'Negro + sepia', inks: ['#1a1716', '#8a6a4a', '#c9ad86'] }, { name: 'Azul noche', inks: ['#141a2b', '#3d5a80', '#98c1d9'] }, { name: 'Negro + rojo', inks: ['#151515', '#c0392b', '#f0b27a'] }],

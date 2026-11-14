@@ -9,7 +9,8 @@ Transforma capas de **texto** y **formas** con aspecto analógico: desgaste, té
   - La foto se reparte en todo el rango de tonos y se dibuja en grano fino (una foto oscura ya no se vuelve una mancha negra).
   - Trazos largos y finos siguen la forma: oscuros en los medios tonos y claros en las sombras (la punta levanta la tinta).
   - Arañazos largos, algunos en haz.
-  - La intensidad controla la cantidad de trazos y arañazos; nunca mezcla con la foto original.
+  - La intensidad controla la cantidad de trazos y arañazos.
+- **Intensidad en Imágenes (todas las técnicas):** nunca mezcla con la foto original. Cambia la escala y el detalle: al mínimo, trama o grano finísimo y mucho detalle; al máximo, puntos o grano grandes. La textura añadida es mínima.
 
 ## Novedades 0.9.8 (Imágenes)
 - **El deslizador de intensidad ya no cambia el tamaño de la trama ni del grano:** añade textura de imprenta (tinta irregular, bandas, zonas sin tinta, desregistro). En Serigrafía controla el nivel de detalle y nunca mezcla con la foto.
