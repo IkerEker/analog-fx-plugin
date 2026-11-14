@@ -18,7 +18,7 @@
     erode: OFF, cracks: OFF, bleed: OFF, drips: OFF, splat: OFF, print: OFF, tintas: OFF,
     warp: { on: true, amount: 0.04, rough: 0.2 },
     press: OFF, wood: OFF, mesh: OFF, stone: OFF, wash: OFF,
-    seep: OFF, wick: OFF, soak: OFF, tangle: OFF, glitch: OFF, laser: OFF, scratch: OFF, smudge: OFF, engrave: OFF, stamp: OFF, letters: OFF, damp: OFF, aqua: OFF, gouge: OFF, rim: OFF, stencil: OFF, copy: OFF, drip: OFF,
+    seep: OFF, wick: OFF, soak: OFF, tangle: OFF, glitch: OFF, laser: OFF, scratch: OFF, smudge: OFF, spray: OFF, engrave: OFF, stamp: OFF, letters: OFF, damp: OFF, aqua: OFF, gouge: OFF, rim: OFF, stencil: OFF, copy: OFF, drip: OFF,
     paper: { on: true, feather: 0.2, relief: 0.3, tooth: 0.1, paperScale: 0.5 },
     color: { on: true, hue: 0, sat: 0, light: 0, hueVar: 0.05, satVar: 0.1, lightVar: 0.25, edge: 0.25 },
     ink: { on: true, pressure: 0.2, grain: 0.2, fade: 0, roller: 0 },
@@ -37,6 +37,7 @@
         { id: 'leve', name: 'Por las fibras', p: { texture: 'desgaste_1', wick: { on: true, mode: 'fiber', amount: 0.6, reach: 0.5 }, warp: { on: true, amount: 0.02, rough: 0.2 }, ink: { on: true, pressure: 0.12, grain: 0.15 }, paper: { on: true, feather: 0, relief: 0.2, tooth: 0.05 }, color: { on: true, lightVar: 0.2, edge: 0.1 }, out: { hard: 0 } } },
         { id: 'normal', name: 'Corrida a un lado', p: { texture: 'desgaste_1', wick: { on: true, mode: 'smear', amount: 0.6, reach: 0.3, dir: 0.06, drag: 0.5 }, warp: { on: true, amount: 0.02, rough: 0.2 }, ink: { on: true, pressure: 0.15, grain: 0.18 }, paper: { on: true, feather: 0, relief: 0.2, tooth: 0.05 }, color: { on: true, lightVar: 0.22, edge: 0.1 }, out: { hard: 0 } } },
         { id: 'empapada', name: 'Borde húmedo', p: { texture: 'desgaste_1', wick: { on: true, mode: 'wet', amount: 0.6, reach: 0.5, front: 0.55 }, warp: { on: true, amount: 0.02, rough: 0.2 }, ink: { on: true, pressure: 0.15, grain: 0.18 }, paper: { on: true, feather: 0, relief: 0.2, tooth: 0.05 }, color: { on: true, lightVar: 0.22, edge: 0.1 }, out: { hard: 0 } } },
+        { id: 'spray', name: 'Spray', p: { texture: 'desgaste_1', spray: { on: true, amount: 0.8, dir: -0.2 }, warp: { on: true, amount: 0.01, rough: 0.05 }, ink: { on: true, pressure: 0, grain: 0 }, paper: { on: true, feather: 0, relief: 0.05, tooth: 0 }, color: { on: true, lightVar: 0.03, edge: 0 }, out: { hard: 0 } } },
       ] },
     { id: 'rekt', group: 'desgaste', name: 'Destrozado', desc: 'Tinta rota: desconchones con borde nítido, grietas y huecos por zonas, algo de corrido y goteo, salpicaduras junto a cada letra en su color. Siempre se lee.',
       palettes: PAL_LAYER, variants: [
@@ -167,7 +168,7 @@
     engrave: ['length', 'width', 'shadow', 'blocks'], stamp: ['tilt', 'uneven', 'edge', 'letterVar', 'periph', 'double', 'dry'],
     aqua: ['variation', 'rim', 'granul', 'blooms', 'drift', 'dry'], gouge: ['edge', 'inner'], rim: ['amount'],
     stencil: ['fiber', 'density', 'setoff', 'oil', 'starve', 'spread'], letters: ['density', 'tone'],
-    copy: ['gen', 'dropout', 'toner', 'streaks', 'haze', 'slur'], drip: ['amount', 'length', 'absorb', 'runs'], soak: ['amount', 'hair', 'roots', 'film', 'crust', 'bubbles'], tangle: ['amount'], glitch: ['amount'], laser: ['amount'], scratch: ['amount'], smudge: ['amount']
+    copy: ['gen', 'dropout', 'toner', 'streaks', 'haze', 'slur'], drip: ['amount', 'length', 'absorb', 'runs'], soak: ['amount', 'hair', 'roots', 'film', 'crust', 'bubbles'], tangle: ['amount'], glitch: ['amount'], laser: ['amount'], scratch: ['amount'], smudge: ['amount'], spray: ['amount']
   };
 
 

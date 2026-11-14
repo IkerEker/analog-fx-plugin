@@ -160,6 +160,7 @@
       { k: 'amount', label: 'Zona mojada' }, { k: 'size', label: 'Tamaño de las gotas' }, { k: 'spread', label: 'Cuánto se abre la tinta' },
       { k: 'cloud', label: 'Tinta disuelta en el papel' }, { k: 'lift', label: 'Tinta lavada en la letra' }, { k: 'tide', label: 'Marca del borde del agua' },
       { k: 'cockle', label: 'Papel abombado' }] },
+    { id: 'spray', title: 'Spray', ctl: [{ k: 'amount', label: 'Niebla y salpicaduras' }, { k: 'dir', label: 'Dirección de la pasada', min: -1, max: 1, fmt: function (v) { return Math.round(v * 180) + '°'; } }] },
     { id: 'soak', title: 'Empapado / Negativo', ctl: [{ k: 'amount', label: 'Cuánto le afecta el agua' }, { k: 'hair', label: 'Pelillos del halo (negativo)' }, { k: 'roots', label: 'Raíces (negativo)' }, { k: 'smoke', label: 'Humo gris (negativo)' }, { k: 'gloss', label: 'Brillos en la letra (negativo)' }, { k: 'film', label: 'Velos de tinta (sobre agua)' }, { k: 'crust', label: 'Costra de sedimento (sobre agua)' }, { k: 'bubbles', label: 'Burbujas y salpicaduras (sobre agua)' }] },
     { id: 'gouge', title: 'Gubia (xilografía)', ctl: [
       { k: 'edge', label: 'Cortes desde el borde' }, { k: 'inner', label: 'Cortes interiores' },

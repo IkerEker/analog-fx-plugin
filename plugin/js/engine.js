@@ -309,6 +309,7 @@
     if (p.aqua && p.aqua.on) m += U * 0.05;
     if (p.damp && p.damp.on) m += U * (0.1 + 0.35 * (p.damp.spread || 0));
     if (p.laser && p.laser.on) m += p.laser.mode === 'fuser' ? U * 0.8 : U * 0.3;
+    if (p.spray && p.spray.on) ext = Math.max(ext, U * (0.4 + 1.2 * (p.spray.amount || 0)));
     if (p.smudge && p.smudge.on) m += U * (0.15 + 0.3 * (p.smudge.amount || 0));
     if (p.tangle && p.tangle.on) m += U * 0.6 * (p.tangle.amount || 0);
     if (p.glitch && p.glitch.on) m += p.glitch.mode === 'drag' ? U * 1.4 : U * 0.5;
@@ -2222,6 +2223,55 @@
       shape = A;
     }
 
+    // 1h · SPRAY (tinta corrida › aerosol): la letra hecha de puntitos finísimos de pintura; niebla
+    // de puntos alrededor (overspray) que se aclara al alejarse; estela larga de niebla en la
+    // dirección de la pasada (más en unas letras que en otras); salpicaduras de gotitas.
+    var SP = p.spray || {};
+    if (SP.on && (SP.amount || 0) > 0) {
+      var spA = Math.min(1.6, SP.amount), A0p = new Float32Array(A), sdP = p.seed * 331 + 9;
+      var ang = (SP.dir == null ? -0.2 : SP.dir) * Math.PI, ddx = Math.cos(ang), ddy = Math.sin(ang);
+      var core = blur(A0p, w, h, U * 0.012 + 0.8, U * 0.012 + 0.8);
+      var halo1 = blur(A0p, w, h, U * 0.05, U * 0.05), halo2 = blur(A0p, w, h, U * 0.16, U * 0.16);
+      // estela direccional: suma con decaimiento a lo largo de la dirección (en pasos dobles)
+      var St = new Float32Array(A0p), Ls = U * (0.35 + 1.1 * spA), aD = Math.exp(-1 / Math.max(2, Ls));
+      for (var stp = 1; stp < Ls * 3; stp *= 2) {
+        var Sn = new Float32Array(St), fa = Math.pow(aD, stp);
+        for (y = 0; y < h; y++) for (x = 0; x < w; x++) { i = y * w + x; var v = sampleBil(St, w, h, x - ddx * stp, y - ddy * stp) * fa; if (v > Sn[i]) Sn[i] = v; }
+        St = Sn;
+      }
+      St = blur(St, w, h, U * 0.03, U * 0.03);
+      var gLetter = grid(function (u, v) { return noise.fbm(u * 0.6 + 13, v * 0.6 - 7, 2); });
+      var T = new Float32Array(n);
+      for (i = 0; i < n; i++) {
+        var yy = (i / w) | 0, xx = i - yy * w;
+        var trailK = 0.3 + 0.7 * smooth(0.3, 0.65, gLetter(xx, yy));                 // la estela no es igual en todas
+        var d = Math.max(Math.min(1, core[i] * 1.15), halo1[i] * 0.75, halo2[i] * 0.55 * spA, St[i] * 0.7 * trailK * spA);
+        T[i] = d;
+      }
+      var tSp = physSampler('d', 120, 'grano');
+      for (i = 0; i < n; i++) {
+        var yy2 = (i / w) | 0, xx2 = i - yy2 * w, t = T[i];
+        if (t <= 0.003) { A[i] = 0; continue; }
+        var r = hash(i * 2654435761 + sdP) * 0.8 + tSp(xx2, yy2) * 0.2;
+        A[i] = r < Math.pow(t, 1.25) ? 1 : (r < Math.pow(t, 1.25) * 1.25 ? 0.5 : 0);   // punto de pintura (algunos medios)
+      }
+      // salpicaduras: gotitas de varios tamaños, más cerca de las letras y de la estela
+      var nearP = blur(A0p, w, h, U * 0.5, U * 0.5), nDr = Math.round((w * h) / (U * U) * 14 * spA);
+      for (var q = 0, tr = 0; q < nDr && tr < nDr * 30; tr++) {
+        var px = R() * w, py = R() * h, j = (py | 0) * w + (px | 0);
+        if (R() > nearP[j] * 3 + St[j] * 0.5) continue;
+        q++;
+        var rr = Math.max(0.6, U * 0.004 * (0.4 + 4 * Math.pow(R(), 4))), el = 1 + R() * 0.8, an = R() * 3.14;
+        for (var yy3 = Math.floor(py - rr * 2); yy3 <= py + rr * 2; yy3++) for (var xx3 = Math.floor(px - rr * 2); xx3 <= px + rr * 2; xx3++) {
+          if (xx3 < 0 || yy3 < 0 || xx3 >= w || yy3 >= h) continue;
+          var ex = (xx3 - px) * Math.cos(an) + (yy3 - py) * Math.sin(an), ey = -(xx3 - px) * Math.sin(an) + (yy3 - py) * Math.cos(an);
+          var dd = Math.sqrt(ex * ex / (el * el) + ey * ey), c = clamp01(rr + 0.5 - dd);
+          var jj = yy3 * w + xx3; if (c > A[jj]) A[jj] = c;
+        }
+      }
+      shape = A;
+    }
+
     // 1g2 · DISTORSIÓN glitch / arrastre vertical
     var SMx = p.smudge || {};
     if (SMx.on && (SMx.mode === 'glitch' || SMx.mode === 'drag' || SMx.mode === 'dissolve' || SMx.mode === 'displace') && (SMx.amount || 0) > 0) {
@@ -3566,6 +3616,7 @@
     tangle: { on: false, amount: 0.8, comb: 0.4 },
     laser: { on: false, mode: 'drum', amount: 0.8 },
     scratch: { on: false, amount: 0.8 },
+    spray: { on: false, amount: 0.8, dir: -0.2 },
     smudge: { on: false, mode: 'mix', amount: 0.8, cell: 0.022 },
     glitch: { on: false, mode: 'collage', amount: 0.8 },
     drip: { on: false, amount: 0.5, length: 0.45, thick: 0.4, sag: 0.5, beads: 0.3, trail: 0.3, dark: 0.6, absorb: 0, runs: 0 },
