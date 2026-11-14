@@ -645,7 +645,7 @@
     var w = im.w, h = im.h, S = im.S, n = im.n, i, x, y, seed = p.seed, e = p.e, bandsA = Math.min(1.6, p.bands || 0);
     if (p.method === 'laser') {
       var T = darkness(im);
-      T = diffuse(T, w, h, Math.max(1, S * 0.0012 * (0.6 + e * 1.5)), 'fs', seed);
+      T = diffuse(T, w, h, Math.max(1, S * 0.0009), 'fs', seed);
       T = blur(T, w, h, 0.5);
       if ((p.ghost || 0) > 0) { var Gh = shift(T, w, h, 0, S * 0.09); for (i = 0; i < n; i++) T[i] = Math.max(T[i], Gh[i] * Math.min(1, p.ghost) * 0.25); }
       streaksV(T, im, p.streaks || 0, seed, false);
@@ -659,27 +659,44 @@
       var c = 1 - im.R[i], m = 1 - im.G[i], yy = 1 - im.B[i], k0 = Math.min(c, m, yy), k = k0 * 0.8 * smooth(0.1, 0.7, k0);
       ch[0][i] = (c - k) / (1 - k + 1e-3); ch[1][i] = (m - k) / (1 - k + 1e-3); ch[2][i] = (yy - k) / (1 - k + 1e-3); ch[3][i] = k;
     }
-    var pass = Math.max(6, S * 0.045), nozzle = Math.max(2, S * 0.006), bad = p.method === 'empty' ? [1] : [0, 1, 3];
-    var dropPs = Math.max(1, S * 0.001 * (0.5 + 2 * e)), layers = [];
+    // INYECCIÓN DE TINTA real: gotitas finísimas de las 4 tintas (FM, tamaño fijo, ~1 px) que se
+    // abren un poco en el papel; el cabezal imprime en pasadas horizontales. Defectos:
+    //  - boquillas obstruidas: líneas FINÍSIMAS (1 px) donde falta UNA tinta (se ve el color complementario
+    //    muy tenue, no una raya de color chillón), agrupadas en algunas pasadas, a veces intermitentes;
+    //  - bandas de pasada: cada pasada con densidad algo distinta y su unión más oscura o más clara;
+    //  - pasadas desalineadas: alguna pasada corrida unos píxeles;
+    //  - cartucho agotado: la tinta se acaba hacia el FINAL de la página (abajo), primero rayando
+    //    (boquillas que fallan) y luego desaparece del todo.
+    var bandsA = Math.min(1.6, p.bands || 0), pass = Math.max(8, S * 0.04), nozzleH = Math.max(1, Math.round(S * 0.0011));
+    var badCh = p.method === 'empty' ? [p.channel == null ? 1 : p.channel] : [0, 1, 2, 3], dropPs = Math.max(1, S * 0.0009), layers = [];
+    var Pv = noiseField(w, h, S * 0.2, seed + 13, true);
     for (var q = 0; q < 4; q++) {
       var L = ch[q];
-      // tinta que se acaba (antes de tramar, para que las gotitas se espacien)
-      if (p.method === 'empty' && q === (p.channel == null ? 1 : p.channel)) {
-        var Fe = noiseField(w, h, S * 0.08, seed + 5, false), fd = Math.min(1, p.fade || 0.8);
-        for (y = 0; y < h; y++) for (x = 0; x < w; x++) { i = y * w + x; L[i] *= 1 - smooth(0.1, 0.8, x / w + (Fe[i] - 0.5) * 0.35) * fd; }
-      }
-      // gotitas de la inyección (FM): con poca intensidad casi tono continuo
-      if (e > 0.15) { var Ld = diffuse(L, w, h, dropPs, 'fs', seed + q), mixD = smooth(0.15, 0.7, e); for (i = 0; i < n; i++) L[i] = L[i] * (1 - mixD) + Ld[i] * mixD; L = blur(L, w, h, 0.45); }
+      var emptyQ = p.method === 'empty' && q === (p.channel == null ? 1 : p.channel);
+      var fd = Math.min(1, p.fade || 0.8);
+      // gotitas: difusión de error con algo de ruido + la tinta se abre medio píxel
+      var Ld = diffuse(L, w, h, dropPs, 'fs', seed + q * 7), mixD = smooth(0.1, 0.6, e);
+      for (i = 0; i < n; i++) L[i] = L[i] * (1 - mixD) + Ld[i] * mixD;
+      L = blur(L, w, h, 0.5);
       var O = new Float32Array(n);
       for (y = 0; y < h; y++) {
-        var pi = Math.floor(y / pass), within = y - pi * pass, nz = Math.floor(within / nozzle), nf = within - nz * nozzle;
-        var clog = (bad.indexOf(q) >= 0 ? 1 : 0.35) * Math.min(0.5, bandsA * 0.32) > hash2(pi, nz * 4 + q, seed + 71) && nf < Math.max(1, nozzle * 0.45);
-        var passD = 1 - bandsA * 0.14 * (pi & 1);                         // pasadas alternas con distinta densidad
-        var xshift = hash2(pi, 9 + q, seed + 3) < bandsA * 0.3 ? (hash2(pi, 11 + q, seed) - 0.5) * S * 0.012 * bandsA : 0;
+        var pi = Math.floor(y / pass), within = y - pi * pass;
+        var passD = 1 - bandsA * 0.08 * (hash2(pi, q, seed + 5) - 0.3);                  // densidad propia de cada pasada
+        var seam = within < 1.5 ? 1 + bandsA * 0.25 * (hash2(pi, 1, seed) - 0.4) : 1;     // unión de pasadas
+        var xshift = hash2(pi, 9 + q, seed + 3) < bandsA * 0.12 ? Math.round((hash2(pi, 11, seed) - 0.5) * S * 0.006) : 0;
+        // boquilla obstruida en esta fila (1 px), solo en algunas pasadas, intermitente a lo largo de x
+        var row = Math.floor(within / nozzleH), passBad = hash2(pi, 77, seed + q) < 0.35 + 0.4 * bandsA;
+        var clogRow = badCh.indexOf(q) >= 0 && passBad && hash2(pi * 131 + row, q, seed + 71) < bandsA * 0.09;
+        // cartucho que se acaba: hacia abajo de la página
+        var emptyK = emptyQ ? smooth(0.42, 1.0, y / h + (Pv[y * w] - 0.5) * 0.15) * fd : 0;
+        var emptyRow = emptyQ && hash2(row + pi * 31, 5, seed) < emptyK * 1.2;           // primero falla a rayas
         for (x = 0; x < w; x++) {
           i = y * w + x;
-          var v = xshift ? L[y * w + Math.max(0, Math.min(w - 1, Math.round(x - xshift)))] : L[i];
-          O[i] = clog ? 0 : v * passD;
+          var v = xshift ? L[y * w + Math.max(0, Math.min(w - 1, x - xshift))] : L[i];
+          v *= passD * seam;
+          if (clogRow && noise1(x / (S * 0.15) + pi, seed + q) > 0.3) v *= 0.05;
+          if (emptyQ) { v *= 1 - emptyK * 0.85; if (emptyRow) v *= 0.1; }
+          O[i] = clamp01(v);
         }
       }
       layers.push({ cov: defects(O, im, p, q, seed), ink: inks[q] });
