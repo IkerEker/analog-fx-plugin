@@ -345,6 +345,23 @@
     return O;
   }
 
+  // textura de imprenta que crece con la intensidad (no cambia la trama): tinta irregular, bandas
+  // del rodillo, zonas con poca tinta y algo de velo. 'salt' distingue cada tinta.
+  function pressTexture(C, im, p, salt) {
+    var k = smooth(0.25, 1, p.e); if (k <= 0) return C;
+    var w = im.w, h = im.h, S = im.S, sd = p.seed + salt * 101;
+    var M1 = noiseField(w, h, S * 0.1, sd + 3, true), M2 = noiseField(w, h, S * 0.025, sd + 5, false), Lw = noiseField(w, h, S * 0.05, sd + 7, true);
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+      var i = y * w + x, c = C[i];
+      var band = 0.5 + 0.5 * Math.sin(y / (S * 0.035) * 6.283 + M1[i] * 3 + salt);
+      c *= 1 - k * (0.32 * smooth(0.45, 0.85, M1[i] * 0.7 + M2[i] * 0.3) + 0.1 * band);
+      var low = smooth(0.64, 0.8, Lw[i]) * k;
+      if (low > 0 && c > 0) c *= 1 - low * 0.65 * (hash(i * 7 + sd) < 0.5 ? 1 : 0.4);
+      C[i] = Math.max(c, 0.03 * k * smooth(0.45, 0.8, M1[i]));
+    }
+    return C;
+  }
+
   // ================================================================== técnicas
   // Cada técnica devuelve capas { cov: Float32Array 0..1, ink: [r,g,b], opaque?: bool }.
   // p.e = intensidad 0..1 (ver applyIntensity).
@@ -470,7 +487,7 @@
       if ((p.lines || 0) > 0) C = amScreen(C, w, h, { cell: S / p.lines, ang: ang[k], shape: p.shape || 'round', gain: p.gain || 0.15, comp: 0.8, rag: 0.12, seed: p.seed + k });
       var md = S * 0.004 * (p.misreg || 0) * k;
       C = shift(C, w, h, md * Math.cos(k * 2.1), md * Math.sin(k * 2.1));
-      layers.push({ cov: defects(C, im, p, k, p.seed), ink: p.inks[k] });
+      layers.push({ cov: defects(pressTexture(C, im, p, k), im, p, k, p.seed), ink: p.inks[k] });
     }
     return layers;
   };
@@ -518,7 +535,7 @@
       if (fadeK[q] < 1) for (i = 0; i < n; i++) L[i] *= fadeK[q];
       var md = S * 0.005 * (p.misreg || 0);
       L = shift(L, w, h, md * dirs[q][0], md * dirs[q][1]);
-      layers.push({ cov: defects(L, im, p, q, p.seed), ink: inks[q] });
+      layers.push({ cov: defects(pressTexture(L, im, p, q), im, p, q, p.seed), ink: inks[q] });
     }
     return layers;
   };
@@ -706,8 +723,8 @@
     p.e = e;
     var f = Math.pow(2 * e, 1.5);                                          // 0 → 0 · 0,5 → 1 · 1 → 2,8
     DEFECTS.forEach(function (k) { if (typeof p[k] === 'number') p[k] = Math.min(2.5, p[k] * f); });
-    if (p.lines > 0) p.lines = p.lines * Math.pow(2, (0.5 - e) * 2.6 * (p.lineK == null ? 1 : p.lineK));    // ×2,5 más fina … ×2,5 más gruesa
-    if (typeof p.px === 'number') p.px = p.px * Math.pow(2, (e - 0.5) * 3);
+    if (p.lines > 0) p.lines = p.lines * Math.pow(2, (0.5 - e) * 2.6 * (p.lineK == null ? 0.35 : p.lineK));    // ×2,5 más fina … ×2,5 más gruesa
+    if (typeof p.px === 'number') p.px = p.px * Math.pow(2, (e - 0.5) * 1.1);
     if (typeof p.gain === 'number') p.gain = p.gain * (0.3 + 1.1 * e);
     p.clarity = (p.clarity == null ? 0.3 : p.clarity) * (0.3 + 1.4 * e);
     p.detail = (p.detail || 0) * (0.35 + 1.3 * e);

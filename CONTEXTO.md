@@ -135,6 +135,7 @@ Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pi
 ### En curso (sin empaquetar; el usuario pidió no enviar el .ccx todavía)
 
 - Imágenes › Fotocopia punk: el umbral se compara con ruido de tóner (`tgrain`): blancos y negros nítidos, medios tonos en grano fino; nitidez fina antes del umbral.
+- Imágenes, regla del usuario: **el deslizador de intensidad NO debe cambiar el tamaño de la trama o del grano**, sino añadir textura. Por eso `lineK` vale 0,35 por defecto, el factor de `px` se ha reducido y `pressTexture()` se aplica por tinta en Cuatricromía y Duotono/Tritono.
 - Periódico (las tres variantes): `lineK 0.35`, así la intensidad cambia poco el tamaño del punto o de la línea. A cambio añade textura de rotativa que crece con `e`: tinta irregular, bandas, zonas sin tinta, traspaso del dorso, velo, motas con anillo y arañazos.
 - Copia de copia: `smear` (franjas movidas con estela horizontal) y `blots` (borrones grises).
 - Las tres fotocopias se diferencian así:
