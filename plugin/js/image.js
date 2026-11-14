@@ -367,10 +367,65 @@
   // p.e = intensidad 0..1 (ver applyIntensity).
   var TECH = {};
 
+  // GRABADO RAYADO (punta seca + fotocopia): la foto dibujada con miles de trazos finos que siguen
+  // la forma (dirección de las curvas de nivel de la luz), más densos y largos donde es más oscuro;
+  // negros macizos; medios tonos con una trama fina de revista; grano de tóner; y algunas rayas
+  // largas (claras y oscuras) que cruzan la imagen, como en un grabado arañado.
+  function xeroxScratch(im, p) {
+    var w = im.w, h = im.h, S = im.S, n = im.n, e = p.e, sd = p.seed, i, x, y, R = 0;
+    function rnd() { R = (R + 0x6D2B79F5) | 0; var t = Math.imul(R ^ (R >>> 15), 1 | R); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+    R = sd * 7919 + 3;
+    var T = darkness(im), Tb = blur(T, w, h, Math.max(0.8, S * 0.002));
+    for (i = 0; i < n; i++) T[i] = clamp01(T[i] + (T[i] - Tb[i]) * 1.2);
+    // dirección del trazo: tangente a las curvas de nivel (tensor de estructura suavizado)
+    var Ts = blur(T, w, h, S * 0.004), Jxx = new Float32Array(n), Jxy = new Float32Array(n), Jyy = new Float32Array(n);
+    for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) { i = y * w + x; var gx = Ts[i + 1] - Ts[i - 1], gy = Ts[i + w] - Ts[i - w]; Jxx[i] = gx * gx; Jxy[i] = gx * gy; Jyy[i] = gy * gy; }
+    Jxx = blur(Jxx, w, h, S * 0.012); Jxy = blur(Jxy, w, h, S * 0.012); Jyy = blur(Jyy, w, h, S * 0.012);
+    var C = new Float32Array(n), Tf = blur(T, w, h, S * 0.003);
+    function dep(px, py, c) { var xi = px | 0, yi = py | 0; if (xi < 0 || yi < 0 || xi >= w || yi >= h) return; var j = yi * w + xi; C[j] = 1 - (1 - C[j]) * (1 - c); }
+    var nS = Math.round(n / (S * S) * 9000 * (0.6 + 0.8 * e)), budget = n * 6;
+    for (var k = 0; k < nS && budget > 0; k++) {
+      var sx = rnd() * w, sy = rnd() * h, j0 = (sy | 0) * w + (sx | 0), t0 = Tf[j0];
+      if (rnd() > Math.pow(t0, 1.9) * 1.4) continue;                   // más trazos donde es oscuro
+      var th = 0.5 * Math.atan2(2 * Jxy[j0], Jxx[j0] - Jyy[j0]) + Math.PI / 2 + (rnd() - 0.5) * 0.5;
+      if (Jxx[j0] + Jyy[j0] < 1e-5) th = -0.9 + (rnd() - 0.5) * 0.6;   // zonas planas: rayado en diagonal
+      var len = S * (0.008 + 0.05 * Math.pow(rnd(), 1.5)) * (0.5 + t0), ink = 0.35 + 0.5 * rnd(), cv = (rnd() - 0.5) * 0.02;
+      var px = sx - Math.cos(th) * len / 2, py = sy - Math.sin(th) * len / 2;
+      for (var q = 0; q < len && budget > 0; q++, budget--) {
+        th += cv; px += Math.cos(th); py += Math.sin(th);
+        var tt = q / len, taper = Math.min(1, Math.min(tt, 1 - tt) * 6);   // entra y sale en punta
+        dep(px, py, ink * taper);
+      }
+    }
+    // negros macizos y trama fina en los medios tonos
+    var H = amScreen(T, w, h, { cell: S / 150, ang: 45, shape: 'round', gain: 0.3, comp: 0.3, rag: 0.4, seed: sd });
+    var N1 = noiseField(w, h, Math.max(1, S * 0.0012), sd + 7, false), Nb = noiseField(w, h, S * 0.08, sd + 9, true);
+    for (i = 0; i < n; i++) {
+      var t = T[i], solid = smooth(0.64, 0.74, t);
+      var mid = smooth(0.2, 0.45, t) * (1 - smooth(0.6, 0.8, t)) * smooth(0.45, 0.7, Nb[i]);   // trama solo a zonas
+      var v = Math.max(C[i] * (0.8 + 0.2 * N1[i]), solid, H[i] * mid * 0.85);
+      var thr = 0.5 + (hash(i * 2654435761 + sd) - 0.5) * 0.45;                                  // grano de tóner
+      C[i] = smooth(thr - 0.12, thr + 0.12, v);
+    }
+    // rayas largas que cruzan (arañazos de la plancha): claras sobre el negro, oscuras sobre el claro
+    var nL = Math.round(4 + 10 * e);
+    for (var l = 0; l < nL; l++) {
+      var a = (rnd() < 0.6 ? Math.PI / 2 : rnd() * Math.PI) + (rnd() - 0.5) * 0.15, x0 = rnd() * w, y0 = rnd() * h, L = S * (0.3 + 1.2 * rnd()), white = rnd() < 0.55;
+      for (var s2 = -L / 2; s2 < L / 2; s2++) {
+        var xx = Math.round(x0 + Math.cos(a) * s2), yy = Math.round(y0 + Math.sin(a) * s2); if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+        var jj = yy * w + xx; if (noise1(s2 / (S * 0.04), sd + l) < 0.3) continue;
+        C[jj] = white ? C[jj] * 0.1 : Math.max(C[jj], 0.85);
+      }
+    }
+    addSpecks(C, blur(C, w, h, S * 0.01), im, p.specks || 0.3, sd, true);
+    return [{ cov: defects(C, im, p, 0, sd), ink: p.inks[0] }];
+  }
+
   // 1 · Fotocopia punk: umbral (más o menos duro según la intensidad), umbral adaptativo para que
   // el detalle no se pierda, copia de copia (cada pasada empasta y redondea), tóner que salpica,
   // huecos, rayas y velo (sin bordes: solo la imagen).
   TECH.xerox = function (im, p) {
+    if (p.method === 'scratch') return xeroxScratch(im, p);
     var w = im.w, h = im.h, S = im.S, n = im.n, e = p.e, seed = p.seed, i, T = darkness(im);
     // umbral adaptativo: el fondo local se lleva hacia el medio, así el detalle de luces y sombras se lee
     var ad = p.adapt == null ? 0.35 : p.adapt;
@@ -796,7 +851,8 @@
       variants: [
         { id: 'umbral', name: 'Umbral duro', p: { kind: 'xerox', threshold: 0.6, gen: 0.1, adapt: 0.15, tgrain: 0.3, contrast: 0.25, detail: 0.55, clarity: 0.5, specks: 0.35, dropout: 0.2, streaks: 0.15, haze: 0.08, grain: 0.15, mottle: 0.1 } },
         { id: 'copia', name: 'Copia de copia', p: { kind: 'xerox', threshold: 0.55, gen: 1, adapt: 0.45, tgrain: 0.85, smear: 0.8, blots: 0.7, detail: 0.3, clarity: 0.3, specks: 0.7, dropout: 0.45, streaks: 0.35, haze: 0.25, grain: 0.25, mottle: 0.2 } },
-        { id: 'trama', name: 'Revista fotocopiada', p: { kind: 'xerox', method: 'trama', lines: 125, tgrain: 0.45, threshold: 0.5, gen: 0.25, adapt: 0.15, detail: 0.3, clarity: 0.3, specks: 0.3, dropout: 0.15, streaks: 0.1, haze: 0.1, grain: 0.15, mottle: 0.1 } }
+        { id: 'trama', name: 'Revista fotocopiada', p: { kind: 'xerox', method: 'trama', lines: 125, tgrain: 0.45, threshold: 0.5, gen: 0.25, adapt: 0.15, detail: 0.3, clarity: 0.3, specks: 0.3, dropout: 0.15, streaks: 0.1, haze: 0.1, grain: 0.15, mottle: 0.1 } },
+        { id: 'rayado', name: 'Grabado rayado', p: { kind: 'xerox', method: 'scratch', detail: 0.4, clarity: 0.5, specks: 0.3, mottle: 0.15, grain: 0.1 } }
       ] },
     { id: 'news', name: 'Periódico', desc: 'Trama de puntos de una tinta en papel de periódico: las luces pierden el punto, los medios engordan, las sombras se empastan; el punto se corre y a veces se dobla.',
       palettes: [{ name: 'Tinta de periódico', inks: ['#262423'] }, RD, BL], keys: ['lines', 'gain', 'slur', 'contrast', 'detail', 'mottle', 'grain'],

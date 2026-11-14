@@ -136,6 +136,10 @@ Todas las gotas salen del banco `plugin/drips`. El motor usa `prepareDrips`, `pi
 
 - Imágenes › Fotocopia punk: el umbral se compara con ruido de tóner (`tgrain`): blancos y negros nítidos, medios tonos en grano fino; nitidez fina antes del umbral.
 - Imágenes, regla del usuario: **el deslizador de intensidad NO debe cambiar el tamaño de la trama o del grano**, sino añadir textura. Por eso `lineK` vale 0,35 por defecto, el factor de `px` se ha reducido y `pressTexture()` se aplica por tinta en Cuatricromía y Duotono/Tritono.
+- Fotocopia punk, 4.ª variante `rayado`, «Grabado rayado» (`xeroxScratch`):
+  - Trazos finos que siguen las curvas de nivel de la luz, más densos donde es oscuro.
+  - Negros macizos, trama fina a zonas y grano de tóner.
+  - Arañazos largos claros y oscuros.
 - Impresora rota: inyección rehecha.
   - Gotitas FM fijas (S·0,0009).
   - Boquillas obstruidas: filas de 1 px de una sola tinta, intermitentes y solo en algunas pasadas.
